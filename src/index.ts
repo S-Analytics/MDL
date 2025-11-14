@@ -1,4 +1,5 @@
 import * as path from 'path';
+import express from 'express';
 import { InMemoryMetricStore } from './storage';
 import { createServer } from './api';
 import { getDashboardHTML } from './dashboard';
@@ -9,6 +10,9 @@ const store = new InMemoryMetricStore(DEFAULT_STORAGE_PATH);
 
 // Create API server
 const app = createServer(store);
+
+// Serve static files from examples directory
+app.use('/examples', express.static(path.join(process.cwd(), 'examples')));
 
 // Add dashboard route
 app.get('/', (req, res) => {
