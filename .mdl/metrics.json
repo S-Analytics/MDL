@@ -1,6 +1,6 @@
 [
   {
-    "id": "revenue-mhyc0ra4-z7htj2",
+    "id": "revenue-mhyccn9d-t900a3",
     "name": "Revenue",
     "description": "Total revenue generated from all sources",
     "category": "financial",
@@ -29,11 +29,11 @@
       "dataClassification": "internal",
       "auditRequired": true
     },
-    "createdAt": "2025-11-14T04:02:30.556Z",
-    "updatedAt": "2025-11-14T04:02:30.556Z"
+    "createdAt": "2025-11-14T04:11:45.217Z",
+    "updatedAt": "2025-11-14T04:11:45.217Z"
   },
   {
-    "id": "customer-satisfaction-score-mhyc0ra5-wcmnta",
+    "id": "customer-satisfaction-score-mhyccn9e-2gocxe",
     "name": "Customer Satisfaction Score",
     "description": "Average customer satisfaction rating on a scale of 1-10",
     "category": "customer",
@@ -59,11 +59,11 @@
       "complianceLevel": "internal",
       "dataClassification": "internal"
     },
-    "createdAt": "2025-11-14T04:02:30.557Z",
-    "updatedAt": "2025-11-14T04:02:30.557Z"
+    "createdAt": "2025-11-14T04:11:45.218Z",
+    "updatedAt": "2025-11-14T04:11:45.218Z"
   },
   {
-    "id": "active-users-mhyc0ra5-uuh260",
+    "id": "active-users-mhyccn9e-074qrw",
     "name": "Active Users",
     "description": "Number of active users in the last 30 days",
     "category": "engagement",
@@ -86,11 +86,11 @@
       "complianceLevel": "confidential",
       "dataClassification": "sensitive"
     },
-    "createdAt": "2025-11-14T04:02:30.557Z",
-    "updatedAt": "2025-11-14T04:02:30.557Z"
+    "createdAt": "2025-11-14T04:11:45.218Z",
+    "updatedAt": "2025-11-14T04:11:45.218Z"
   },
   {
-    "id": "api-response-time-mhyc0ra5-09iryr",
+    "id": "api-response-time-mhyccn9e-5j5aji",
     "name": "API Response Time",
     "description": "Average API response time in milliseconds",
     "category": "performance",
@@ -117,11 +117,11 @@
       "team": "Engineering",
       "complianceLevel": "internal"
     },
-    "createdAt": "2025-11-14T04:02:30.557Z",
-    "updatedAt": "2025-11-14T04:02:30.557Z"
+    "createdAt": "2025-11-14T04:11:45.218Z",
+    "updatedAt": "2025-11-14T04:11:45.218Z"
   },
   {
-    "id": "conversion-rate-mhyc0ra5-lyzro8",
+    "id": "conversion-rate-mhyccn9f-gp0966",
     "name": "Conversion Rate",
     "description": "Percentage of visitors who complete a desired action",
     "category": "marketing",
@@ -150,16 +150,7 @@
       ],
       "complianceLevel": "confidential"
     },
-    "createdAt": "2025-11-14T04:02:30.557Z",
-    "updatedAt": "2025-11-14T04:02:30.557Z"
-  },
-  {
-    "id": "test-api-metric-mhyc9to5-cac5j3",
-    "name": "Test API Metric",
-    "description": "A metric created via API",
-    "category": "test",
-    "dataType": "number",
-    "createdAt": "2025-11-14T04:09:33.557Z",
-    "updatedAt": "2025-11-14T04:09:33.557Z"
+    "createdAt": "2025-11-14T04:11:45.219Z",
+    "updatedAt": "2025-11-14T04:11:45.219Z"
   }
 ]
