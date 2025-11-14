@@ -152,5 +152,14 @@
     },
     "createdAt": "2025-11-14T04:02:30.557Z",
     "updatedAt": "2025-11-14T04:02:30.557Z"
+  },
+  {
+    "id": "test-api-metric-mhyc9to5-cac5j3",
+    "name": "Test API Metric",
+    "description": "A metric created via API",
+    "category": "test",
+    "dataType": "number",
+    "createdAt": "2025-11-14T04:09:33.557Z",
+    "updatedAt": "2025-11-14T04:09:33.557Z"
   }
 ]
