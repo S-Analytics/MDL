@@ -1,4 +1,3 @@
-import express from 'express';
 import * as path from 'path';
 import { InMemoryMetricStore } from './storage';
 import { createServer } from './api';
@@ -18,6 +17,11 @@ app.get('/', (req, res) => {
 
 app.get('/dashboard', (req, res) => {
   res.send(getDashboardHTML());
+});
+
+// 404 handler (must be after all routes)
+app.use((req, res) => {
+  res.status(404).json({ success: false, error: 'Route not found' });
 });
 
 // Start server

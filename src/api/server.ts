@@ -12,7 +12,7 @@ export interface ServerConfig {
 /**
  * Create and configure Express server for MDL API
  */
-export function createServer(store: IMetricStore, config: ServerConfig = {}) {
+export function createServer(store: IMetricStore, _config: ServerConfig = {}) {
   const app = express();
   
   // Middleware
@@ -174,15 +174,11 @@ export function createServer(store: IMetricStore, config: ServerConfig = {}) {
     }
   });
 
+  // Note: Do not add 404 handler here - it should be added after dashboard routes
   // Error handling middleware
-  app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
     console.error('Error:', err);
     res.status(500).json({ success: false, error: 'Internal server error' });
-  });
-
-  // 404 handler
-  app.use((req: Request, res: Response) => {
-    res.status(404).json({ success: false, error: 'Route not found' });
   });
 
   return app;

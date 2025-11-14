@@ -1,0 +1,156 @@
+[
+  {
+    "id": "revenue-mhyc0ra4-z7htj2",
+    "name": "Revenue",
+    "description": "Total revenue generated from all sources",
+    "category": "financial",
+    "dataType": "currency",
+    "unit": "USD",
+    "tags": [
+      "revenue",
+      "financial",
+      "kpi"
+    ],
+    "validationRules": [
+      {
+        "type": "min",
+        "value": 0,
+        "message": "Revenue cannot be negative"
+      }
+    ],
+    "governance": {
+      "owner": "finance-team",
+      "team": "Finance",
+      "approvers": [
+        "cfo@example.com",
+        "finance-lead@example.com"
+      ],
+      "complianceLevel": "internal",
+      "dataClassification": "internal",
+      "auditRequired": true
+    },
+    "createdAt": "2025-11-14T04:02:30.556Z",
+    "updatedAt": "2025-11-14T04:02:30.556Z"
+  },
+  {
+    "id": "customer-satisfaction-score-mhyc0ra5-wcmnta",
+    "name": "Customer Satisfaction Score",
+    "description": "Average customer satisfaction rating on a scale of 1-10",
+    "category": "customer",
+    "dataType": "number",
+    "tags": [
+      "csat",
+      "customer",
+      "quality"
+    ],
+    "validationRules": [
+      {
+        "type": "range",
+        "value": [
+          1,
+          10
+        ],
+        "message": "CSAT score must be between 1 and 10"
+      }
+    ],
+    "governance": {
+      "owner": "customer-success",
+      "team": "Customer Success",
+      "complianceLevel": "internal",
+      "dataClassification": "internal"
+    },
+    "createdAt": "2025-11-14T04:02:30.557Z",
+    "updatedAt": "2025-11-14T04:02:30.557Z"
+  },
+  {
+    "id": "active-users-mhyc0ra5-uuh260",
+    "name": "Active Users",
+    "description": "Number of active users in the last 30 days",
+    "category": "engagement",
+    "dataType": "count",
+    "tags": [
+      "users",
+      "engagement",
+      "dau"
+    ],
+    "validationRules": [
+      {
+        "type": "min",
+        "value": 0,
+        "message": "Active users cannot be negative"
+      }
+    ],
+    "governance": {
+      "owner": "product-analytics",
+      "team": "Product",
+      "complianceLevel": "confidential",
+      "dataClassification": "sensitive"
+    },
+    "createdAt": "2025-11-14T04:02:30.557Z",
+    "updatedAt": "2025-11-14T04:02:30.557Z"
+  },
+  {
+    "id": "api-response-time-mhyc0ra5-09iryr",
+    "name": "API Response Time",
+    "description": "Average API response time in milliseconds",
+    "category": "performance",
+    "dataType": "duration",
+    "unit": "ms",
+    "tags": [
+      "performance",
+      "api",
+      "latency"
+    ],
+    "validationRules": [
+      {
+        "type": "min",
+        "value": 0
+      },
+      {
+        "type": "max",
+        "value": 10000,
+        "message": "Response time should not exceed 10 seconds"
+      }
+    ],
+    "governance": {
+      "owner": "engineering",
+      "team": "Engineering",
+      "complianceLevel": "internal"
+    },
+    "createdAt": "2025-11-14T04:02:30.557Z",
+    "updatedAt": "2025-11-14T04:02:30.557Z"
+  },
+  {
+    "id": "conversion-rate-mhyc0ra5-lyzro8",
+    "name": "Conversion Rate",
+    "description": "Percentage of visitors who complete a desired action",
+    "category": "marketing",
+    "dataType": "percentage",
+    "unit": "%",
+    "tags": [
+      "conversion",
+      "marketing",
+      "funnel"
+    ],
+    "validationRules": [
+      {
+        "type": "range",
+        "value": [
+          0,
+          100
+        ],
+        "message": "Percentage must be between 0 and 100"
+      }
+    ],
+    "governance": {
+      "owner": "marketing-ops",
+      "team": "Marketing",
+      "approvers": [
+        "cmo@example.com"
+      ],
+      "complianceLevel": "confidential"
+    },
+    "createdAt": "2025-11-14T04:02:30.557Z",
+    "updatedAt": "2025-11-14T04:02:30.557Z"
+  }
+]

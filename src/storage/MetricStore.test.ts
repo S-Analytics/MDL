@@ -89,7 +89,7 @@ describe('InMemoryMetricStore', () => {
 
     it('should filter by tags', async () => {
       const metric1 = await store.create({ ...createSampleMetric(), name: 'Metric 1', tags: ['tag1', 'tag2'] });
-      const metric2 = await store.create({ ...createSampleMetric(), name: 'Metric 2', tags: ['tag3'] });
+      await store.create({ ...createSampleMetric(), name: 'Metric 2', tags: ['tag3'] });
 
       const metrics = await store.findAll({ tags: ['tag1'] });
       expect(metrics.length).toBeGreaterThanOrEqual(1);
