@@ -1,8 +1,8 @@
-import * as path from 'path';
 import express from 'express';
-import { InMemoryMetricStore } from './storage';
+import * as path from 'path';
 import { createServer } from './api';
 import { getDashboardHTML } from './dashboard';
+import { InMemoryMetricStore } from './storage';
 
 // Initialize storage with default persistence path
 const DEFAULT_STORAGE_PATH = path.join(process.cwd(), '.mdl', 'metrics.json');
@@ -48,9 +48,10 @@ app.listen(PORT, HOST, () => {
 });
 
 // Export for programmatic use
-export * from './models';
-export * from './storage';
-export * from './config';
-export * from './opa';
 export * from './api';
+export * from './config';
+export * from './models';
+export * from './opa';
+export * from './storage';
 export { store };
+

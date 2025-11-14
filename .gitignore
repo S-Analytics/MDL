@@ -82,6 +82,15 @@ out
 .nuxt
 dist
 
+# Electron build output
+release/
+*.dmg
+*.zip
+*.exe
+*.deb
+*.rpm
+*.AppImage
+
 # Gatsby files
 .cache/
 # Comment in the public line in if your project uses Gatsby and not Next.js

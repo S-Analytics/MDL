@@ -9,22 +9,52 @@ A comprehensive application to store and manage Metric Definitions with support 
   - REST API for programmatic access
   - CLI for command-line operations
   - YAML/JSON config file loading
+  - **Desktop App** for macOS, Windows, and Linux
 - 🔐 **OPA Policy Integration**: Generate Open Policy Agent policies from metric definitions
 - 📈 **Visualization Dashboard**: Web-based dashboard for transparency and governance
 - ✅ **Validation Rules**: Define validation rules for metrics (min, max, range, enum, etc.)
 - 👥 **Governance Support**: Track owners, teams, approvers, and compliance levels
 - 💾 **Persistent Storage**: File-based persistence with in-memory performance
+- 💻 **Cross-Platform**: Available as installable desktop application or web server
 
 ## Installation
+
+### For Development or Web Server
 
 ```bash
 npm install
 npm run build
 ```
 
+### As Desktop Application
+
+**Option 1: Download Pre-built Installer** (when available)
+- Download the installer for your platform from the releases page
+- Install and run the application
+
+**Option 2: Build from Source**
+```bash
+npm install
+npm run electron:build
+```
+
+See [ELECTRON.md](ELECTRON.md) for detailed build instructions.
+
 ## Quick Start
 
-### 1. Start the Server
+### Option 1: Desktop Application (Recommended)
+
+```bash
+npm run electron:dev
+```
+
+This launches the MDL desktop application with a native window. The app includes:
+- Full-featured dashboard
+- All metrics management capabilities
+- Native menu bar and keyboard shortcuts
+- Auto-starts the backend server
+
+### Option 2: Web Server
 
 ```bash
 npm start
@@ -35,7 +65,7 @@ The server will start on `http://localhost:3000` with:
 - API: `http://localhost:3000/api/metrics`
 - Health Check: `http://localhost:3000/health`
 
-### 2. Use the CLI
+### Option 3: Use the CLI
 
 ```bash
 # Import sample metrics

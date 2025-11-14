@@ -493,6 +493,116 @@ export function getDashboardHTML(): string {
             content: ' *';
             color: #ef4444;
         }
+        .key-result-item {
+            background: #f9fafb;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            border-left: 3px solid #667eea;
+            position: relative;
+        }
+        .key-result-item h4 {
+            margin-bottom: 0.75rem;
+            color: #667eea;
+            font-size: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .remove-kr-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        .remove-kr-btn:hover {
+            background: #dc2626;
+        }
+        .icon-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 6px;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        .icon-btn:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        .icon-btn.primary {
+            color: #667eea;
+        }
+        .icon-btn.primary:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+        .icon-btn.success {
+            color: #10b981;
+        }
+        .icon-btn.success:hover {
+            background: rgba(16, 185, 129, 0.1);
+        }
+        .icon-btn.danger {
+            color: #ef4444;
+        }
+        .icon-btn.danger:hover {
+            background: rgba(239, 68, 68, 0.1);
+        }
+        .icon-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+        .icon-btn-large {
+            padding: 0.75rem 1.5rem;
+            background: #667eea;
+            color: white;
+            border-radius: 6px;
+        }
+        .icon-btn-large:hover {
+            background: #5568d3;
+        }
+        .icon-btn-large svg {
+            width: 18px;
+            height: 18px;
+            margin-right: 0.5rem;
+        }
+        .tooltip {
+            visibility: hidden;
+            position: absolute;
+            z-index: 1000;
+            background: #1f2937;
+            color: white;
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            white-space: nowrap;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%) translateY(-5px);
+            opacity: 0;
+            transition: opacity 0.2s, transform 0.2s;
+            pointer-events: none;
+        }
+        .tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: #1f2937;
+        }
+        .icon-btn:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+            transform: translateX(-50%) translateY(-8px);
+        }
     </style>
 </head>
 <body>
@@ -571,6 +681,141 @@ export function getDashboardHTML(): string {
                     <button type="button" class="btn btn-secondary" onclick="closeImportModal()">Cancel</button>
                     <button type="button" class="btn btn-success" onclick="performImport()">Import Metrics</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Domain Form Modal -->
+    <div class="modal" id="domainFormModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button class="close-btn" onclick="closeDomainFormModal()">&times;</button>
+                <h2 id="domainFormModalTitle">Add New Domain</h2>
+            </div>
+            <div class="modal-body">
+                <form id="domainForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="required">Domain ID</label>
+                            <input type="text" id="dom_domain_id" name="domain_id" required placeholder="DOMAIN-001">
+                        </div>
+                        <div class="form-group">
+                            <label class="required">Name</label>
+                            <input type="text" id="dom_name" name="name" required placeholder="Domain name">
+                        </div>
+                        <div class="form-group">
+                            <label class="required">Owner Team</label>
+                            <input type="text" id="dom_owner_team" name="owner_team" required placeholder="e.g., product_team">
+                        </div>
+                        <div class="form-group">
+                            <label class="required">Contact Email</label>
+                            <input type="email" id="dom_contact_email" name="contact_email" required placeholder="team@company.com">
+                        </div>
+                        <div class="form-group">
+                            <label class="required">Color (Hex)</label>
+                            <input type="color" id="dom_color" name="color" required value="#667eea">
+                        </div>
+                        <div class="form-group">
+                            <label>Tier Focus (comma-separated)</label>
+                            <input type="text" id="dom_tier_focus" name="tier_focus" placeholder="Tier-1, Tier-2">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" style="margin-top: 1rem;">
+                        <label class="required">Description</label>
+                        <textarea id="dom_description" name="description" required placeholder="Detailed description of the domain..."></textarea>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 1rem;">
+                        <label>Key Areas (comma-separated)</label>
+                        <textarea id="dom_key_areas" name="key_areas" rows="3" placeholder="Area 1, Area 2, Area 3"></textarea>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeDomainFormModal()">Cancel</button>
+                        <button type="submit" class="btn btn-success">Save Domain</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Objective Form Modal -->
+    <div class="modal" id="objectiveFormModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button class="close-btn" onclick="closeObjectiveFormModal()">&times;</button>
+                <h2 id="objectiveFormModalTitle">Add New Objective</h2>
+            </div>
+            <div class="modal-body">
+                <form id="objectiveForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="required">Objective ID</label>
+                            <input type="text" id="obj_objective_id" name="objective_id" required placeholder="OBJ-001">
+                        </div>
+                        <div class="form-group">
+                            <label class="required">Name</label>
+                            <input type="text" id="obj_name" name="name" required placeholder="Objective name">
+                        </div>
+                        <div class="form-group">
+                            <label class="required">Owner Team</label>
+                            <input type="text" id="obj_owner_team" name="owner_team" required placeholder="e.g., product_team">
+                        </div>
+                        <div class="form-group">
+                            <label class="required">Status</label>
+                            <select id="obj_status" name="status" required>
+                                <option value="active">Active</option>
+                                <option value="draft">Draft</option>
+                                <option value="completed">Completed</option>
+                                <option value="cancelled">Cancelled</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Strategic Pillar</label>
+                            <input type="text" id="obj_strategic_pillar" name="strategic_pillar" placeholder="e.g., Customer Experience">
+                        </div>
+                        <div class="form-group">
+                            <label>Priority</label>
+                            <select id="obj_priority" name="priority">
+                                <option value="high">High</option>
+                                <option value="medium">Medium</option>
+                                <option value="low">Low</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="required">Start Date</label>
+                            <input type="date" id="obj_start_date" name="start_date" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="required">End Date</label>
+                            <input type="date" id="obj_end_date" name="end_date" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" style="margin-top: 1rem;">
+                        <label class="required">Description</label>
+                        <textarea id="obj_description" name="description" required placeholder="Detailed description of the objective..."></textarea>
+                    </div>
+
+                    <div class="detail-section">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h3 style="margin: 0;">Key Results</h3>
+                            <button type="button" class="icon-btn icon-btn-large" onclick="addKeyResult()" style="background: #10b981;">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                </svg>
+                                Add Key Result
+                            </button>
+                        </div>
+                        <div id="keyResultsContainer"></div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeObjectiveFormModal()">Cancel</button>
+                        <button type="submit" class="btn btn-success">Save Objective</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -724,12 +969,28 @@ export function getDashboardHTML(): string {
         </div>
 
         <div class="section">
-            <h2>Business Domains</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="margin: 0;">Business Domains</h2>
+                <button class="icon-btn icon-btn-large" onclick="openAddDomainForm()">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add Domain
+                </button>
+            </div>
             <div id="domainsGrid" class="stats-grid"></div>
         </div>
 
         <div class="section">
-            <h2>Objectives & Key Results</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="margin: 0;">Objectives & Key Results</h2>
+                <button class="icon-btn icon-btn-large" onclick="openAddObjectiveForm()">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add Objective
+                </button>
+            </div>
             <div id="objectivesGrid" class="metric-grid"></div>
         </div>
 
@@ -750,10 +1011,30 @@ export function getDashboardHTML(): string {
                 <select id="categoryFilter">
                     <option value="">All Categories</option>
                 </select>
-                <button class="btn btn-success" onclick="openAddMetricForm()">+ Add Metric</button>
-                <button class="btn btn-secondary" onclick="openImportModal()">📥 Import</button>
-                <button class="btn btn-secondary" onclick="exportMetrics()">📤 Export</button>
-                <button class="btn btn-primary" onclick="refreshData()">Refresh</button>
+                <button class="icon-btn icon-btn-large" onclick="openAddMetricForm()">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add Metric
+                </button>
+                <button class="icon-btn icon-btn-large" onclick="openImportModal()">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                    Import
+                </button>
+                <button class="icon-btn icon-btn-large" onclick="exportMetrics()">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Export
+                </button>
+                <button class="icon-btn icon-btn-large" onclick="refreshData()">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Refresh
+                </button>
             </div>
             <div class="metric-grid" id="metricsGrid">
                 <div class="loading">Loading metrics...</div>
@@ -782,8 +1063,15 @@ export function getDashboardHTML(): string {
                 const objectivesData = await objectivesRes.json();
                 
                 allMetrics = metricsData.data || [];
-                allDomains = domainsData.domains || [];
-                allObjectives = objectivesData.objectives || [];
+                
+                // Load domains from localStorage first, then fall back to sample data
+                const storedDomains = await loadDomainsFromStorage();
+                allDomains = storedDomains || domainsData.domains || [];
+                
+                // Load objectives from localStorage first, then fall back to sample data
+                const storedObjectives = await loadObjectivesFromStorage();
+                allObjectives = storedObjectives || objectivesData.objectives || [];
+                
                 stats = statsData.data || {};
                 
                 // Update objectives count
@@ -897,9 +1185,19 @@ export function getDashboardHTML(): string {
                             </div>
                         \` : ''}
                     </div>
-                    <div class="action-buttons">
-                        <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); openEditMetricForm('\${metric.metric_id}')">Edit</button>
-                        <button class="btn btn-danger btn-small" onclick="event.stopPropagation(); deleteMetric('\${metric.metric_id}', '\${metric.name}')">Delete</button>
+                    <div class="action-buttons" style="justify-content: flex-end;">
+                        <button class="icon-btn primary" onclick="event.stopPropagation(); openEditMetricForm('\${metric.metric_id}')">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                            <span class="tooltip">Edit Metric</span>
+                        </button>
+                        <button class="icon-btn danger" onclick="event.stopPropagation(); deleteMetric('\${metric.metric_id}', '\${metric.name}')">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            <span class="tooltip">Delete Metric</span>
+                        </button>
                     </div>
                 </div>
             \`).join('');
@@ -916,14 +1214,29 @@ export function getDashboardHTML(): string {
             grid.innerHTML = allDomains.map(domain => {
                 const metricsInDomain = allMetrics.filter(m => m.business_domain === domain.name);
                 return \`
-                    <div class="stat-card" style="border-left: 4px solid \${domain.color || '#667eea'};">
+                    <div class="stat-card" style="border-left: 4px solid \${domain.color || '#667eea'}; position: relative;">
                         <h3 style="color: \${domain.color || '#667eea'};">\${domain.name}</h3>
                         <div class="value">\${metricsInDomain.length}</div>
                         <p style="font-size: 0.9rem; color: #666; margin-top: 0.5rem;">\${domain.description}</p>
                         <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #e2e8f0; font-size: 0.85rem;">
                             <div style="margin-bottom: 0.25rem;"><strong>Owner:</strong> \${domain.owner_team}</div>
                             <div style="margin-bottom: 0.25rem;"><strong>Tiers:</strong> \${domain.tier_focus.join(', ')}</div>
+                            <div style="margin-bottom: 0.25rem;"><strong>Email:</strong> \${domain.contact_email}</div>
                             <div><strong>Areas:</strong> \${domain.key_areas.slice(0, 3).join(', ')}\${domain.key_areas.length > 3 ? '...' : ''}</div>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem; margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid #e2e8f0; justify-content: flex-end;">
+                            <button class="icon-btn primary" onclick="event.stopPropagation(); openEditDomainForm('\${domain.domain_id}')">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                                <span class="tooltip">Edit Domain</span>
+                            </button>
+                            <button class="icon-btn danger" onclick="event.stopPropagation(); deleteDomain('\${domain.domain_id}', '\${domain.name.replace(/'/g, "\\'")}')">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                                <span class="tooltip">Delete Domain</span>
+                            </button>
                         </div>
                     </div>
                 \`;
@@ -949,11 +1262,13 @@ export function getDashboardHTML(): string {
                 return \`
                 <div class="metric-card" style="border-left: 4px solid \${priorityColor};">
                     <div style="display: flex; justify-content: space-between; align-items: start;">
-                        <div>
+                        <div style="flex: 1;">
                             <h3>\${obj.name}</h3>
                             <div class="id">ID: \${obj.objective_id}</div>
                         </div>
-                        <span class="badge" style="background: \${priorityColor};">\${obj.priority ? obj.priority.toUpperCase() : 'MEDIUM'}</span>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <span class="badge" style="background: \${priorityColor};">\${obj.priority ? obj.priority.toUpperCase() : 'MEDIUM'}</span>
+                        </div>
                     </div>
                     <p style="margin-top: 0.5rem;">\${obj.description}</p>
                     <div class="governance-info" style="margin-top: 0.75rem;">
@@ -1001,6 +1316,20 @@ export function getDashboardHTML(): string {
                             }).join('')}
                         </div>
                     \` : ''}
+                    <div class="action-buttons" style="justify-content: flex-end;">
+                        <button class="icon-btn primary" onclick="event.stopPropagation(); openEditObjectiveForm('\${obj.objective_id}')">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                            <span class="tooltip">Edit Objective</span>
+                        </button>
+                        <button class="icon-btn danger" onclick="event.stopPropagation(); deleteObjective('\${obj.objective_id}', '\${obj.name.replace(/'/g, "\\'")}')">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            <span class="tooltip">Delete Objective</span>
+                        </button>
+                    </div>
                 </div>
                 \`;
             }).join('');
@@ -1018,9 +1347,19 @@ export function getDashboardHTML(): string {
             document.getElementById('modalMetricName').textContent = metric.name;
             document.getElementById('modalMetricId').innerHTML = \`
                 ID: \${metric.metric_id}
-                <div style="float: right;">
-                    <button class="btn btn-secondary btn-small" onclick="closeMetricDetail(); openEditMetricForm('\${metric.metric_id}')" style="margin-right: 0.5rem;">Edit</button>
-                    <button class="btn btn-danger btn-small" onclick="closeMetricDetail(); deleteMetric('\${metric.metric_id}', '\${metric.name}')">Delete</button>
+                <div style="float: right; display: flex; gap: 0.5rem;">
+                    <button class="icon-btn primary" onclick="closeMetricDetail(); openEditMetricForm('\${metric.metric_id}')">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        <span class="tooltip">Edit Metric</span>
+                    </button>
+                    <button class="icon-btn danger" onclick="closeMetricDetail(); deleteMetric('\${metric.metric_id}', '\${metric.name}')">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        <span class="tooltip">Delete Metric</span>
+                    </button>
                 </div>
             \`;
             
@@ -1436,6 +1775,404 @@ export function getDashboardHTML(): string {
             return html;
         }
 
+        // Domain Form Functions
+        let isEditModeDomain = false;
+        let editingDomainId = null;
+
+        function openAddDomainForm() {
+            isEditModeDomain = false;
+            editingDomainId = null;
+            document.getElementById('domainFormModalTitle').textContent = 'Add New Domain';
+            document.getElementById('domainForm').reset();
+            document.getElementById('dom_domain_id').disabled = false;
+            document.getElementById('dom_color').value = '#667eea';
+            document.getElementById('domainFormModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function openEditDomainForm(domainId) {
+            const domain = allDomains.find(d => d.domain_id === domainId);
+            if (!domain) return;
+
+            isEditModeDomain = true;
+            editingDomainId = domainId;
+            document.getElementById('domainFormModalTitle').textContent = 'Edit Domain';
+            
+            // Populate form fields
+            document.getElementById('dom_domain_id').value = domain.domain_id;
+            document.getElementById('dom_domain_id').disabled = true;
+            document.getElementById('dom_name').value = domain.name;
+            document.getElementById('dom_owner_team').value = domain.owner_team;
+            document.getElementById('dom_contact_email').value = domain.contact_email;
+            document.getElementById('dom_color').value = domain.color || '#667eea';
+            document.getElementById('dom_tier_focus').value = (domain.tier_focus || []).join(', ');
+            document.getElementById('dom_description').value = domain.description;
+            document.getElementById('dom_key_areas').value = (domain.key_areas || []).join(', ');
+
+            document.getElementById('domainFormModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeDomainFormModal() {
+            document.getElementById('domainFormModal').classList.remove('active');
+            document.body.style.overflow = 'auto';
+            document.getElementById('domainForm').reset();
+            isEditModeDomain = false;
+            editingDomainId = null;
+        }
+
+        // Domain Form Submission
+        document.addEventListener('DOMContentLoaded', function() {
+            const domainForm = document.getElementById('domainForm');
+            if (domainForm) {
+                domainForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    
+                    const formData = new FormData(e.target);
+                    
+                    const domainData = {
+                        domain_id: formData.get('domain_id'),
+                        name: formData.get('name'),
+                        description: formData.get('description'),
+                        owner_team: formData.get('owner_team'),
+                        contact_email: formData.get('contact_email'),
+                        tier_focus: formData.get('tier_focus') 
+                            ? formData.get('tier_focus').split(',').map(t => t.trim()).filter(Boolean)
+                            : [],
+                        key_areas: formData.get('key_areas')
+                            ? formData.get('key_areas').split(',').map(a => a.trim()).filter(Boolean)
+                            : [],
+                        color: formData.get('color') || '#667eea'
+                    };
+
+                    try {
+                        if (isEditModeDomain) {
+                            const index = allDomains.findIndex(d => d.domain_id === editingDomainId);
+                            if (index !== -1) {
+                                allDomains[index] = domainData;
+                            }
+                        } else {
+                            allDomains.push(domainData);
+                        }
+
+                        await saveDomainsToStorage();
+                        
+                        showToast(\`Domain \${isEditModeDomain ? 'updated' : 'created'} successfully!\`, 'success');
+                        closeDomainFormModal();
+                        renderDomains();
+                        updateStats();
+                    } catch (error) {
+                        showToast(\`Error: \${error.message}\`, 'error');
+                    }
+                });
+            }
+        });
+
+        async function saveDomainsToStorage() {
+            try {
+                localStorage.setItem('mdl_domains', JSON.stringify(allDomains));
+                return true;
+            } catch (error) {
+                console.error('Error saving domains:', error);
+                throw error;
+            }
+        }
+
+        async function loadDomainsFromStorage() {
+            try {
+                const stored = localStorage.getItem('mdl_domains');
+                if (stored) {
+                    return JSON.parse(stored);
+                }
+            } catch (error) {
+                console.error('Error loading domains from storage:', error);
+            }
+            return null;
+        }
+
+        async function deleteDomain(domainId, domainName) {
+            // Check if any metrics use this domain
+            const metricsInDomain = allMetrics.filter(m => m.business_domain === domainName);
+            
+            if (metricsInDomain.length > 0) {
+                if (!confirm(\`This domain has \${metricsInDomain.length} metric(s). Deleting the domain will not delete the metrics, but they will be orphaned. Continue?\`)) {
+                    return;
+                }
+            }
+
+            if (!confirm(\`Are you sure you want to delete "\${domainName}"?\`)) {
+                return;
+            }
+
+            try {
+                const index = allDomains.findIndex(d => d.domain_id === domainId);
+                if (index !== -1) {
+                    allDomains.splice(index, 1);
+                    await saveDomainsToStorage();
+                    showToast('Domain deleted successfully!', 'success');
+                    renderDomains();
+                    updateStats();
+                } else {
+                    showToast('Domain not found', 'error');
+                }
+            } catch (error) {
+                showToast(\`Error: \${error.message}\`, 'error');
+            }
+        }
+
+        // Objective Form Functions
+        let isEditModeObjective = false;
+        let editingObjectiveId = null;
+        let keyResultCounter = 0;
+
+        function openAddObjectiveForm() {
+            isEditModeObjective = false;
+            editingObjectiveId = null;
+            keyResultCounter = 0;
+            document.getElementById('objectiveFormModalTitle').textContent = 'Add New Objective';
+            document.getElementById('objectiveForm').reset();
+            document.getElementById('obj_objective_id').disabled = false;
+            document.getElementById('obj_status').value = 'active';
+            document.getElementById('obj_priority').value = 'medium';
+            document.getElementById('keyResultsContainer').innerHTML = '';
+            
+            // Add one empty key result by default
+            addKeyResult();
+            
+            document.getElementById('objectiveFormModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function openEditObjectiveForm(objectiveId) {
+            const objective = allObjectives.find(o => o.objective_id === objectiveId);
+            if (!objective) return;
+
+            isEditModeObjective = true;
+            editingObjectiveId = objectiveId;
+            keyResultCounter = 0;
+            document.getElementById('objectiveFormModalTitle').textContent = 'Edit Objective';
+            
+            // Populate form fields
+            document.getElementById('obj_objective_id').value = objective.objective_id;
+            document.getElementById('obj_objective_id').disabled = true;
+            document.getElementById('obj_name').value = objective.name;
+            document.getElementById('obj_owner_team').value = objective.owner_team;
+            document.getElementById('obj_status').value = objective.status;
+            document.getElementById('obj_strategic_pillar').value = objective.strategic_pillar || '';
+            document.getElementById('obj_priority').value = objective.priority || 'medium';
+            document.getElementById('obj_start_date').value = objective.timeframe.start;
+            document.getElementById('obj_end_date').value = objective.timeframe.end;
+            document.getElementById('obj_description').value = objective.description;
+            
+            // Populate key results
+            document.getElementById('keyResultsContainer').innerHTML = '';
+            if (objective.key_results && objective.key_results.length > 0) {
+                objective.key_results.forEach(kr => {
+                    addKeyResult(kr);
+                });
+            } else {
+                addKeyResult();
+            }
+
+            document.getElementById('objectiveFormModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeObjectiveFormModal() {
+            document.getElementById('objectiveFormModal').classList.remove('active');
+            document.body.style.overflow = 'auto';
+            document.getElementById('objectiveForm').reset();
+            document.getElementById('keyResultsContainer').innerHTML = '';
+            isEditModeObjective = false;
+            editingObjectiveId = null;
+            keyResultCounter = 0;
+        }
+
+        function addKeyResult(existingKR = null) {
+            const container = document.getElementById('keyResultsContainer');
+            const krId = keyResultCounter++;
+            
+            const krHtml = \`
+                <div class="key-result-item" id="kr_\${krId}">
+                    <h4>
+                        <span>Key Result #\${krId + 1}</span>
+                        <button type="button" class="icon-btn danger" onclick="removeKeyResult(\${krId})" style="padding: 0.35rem;">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                            <span class="tooltip">Remove Key Result</span>
+                        </button>
+                    </h4>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="required">KR ID</label>
+                            <input type="text" name="kr_id_\${krId}" value="\${existingKR?.kr_id || ''}" required placeholder="OBJ-001:KR-001">
+                        </div>
+                        <div class="form-group">
+                            <label class="required">Name</label>
+                            <input type="text" name="kr_name_\${krId}" value="\${existingKR?.name || ''}" required placeholder="Key result name">
+                        </div>
+                        <div class="form-group">
+                            <label class="required">Direction</label>
+                            <select name="kr_direction_\${krId}" required>
+                                <option value="increase" \${existingKR?.direction === 'increase' ? 'selected' : ''}>Increase</option>
+                                <option value="decrease" \${existingKR?.direction === 'decrease' ? 'selected' : ''}>Decrease</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="required">Unit</label>
+                            <input type="text" name="kr_unit_\${krId}" value="\${existingKR?.unit || ''}" required placeholder="e.g., %, count, ms">
+                        </div>
+                        <div class="form-group">
+                            <label class="required">Baseline Value</label>
+                            <input type="number" step="any" name="kr_baseline_\${krId}" value="\${existingKR?.baseline_value ?? ''}" required placeholder="0">
+                        </div>
+                        <div class="form-group">
+                            <label class="required">Target Value</label>
+                            <input type="number" step="any" name="kr_target_\${krId}" value="\${existingKR?.target_value ?? ''}" required placeholder="100">
+                        </div>
+                        <div class="form-group">
+                            <label>Current Value</label>
+                            <input type="number" step="any" name="kr_current_\${krId}" value="\${existingKR?.current_value ?? ''}" placeholder="50">
+                        </div>
+                        <div class="form-group">
+                            <label>Linked Metric IDs (comma-separated)</label>
+                            <input type="text" name="kr_metrics_\${krId}" value="\${existingKR?.metric_ids?.join(', ') || ''}" placeholder="METRIC-ID-1, METRIC-ID-2">
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-top: 0.75rem;">
+                        <label>Description</label>
+                        <textarea name="kr_description_\${krId}" rows="2" placeholder="Key result description...">\${existingKR?.description || ''}</textarea>
+                    </div>
+                </div>
+            \`;
+            
+            container.insertAdjacentHTML('beforeend', krHtml);
+        }
+
+        function removeKeyResult(krId) {
+            const element = document.getElementById(\`kr_\${krId}\`);
+            if (element) {
+                element.remove();
+            }
+        }
+
+        // Objective Form Submission
+        document.addEventListener('DOMContentLoaded', function() {
+            const objectiveForm = document.getElementById('objectiveForm');
+            if (objectiveForm) {
+                objectiveForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    
+                    const formData = new FormData(e.target);
+                    
+                    // Collect key results
+                    const keyResults = [];
+                    const container = document.getElementById('keyResultsContainer');
+                    const krItems = container.querySelectorAll('.key-result-item');
+                    
+                    krItems.forEach(item => {
+                        const krId = item.id.replace('kr_', '');
+                        const kr = {
+                            kr_id: formData.get(\`kr_id_\${krId}\`),
+                            name: formData.get(\`kr_name_\${krId}\`),
+                            description: formData.get(\`kr_description_\${krId}\`) || '',
+                            target_value: parseFloat(formData.get(\`kr_target_\${krId}\`)),
+                            baseline_value: parseFloat(formData.get(\`kr_baseline_\${krId}\`)),
+                            unit: formData.get(\`kr_unit_\${krId}\`),
+                            direction: formData.get(\`kr_direction_\${krId}\`),
+                            current_value: formData.get(\`kr_current_\${krId}\`) ? parseFloat(formData.get(\`kr_current_\${krId}\`)) : null,
+                            metric_ids: formData.get(\`kr_metrics_\${krId}\`) 
+                                ? formData.get(\`kr_metrics_\${krId}\`).split(',').map(m => m.trim()).filter(Boolean)
+                                : []
+                        };
+                        keyResults.push(kr);
+                    });
+
+                    const objectiveData = {
+                        objective_id: formData.get('objective_id'),
+                        name: formData.get('name'),
+                        description: formData.get('description'),
+                        timeframe: {
+                            start: formData.get('start_date'),
+                            end: formData.get('end_date')
+                        },
+                        owner_team: formData.get('owner_team'),
+                        status: formData.get('status'),
+                        strategic_pillar: formData.get('strategic_pillar') || undefined,
+                        priority: formData.get('priority') || 'medium',
+                        key_results: keyResults
+                    };
+
+                    try {
+                        // Save to local storage or update allObjectives array
+                        if (isEditModeObjective) {
+                            const index = allObjectives.findIndex(o => o.objective_id === editingObjectiveId);
+                            if (index !== -1) {
+                                allObjectives[index] = objectiveData;
+                            }
+                        } else {
+                            allObjectives.push(objectiveData);
+                        }
+
+                        // Save to file (we'll need to create an endpoint or save to localStorage)
+                        await saveObjectivesToStorage();
+                        
+                        showToast(\`Objective \${isEditModeObjective ? 'updated' : 'created'} successfully!\`, 'success');
+                        closeObjectiveFormModal();
+                        renderObjectives(allObjectives);
+                        updateStats();
+                    } catch (error) {
+                        showToast(\`Error: \${error.message}\`, 'error');
+                    }
+                });
+            }
+        });
+
+        async function saveObjectivesToStorage() {
+            // Save to localStorage for now (in a real app, this would be an API call)
+            try {
+                localStorage.setItem('mdl_objectives', JSON.stringify(allObjectives));
+                return true;
+            } catch (error) {
+                console.error('Error saving objectives:', error);
+                throw error;
+            }
+        }
+
+        async function loadObjectivesFromStorage() {
+            try {
+                const stored = localStorage.getItem('mdl_objectives');
+                if (stored) {
+                    return JSON.parse(stored);
+                }
+            } catch (error) {
+                console.error('Error loading objectives from storage:', error);
+            }
+            return null;
+        }
+
+        async function deleteObjective(objectiveId, objectiveName) {
+            if (!confirm(\`Are you sure you want to delete "\${objectiveName}"? This action cannot be undone.\`)) {
+                return;
+            }
+
+            try {
+                const index = allObjectives.findIndex(o => o.objective_id === objectiveId);
+                if (index !== -1) {
+                    allObjectives.splice(index, 1);
+                    await saveObjectivesToStorage();
+                    showToast('Objective deleted successfully!', 'success');
+                    renderObjectives(allObjectives);
+                    updateStats();
+                } else {
+                    showToast('Objective not found', 'error');
+                }
+            } catch (error) {
+                showToast(\`Error: \${error.message}\`, 'error');
+            }
+        }
+
         // Import/Export Functions
         function openImportModal() {
             document.getElementById('importModal').classList.add('active');
@@ -1838,6 +2575,8 @@ export function getDashboardHTML(): string {
                 closeMetricDetail();
                 closeFormModal();
                 closeImportModal();
+                closeObjectiveFormModal();
+                closeDomainFormModal();
             }
         });
 
@@ -1857,6 +2596,18 @@ export function getDashboardHTML(): string {
         document.getElementById('importModal').addEventListener('click', function(e) {
             if (e.target === this) {
                 closeImportModal();
+            }
+        });
+
+        document.getElementById('objectiveFormModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeObjectiveFormModal();
+            }
+        });
+
+        document.getElementById('domainFormModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeDomainFormModal();
             }
         });
 

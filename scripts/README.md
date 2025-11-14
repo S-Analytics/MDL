@@ -8,6 +8,26 @@ Utility scripts for managing the Metrics Definition Library.
 
 Loads the comprehensive sample metrics from `examples/sample-metrics.json` into the metrics store (`.mdl/metrics.json`).
 
+### generate-icons.sh
+
+Generates platform-specific application icons from a source image for the Electron app.
+
+**Usage:**
+```bash
+./scripts/generate-icons.sh path/to/your-icon.png
+```
+
+**Requirements:**
+- Source image at least 1024x1024 pixels
+- macOS: `iconutil` and `sips` (built-in)
+- Windows/Linux: ImageMagick (`convert`)
+
+**What it does:**
+- Creates `assets/icon.png` (512x512) for Linux
+- Creates `assets/icon.ico` (multi-size) for Windows
+- Creates `assets/icon.icns` (multi-size) for macOS
+- Handles all required icon sizes automatically
+
 **Usage:**
 ```bash
 npm run load:samples
