@@ -1,0 +1,663 @@
+catalog_version: 1.0.0
+catalog_name: Company Metrics Definition Library
+last_updated: '2025-01-01T00:00:00Z'
+owner_team: Data & Analytics
+contacts:
+  - name: Metrics Catalog Owner
+    email: owner@example.com
+objectives:
+  - objective_id: OBJ-001
+    name: Improve Digital Customer Experience
+    description: Increase satisfaction and reduce friction across mobile and web channels.
+    timeframe:
+      start: '2025-01-01'
+      end: '2025-03-31'
+    owner_team: Digital Product
+    status: active
+    key_results:
+      - kr_id: KR-001
+        name: Increase mobile app NPS from 45 to 55
+        description: Drive higher satisfaction for mobile users by addressing key friction points.
+        target_value: 55
+        baseline_value: 45
+        unit: score
+        direction: increase
+        current_value: null
+        metric_ids:
+          - METRIC-NPS-MOBILE
+      - kr_id: KR-002
+        name: Reduce login failure rate from 5% to 2%
+        description: Improve login success for legitimate users without compromising security.
+        target_value: 0.02
+        baseline_value: 0.05
+        unit: ratio
+        direction: decrease
+        current_value: null
+        metric_ids:
+          - METRIC-LOGIN-SUCCESS-RATE
+metrics:
+  - metric_id: METRIC-LOGIN-SUCCESS-RATE
+    name: Login Success Rate
+    short_name: login_success_rate
+    description: Percentage of login attempts that result in a successful authentication.
+    category: KPI
+    tier: Tier-1
+    business_domain: Digital Experience
+    metric_type: leading
+    tags:
+      - authentication
+      - ux
+      - security
+    alignment:
+      strategic_pillar: Customer Experience
+      primary_objective_ids:
+        - OBJ-001
+      related_okr_ids:
+        - OBJ-001:KR-002
+      why_it_matters: Indicates friction in authentication flow and its impact on user access.
+    definition:
+      formula: successful_logins / total_login_attempts
+      formula_detail: Count of successful login events divided by all login attempts within the selected time window.
+      numerator:
+        event_name: login_success
+        filters: []
+      denominator:
+        event_name: login_attempt
+        filters: []
+      unit: ratio
+      expected_direction: increase
+      example_calculation:
+        successful_logins: 9500
+        total_login_attempts: 10000
+        result: 0.95
+    data:
+      primary_sources:
+        - system: product_analytics
+          table_or_stream: events_logins
+          connection_id: analytics_warehouse
+      secondary_sources:
+        - system: auth_service
+          table_or_stream: auth_logs
+          connection_id: auth_db
+      data_freshness: near_real_time
+      update_frequency: 5_minutes
+      time_grain:
+        - hour
+        - day
+        - week
+      data_retention: 365_days
+    governance:
+      data_classification: Non-PII
+      pii_involved: false
+      regulatory_constraints:
+        - general_security_standards
+      owner_team: Digital Analytics
+      technical_owner: data_engineering
+      business_owner: Head of Digital Product
+      version: 1.0.0
+      status: active
+      created_at: '2025-01-01T00:00:00Z'
+      updated_at: '2025-01-01T00:00:00Z'
+    dimensions:
+      - name: platform
+        allowed_values:
+          - web
+          - ios
+          - android
+        required: true
+      - name: region
+        allowed_values: []
+        required: false
+      - name: customer_segment
+        allowed_values:
+          - consumer
+          - smb
+          - enterprise
+        required: false
+    targets_and_alerts:
+      target_value: 0.98
+      warning_threshold: 0.95
+      critical_threshold: 0.9
+      comparison_baseline: previous_7_days
+      alert_rules:
+        - rule_id: ALERT-LOGIN-001
+          condition: value < critical_threshold
+          severity: critical
+          notify_channels:
+            - slack:#sre-alerts
+            - email:auth-oncall@example.com
+          evaluation_window: 15_minutes
+    visualization:
+      default_chart_type: line
+      default_time_range: last_30_days
+      dashboard_locations:
+        - tool: Looker
+          url: https://bi.example.com/dashboards/123-login-kpi
+        - tool: Grafana
+          url: https://grafana.example.com/d/abc123/login-success
+      drilldowns:
+        - platform
+        - region
+        - customer_segment
+    relationships:
+      upstream_metric_ids: []
+      downstream_metric_ids:
+        - METRIC-SESSION_SUCCESS_RATE
+      tradeoffs:
+        - Increasing security challenge frequency can negatively impact this metric.
+    operational_usage:
+      decision_use_cases:
+        - Identify login issues impacting access to digital channels.
+        - Trigger incident triage when success rate drops below critical threshold.
+      review_cadence: daily
+      linked_playbooks:
+        - name: Login Failure Incident Runbook
+          url: https://runbooks.example.com/login-failure
+    metadata:
+      notes: Monitor this metric closely during authentication system changes or deployments.
+      example_queries:
+        - language: sql
+          query: SELECT DATE(event_time) as date, COUNT(CASE WHEN status = 'success' THEN 1 END) / COUNT(*) as success_rate FROM events_logins WHERE event_time >= CURRENT_DATE - INTERVAL 30 DAY GROUP BY DATE(event_time)
+  - metric_id: METRIC-API-RESPONSE-TIME-P95
+    name: API Response Time (P95)
+    short_name: api_response_time_p95
+    description: 95th percentile response time for API requests, indicating the performance experienced by most users.
+    category: Performance
+    tier: Tier-1
+    business_domain: Platform
+    metric_type: operational
+    tags:
+      - performance
+      - api
+      - latency
+      - slo
+    alignment:
+      strategic_pillar: Platform Reliability
+      primary_objective_ids: []
+      related_okr_ids: []
+      why_it_matters: API performance directly impacts user experience and downstream service dependencies.
+    definition:
+      formula: PERCENTILE_95(api_response_time)
+      formula_detail: Calculate the 95th percentile of all API response times during the measurement window.
+      numerator:
+        event_name: api_request_complete
+        filters:
+          - field: status
+            operator: in
+            value:
+              - 200
+              - 201
+              - 204
+      denominator:
+        event_name: not_applicable
+        filters: []
+      unit: milliseconds
+      expected_direction: decrease
+      example_calculation:
+        sample_size: 100000
+        p95_value: 250
+        result: 250
+    data:
+      primary_sources:
+        - system: api_gateway
+          table_or_stream: request_logs
+          connection_id: logs_datastore
+      secondary_sources:
+        - system: apm
+          table_or_stream: traces
+          connection_id: observability_platform
+      data_freshness: real_time
+      update_frequency: 1_minute
+      time_grain:
+        - minute
+        - hour
+        - day
+      data_retention: 90_days
+    governance:
+      data_classification: internal
+      pii_involved: false
+      regulatory_constraints: []
+      owner_team: Platform Engineering
+      technical_owner: sre_team
+      business_owner: VP Engineering
+      version: 1.0.0
+      status: active
+      created_at: '2025-01-01T00:00:00Z'
+      updated_at: '2025-01-01T00:00:00Z'
+    dimensions:
+      - name: endpoint
+        allowed_values: []
+        required: true
+      - name: method
+        allowed_values:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - PATCH
+        required: true
+      - name: environment
+        allowed_values:
+          - production
+          - staging
+        required: true
+    targets_and_alerts:
+      target_value: 200
+      warning_threshold: 300
+      critical_threshold: 500
+      comparison_baseline: previous_hour
+      alert_rules:
+        - rule_id: ALERT-API-001
+          condition: value > critical_threshold
+          severity: critical
+          notify_channels:
+            - pagerduty:api-oncall
+            - slack:#platform-alerts
+          evaluation_window: 5_minutes
+        - rule_id: ALERT-API-002
+          condition: value > warning_threshold
+          severity: warning
+          notify_channels:
+            - slack:#platform-alerts
+          evaluation_window: 10_minutes
+    visualization:
+      default_chart_type: line
+      default_time_range: last_24_hours
+      dashboard_locations:
+        - tool: Grafana
+          url: https://grafana.example.com/d/api-performance
+        - tool: Datadog
+          url: https://datadog.example.com/dashboard/api-metrics
+      drilldowns:
+        - endpoint
+        - method
+        - region
+    relationships:
+      upstream_metric_ids: []
+      downstream_metric_ids:
+        - METRIC-USER-SATISFACTION
+      tradeoffs:
+        - Adding more validation or processing increases response time but improves data quality.
+    operational_usage:
+      decision_use_cases:
+        - Detect performance degradation in real-time
+        - Validate impact of code deployments on API performance
+        - Identify endpoints requiring optimization
+      review_cadence: continuous
+      linked_playbooks:
+        - name: API Performance Degradation Runbook
+          url: https://runbooks.example.com/api-performance
+    metadata:
+      notes: This is a Service Level Indicator (SLI) that contributes to our API availability SLO.
+      example_queries:
+        - language: promql
+          query: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))
+  - metric_id: METRIC-REVENUE-ARR
+    name: Annual Recurring Revenue (ARR)
+    short_name: arr
+    description: Total value of recurring revenue normalized to a one-year period.
+    category: Finance
+    tier: Tier-1
+    business_domain: Revenue
+    metric_type: lagging
+    tags:
+      - revenue
+      - finance
+      - growth
+      - saas
+    alignment:
+      strategic_pillar: Revenue Growth
+      primary_objective_ids: []
+      related_okr_ids: []
+      why_it_matters: Primary metric for measuring business scale and growth trajectory.
+    definition:
+      formula: SUM(monthly_recurring_revenue * 12)
+      formula_detail: Sum of all active subscription MRR values multiplied by 12 to annualize.
+      numerator:
+        event_name: subscription_active
+        filters:
+          - field: status
+            operator: eq
+            value: active
+      denominator:
+        event_name: not_applicable
+        filters: []
+      unit: USD
+      expected_direction: increase
+      example_calculation:
+        total_mrr: 500000
+        arr: 6000000
+        result: 6000000
+    data:
+      primary_sources:
+        - system: billing_system
+          table_or_stream: subscriptions
+          connection_id: billing_db
+      secondary_sources:
+        - system: crm
+          table_or_stream: accounts
+          connection_id: salesforce
+      data_freshness: daily
+      update_frequency: daily
+      time_grain:
+        - day
+        - week
+        - month
+        - quarter
+      data_retention: indefinite
+    governance:
+      data_classification: confidential
+      pii_involved: false
+      regulatory_constraints:
+        - sox
+        - financial_reporting
+      owner_team: Finance
+      technical_owner: finance_analytics
+      business_owner: CFO
+      version: 1.0.0
+      status: active
+      created_at: '2025-01-01T00:00:00Z'
+      updated_at: '2025-01-01T00:00:00Z'
+    dimensions:
+      - name: product_line
+        allowed_values:
+          - enterprise
+          - pro
+          - starter
+        required: true
+      - name: region
+        allowed_values:
+          - north_america
+          - europe
+          - asia_pacific
+          - latam
+        required: true
+      - name: customer_segment
+        allowed_values:
+          - smb
+          - mid_market
+          - enterprise
+        required: true
+    targets_and_alerts:
+      target_value: 50000000
+      warning_threshold: 45000000
+      critical_threshold: 40000000
+      comparison_baseline: quarterly_target
+      alert_rules:
+        - rule_id: ALERT-ARR-001
+          condition: value < quarterly_target
+          severity: warning
+          notify_channels:
+            - email:finance-team@example.com
+          evaluation_window: weekly
+    visualization:
+      default_chart_type: bar
+      default_time_range: last_12_months
+      dashboard_locations:
+        - tool: Tableau
+          url: https://tableau.example.com/revenue-dashboard
+        - tool: Looker
+          url: https://bi.example.com/dashboards/arr
+      drilldowns:
+        - product_line
+        - region
+        - customer_segment
+    relationships:
+      upstream_metric_ids:
+        - METRIC-NEW-BOOKINGS
+        - METRIC-CHURN-RATE
+      downstream_metric_ids:
+        - METRIC-REVENUE-GROWTH-RATE
+      tradeoffs:
+        - Aggressive discounting can increase ARR short-term but may impact margins.
+    operational_usage:
+      decision_use_cases:
+        - Board reporting and investor updates
+        - Sales target setting and quota allocation
+        - Strategic planning and forecasting
+      review_cadence: monthly
+      linked_playbooks:
+        - name: ARR Forecasting Methodology
+          url: https://docs.example.com/arr-forecasting
+    metadata:
+      notes: ARR is the single most important metric for SaaS business valuation and health.
+      example_queries:
+        - language: sql
+          query: SELECT SUM(mrr * 12) as arr FROM subscriptions WHERE status = 'active' AND as_of_date = CURRENT_DATE
+  - metric_id: METRIC-CUSTOMER-CHURN-RATE
+    name: Customer Churn Rate
+    short_name: customer_churn_rate
+    description: Percentage of customers who cancel or do not renew their subscriptions in a given period.
+    category: Retention
+    tier: Tier-1
+    business_domain: Customer Success
+    metric_type: lagging
+    tags:
+      - churn
+      - retention
+      - customer_success
+      - growth
+    alignment:
+      strategic_pillar: Customer Retention
+      primary_objective_ids: []
+      related_okr_ids: []
+      why_it_matters: Customer retention is more cost-effective than acquisition and directly impacts revenue stability.
+    definition:
+      formula: churned_customers / total_customers_at_start
+      formula_detail: Number of customers who churned during the period divided by total customers at the beginning of the period.
+      numerator:
+        event_name: subscription_cancelled
+        filters: []
+      denominator:
+        event_name: active_customers_start_of_period
+        filters: []
+      unit: percentage
+      expected_direction: decrease
+      example_calculation:
+        churned_customers: 50
+        total_customers_at_start: 1000
+        result: 0.05
+    data:
+      primary_sources:
+        - system: billing_system
+          table_or_stream: subscription_events
+          connection_id: billing_db
+      secondary_sources:
+        - system: customer_success_platform
+          table_or_stream: customer_health
+          connection_id: cs_platform
+      data_freshness: daily
+      update_frequency: daily
+      time_grain:
+        - month
+        - quarter
+      data_retention: indefinite
+    governance:
+      data_classification: confidential
+      pii_involved: false
+      regulatory_constraints: []
+      owner_team: Customer Success
+      technical_owner: cs_analytics
+      business_owner: Chief Customer Officer
+      version: 1.0.0
+      status: active
+      created_at: '2025-01-01T00:00:00Z'
+      updated_at: '2025-01-01T00:00:00Z'
+    dimensions:
+      - name: customer_segment
+        allowed_values:
+          - smb
+          - mid_market
+          - enterprise
+        required: true
+      - name: product_line
+        allowed_values:
+          - enterprise
+          - pro
+          - starter
+        required: false
+      - name: churn_reason
+        allowed_values:
+          - price
+          - features
+          - support
+          - competitor
+          - other
+        required: false
+    targets_and_alerts:
+      target_value: 0.02
+      warning_threshold: 0.03
+      critical_threshold: 0.05
+      comparison_baseline: previous_month
+      alert_rules:
+        - rule_id: ALERT-CHURN-001
+          condition: value > critical_threshold
+          severity: critical
+          notify_channels:
+            - slack:#customer-success
+            - email:cs-leadership@example.com
+          evaluation_window: monthly
+    visualization:
+      default_chart_type: line
+      default_time_range: last_12_months
+      dashboard_locations:
+        - tool: Looker
+          url: https://bi.example.com/dashboards/churn-analysis
+      drilldowns:
+        - customer_segment
+        - churn_reason
+        - product_line
+    relationships:
+      upstream_metric_ids:
+        - METRIC-NPS
+        - METRIC-SUPPORT-TICKET-VOLUME
+      downstream_metric_ids:
+        - METRIC-REVENUE-ARR
+        - METRIC-NET-REVENUE-RETENTION
+      tradeoffs:
+        - Aggressive retention discounts can reduce churn but impact margins.
+    operational_usage:
+      decision_use_cases:
+        - Identify at-risk customer segments requiring intervention
+        - Evaluate effectiveness of retention programs
+        - Inform product roadmap decisions
+      review_cadence: monthly
+      linked_playbooks:
+        - name: High Churn Response Playbook
+          url: https://docs.example.com/churn-response
+    metadata:
+      notes: Track both voluntary and involuntary churn separately for deeper insights.
+      example_queries:
+        - language: sql
+          query: SELECT DATE_TRUNC('month', churn_date) as month, COUNT(DISTINCT customer_id) / LAG(COUNT(DISTINCT customer_id)) OVER (ORDER BY month) as churn_rate FROM subscriptions WHERE churn_date IS NOT NULL GROUP BY month
+  - metric_id: METRIC-DEPLOYMENT-FREQUENCY
+    name: Deployment Frequency
+    short_name: deployment_frequency
+    description: Number of successful production deployments per time period, indicating team velocity and continuous delivery maturity.
+    category: Engineering
+    tier: Tier-2
+    business_domain: Platform
+    metric_type: operational
+    tags:
+      - devops
+      - dora
+      - velocity
+      - continuous_delivery
+    alignment:
+      strategic_pillar: Engineering Excellence
+      primary_objective_ids: []
+      related_okr_ids: []
+      why_it_matters: Higher deployment frequency correlates with faster feature delivery and improved engineering practices.
+    definition:
+      formula: COUNT(successful_deployments) / time_period
+      formula_detail: Count all successful production deployments and divide by the measurement period.
+      numerator:
+        event_name: deployment_success
+        filters:
+          - field: environment
+            operator: eq
+            value: production
+      denominator:
+        event_name: time_period
+        filters: []
+      unit: deployments_per_day
+      expected_direction: increase
+      example_calculation:
+        successful_deployments: 150
+        days_in_period: 30
+        result: 5
+    data:
+      primary_sources:
+        - system: ci_cd_platform
+          table_or_stream: deployment_events
+          connection_id: cicd_db
+      secondary_sources:
+        - system: version_control
+          table_or_stream: releases
+          connection_id: github
+      data_freshness: real_time
+      update_frequency: 5_minutes
+      time_grain:
+        - hour
+        - day
+        - week
+      data_retention: 365_days
+    governance:
+      data_classification: internal
+      pii_involved: false
+      regulatory_constraints: []
+      owner_team: Platform Engineering
+      technical_owner: devops_team
+      business_owner: VP Engineering
+      version: 1.0.0
+      status: active
+      created_at: '2025-01-01T00:00:00Z'
+      updated_at: '2025-01-01T00:00:00Z'
+    dimensions:
+      - name: service
+        allowed_values: []
+        required: true
+      - name: team
+        allowed_values: []
+        required: true
+      - name: deployment_type
+        allowed_values:
+          - automated
+          - manual
+        required: false
+    targets_and_alerts:
+      target_value: 10
+      warning_threshold: 5
+      critical_threshold: 2
+      comparison_baseline: previous_month
+      alert_rules: []
+    visualization:
+      default_chart_type: bar
+      default_time_range: last_30_days
+      dashboard_locations:
+        - tool: Grafana
+          url: https://grafana.example.com/d/dora-metrics
+      drilldowns:
+        - service
+        - team
+    relationships:
+      upstream_metric_ids: []
+      downstream_metric_ids:
+        - METRIC-LEAD-TIME-FOR-CHANGES
+        - METRIC-CHANGE-FAILURE-RATE
+      tradeoffs:
+        - Increasing deployment frequency without proper testing can increase failure rates.
+    operational_usage:
+      decision_use_cases:
+        - Measure DevOps maturity and improvement over time
+        - Compare team performance and identify bottlenecks
+        - Validate impact of process improvements
+      review_cadence: weekly
+      linked_playbooks:
+        - name: Improving Deployment Frequency
+          url: https://docs.example.com/deployment-frequency
+    metadata:
+      notes: This is one of the four key DORA metrics for measuring DevOps performance.
+      example_queries:
+        - language: sql
+          query: SELECT DATE(deployment_time) as date, COUNT(*) as deployments FROM deployments WHERE environment = 'production' AND status = 'success' GROUP BY date

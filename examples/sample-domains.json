@@ -1,0 +1,54 @@
+{
+  "domains": [
+    {
+      "domain_id": "DOMAIN-001",
+      "name": "Digital Experience",
+      "description": "Metrics related to user interaction, engagement, and satisfaction with digital products and services",
+      "owner_team": "product_team",
+      "contact_email": "product@company.com",
+      "tier_focus": ["Tier-1", "Tier-2"],
+      "key_areas": ["User Authentication", "User Engagement", "User Satisfaction", "Performance"],
+      "color": "#667eea"
+    },
+    {
+      "domain_id": "DOMAIN-002",
+      "name": "Platform",
+      "description": "Technical infrastructure, system performance, and platform reliability metrics",
+      "owner_team": "sre_team",
+      "contact_email": "sre@company.com",
+      "tier_focus": ["Tier-1", "Tier-2"],
+      "key_areas": ["API Performance", "System Reliability", "Deployment", "Infrastructure"],
+      "color": "#10b981"
+    },
+    {
+      "domain_id": "DOMAIN-003",
+      "name": "Revenue",
+      "description": "Financial performance, revenue generation, and monetization metrics",
+      "owner_team": "finance_analytics",
+      "contact_email": "finance@company.com",
+      "tier_focus": ["Tier-1"],
+      "key_areas": ["Revenue Growth", "Customer Lifetime Value", "Pricing", "Monetization"],
+      "color": "#f59e0b"
+    },
+    {
+      "domain_id": "DOMAIN-004",
+      "name": "Customer Success",
+      "description": "Customer retention, satisfaction, and success metrics",
+      "owner_team": "cs_analytics",
+      "contact_email": "customersuccess@company.com",
+      "tier_focus": ["Tier-1", "Tier-2"],
+      "key_areas": ["Retention", "Churn", "NPS", "Customer Health"],
+      "color": "#ef4444"
+    },
+    {
+      "domain_id": "DOMAIN-005",
+      "name": "Product Development",
+      "description": "Development velocity, code quality, and engineering productivity metrics",
+      "owner_team": "engineering_leadership",
+      "contact_email": "engineering@company.com",
+      "tier_focus": ["Tier-2", "Tier-3"],
+      "key_areas": ["Development Velocity", "Code Quality", "Bug Tracking", "Technical Debt"],
+      "color": "#8b5cf6"
+    }
+  ]
+}
