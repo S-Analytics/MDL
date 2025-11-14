@@ -603,13 +603,51 @@ export function getDashboardHTML(): string {
             opacity: 1;
             transform: translateX(-50%) translateY(-8px);
         }
+        
+        /* Format selection buttons */
+        .format-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem 1rem;
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #334155;
+        }
+        .format-btn:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(102, 126, 234, 0.1);
+        }
+        .format-btn.selected {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .format-btn.selected svg {
+            stroke: white;
+        }
     </style>
 </head>
 <body>
     <div class="header">
-        <div class="container">
-            <h1>📊 MDL Dashboard</h1>
-            <p>Metrics Definition Library - Governance & Transparency</p>
+        <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h1>📊 MDL Dashboard</h1>
+                <p>Metrics Definition Library - Governance & Transparency</p>
+            </div>
+            <button class="icon-btn icon-btn-large" onclick="openSettings()" style="background: rgba(255,255,255,0.2); color: white;">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Settings
+            </button>
         </div>
     </div>
     
@@ -680,6 +718,65 @@ export function getDashboardHTML(): string {
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="closeImportModal()">Cancel</button>
                     <button type="button" class="btn btn-success" onclick="performImport()">Import Metrics</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Download Objective Report Modal -->
+    <div class="modal" id="downloadObjectiveModal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <button class="close-btn" onclick="closeDownloadObjectiveModal()">&times;</button>
+                <h2>Download Objective Report</h2>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 1.5rem;">
+                    <p style="color: #666; margin-bottom: 1rem;">Generate a comprehensive report for this objective including all key results and metrics.</p>
+                    <div style="background: #f9fafb; padding: 1rem; border-radius: 6px; border-left: 4px solid #667eea;">
+                        <strong id="downloadObjectiveName" style="display: block; margin-bottom: 0.5rem;"></strong>
+                        <span id="downloadObjectiveId" style="font-size: 0.9rem; color: #666;"></span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Select Format</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-top: 0.75rem;">
+                        <button type="button" class="format-btn" onclick="selectDownloadFormat('pdf')" data-format="pdf">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 32px; height: 32px; margin-bottom: 0.5rem;">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                            </svg>
+                            <div style="font-weight: 600;">PDF</div>
+                            <div style="font-size: 0.8rem;">Portable Document</div>
+                        </button>
+                        <button type="button" class="format-btn" onclick="selectDownloadFormat('docx')" data-format="docx">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 32px; height: 32px; margin-bottom: 0.5rem;">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <div style="font-weight: 600;">Word</div>
+                            <div style="font-size: 0.8rem; ">Microsoft Word</div>
+                        </button>
+                        <button type="button" class="format-btn" onclick="selectDownloadFormat('md')" data-format="md">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 32px; height: 32px; margin-bottom: 0.5rem;">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                            <div style="font-weight: 600;">Markdown</div>
+                            <div style="font-size: 0.8rem; ">Plain Text</div>
+                        </button>
+                    </div>
+                </div>
+
+                <input type="hidden" id="selectedObjectiveId">
+                <input type="hidden" id="selectedDownloadFormat" value="md">
+
+                <div class="form-actions" style="margin-top: 2rem;">
+                    <button type="button" class="btn btn-secondary" onclick="closeDownloadObjectiveModal()">Cancel</button>
+                    <button type="button" class="btn btn-success" onclick="downloadObjectiveReport()">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 20px; height: 20px; margin-right: 0.5rem;">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Download Report
+                    </button>
                 </div>
             </div>
         </div>
@@ -948,6 +1045,133 @@ export function getDashboardHTML(): string {
         </div>
     </div>
 
+    <!-- Settings Modal -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">
+                <button class="close-btn" onclick="closeSettings()">&times;</button>
+                <h2>⚙️ Settings</h2>
+            </div>
+            <div class="modal-body">
+                <div class="detail-section">
+                    <h3>Application Information</h3>
+                    <div style="display: grid; grid-template-columns: 200px 1fr; gap: 1rem; margin-top: 1rem;">
+                        <div style="font-weight: 600;">Version:</div>
+                        <div id="appVersion">1.0.0</div>
+                        
+                        <div style="font-weight: 600;">Build:</div>
+                        <div id="appBuild">Production</div>
+                        
+                        <div style="font-weight: 600;">Environment:</div>
+                        <div id="appEnvironment">Desktop App</div>
+                    </div>
+                </div>
+
+                <div class="detail-section" style="margin-top: 2rem;">
+                    <h3>Data Storage Configuration</h3>
+                    <p style="color: #666; margin-bottom: 1rem;">Choose how you want to store your metrics data.</p>
+                    
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="display: flex; align-items: center; padding: 1rem; border: 2px solid #e2e8f0; border-radius: 6px; cursor: pointer; transition: all 0.2s;" onclick="selectStorageType('local')">
+                            <input type="radio" name="storageType" value="local" id="storageLocal" checked style="margin-right: 1rem; width: 20px; height: 20px;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.25rem;">📁 Local File Storage</div>
+                                <div style="color: #666; font-size: 0.9rem;">Store metrics in local JSON files (.mdl/metrics.json)</div>
+                                <div style="color: #10b981; font-size: 0.85rem; margin-top: 0.5rem;">✓ No setup required • ✓ Fast • ✓ Portable</div>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="display: flex; align-items: center; padding: 1rem; border: 2px solid #e2e8f0; border-radius: 6px; cursor: pointer; transition: all 0.2s;" onclick="selectStorageType('database')">
+                            <input type="radio" name="storageType" value="database" id="storageDatabase" style="margin-right: 1rem; width: 20px; height: 20px;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.25rem;">🗄️ Database Storage</div>
+                                <div style="color: #666; font-size: 0.9rem;">Connect to MySQL, PostgreSQL, or MongoDB</div>
+                                <div style="color: #f59e0b; font-size: 0.85rem; margin-top: 0.5rem;">⚠️ Requires database setup • ⚠️ Coming soon</div>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div id="databaseConfig" style="display: none; padding: 1.5rem; background: #f9fafb; border-radius: 6px; margin-top: 1rem;">
+                        <h4 style="margin-bottom: 1rem;">Database Connection</h4>
+                        
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label>Database Type</label>
+                            <select id="dbType" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px;">
+                                <option value="postgresql">PostgreSQL</option>
+                                <option value="mysql">MySQL</option>
+                                <option value="mongodb">MongoDB</option>
+                            </select>
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Host</label>
+                                <input type="text" id="dbHost" placeholder="localhost" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px;">
+                            </div>
+                            <div class="form-group">
+                                <label>Port</label>
+                                <input type="text" id="dbPort" placeholder="5432" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px;">
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-top: 1rem;">
+                            <label>Database Name</label>
+                            <input type="text" id="dbName" placeholder="mdl_metrics" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px;">
+                        </div>
+
+                        <div class="form-grid" style="margin-top: 1rem;">
+                            <div class="form-group">
+                                <label>Username</label>
+                                <input type="text" id="dbUser" placeholder="username" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px;">
+                            </div>
+                            <div class="form-group">
+                                <label>Password</label>
+                                <input type="password" id="dbPassword" placeholder="password" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px;">
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+                            <button class="btn btn-secondary" onclick="testDatabaseConnection()">Test Connection</button>
+                            <div id="dbConnectionStatus" style="display: flex; align-items: center; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.9rem;"></div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 2rem; padding: 1rem; background: #eff6ff; border-left: 4px solid #667eea; border-radius: 6px;">
+                        <div style="font-weight: 600; color: #667eea; margin-bottom: 0.5rem;">💡 Current Storage</div>
+                        <div id="currentStorageInfo" style="color: #374151; font-size: 0.9rem;">
+                            Using local file storage: <code style="background: white; padding: 0.25rem 0.5rem; border-radius: 3px; font-family: monospace;">.mdl/metrics.json</code>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detail-section" style="margin-top: 2rem;">
+                    <h3>About MDL</h3>
+                    <p style="color: #666; line-height: 1.6;">
+                        MDL (Metrics Definition Library) is a comprehensive application to store and manage Metric Definitions 
+                        with support for multiple interfaces (API, CLI, config files), OPA policy generation, and visualization 
+                        dashboard for transparency and governance.
+                    </p>
+                    <div style="margin-top: 1rem;">
+                        <a href="https://github.com/S-Analytics/MDL" target="_blank" style="color: #667eea; text-decoration: none;">
+                            📚 Documentation
+                        </a>
+                        <span style="margin: 0 1rem; color: #ccc;">|</span>
+                        <a href="https://github.com/S-Analytics/MDL/issues" target="_blank" style="color: #667eea; text-decoration: none;">
+                            🐛 Report Issue
+                        </a>
+                    </div>
+                </div>
+
+                <div class="form-actions" style="margin-top: 2rem;">
+                    <button type="button" class="btn btn-secondary" onclick="closeSettings()">Close</button>
+                    <button type="button" class="btn btn-success" onclick="saveSettings()">Save Settings</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
         <div class="stats-grid" id="statsGrid">
             <div class="stat-card">
@@ -1091,7 +1315,13 @@ export function getDashboardHTML(): string {
         function updateStats() {
             document.getElementById('totalMetrics').textContent = stats.total || 0;
             document.getElementById('totalObjectives').textContent = stats.objectives || 0;
-            document.getElementById('totalDomains').textContent = Object.keys(stats.byDomain || {}).length;
+            
+            // Count unique business domains from both metrics and loaded domains
+            const domainsFromMetrics = Object.keys(stats.byBusinessDomain || {}).length;
+            const domainsFromList = allDomains.length;
+            const totalDomains = Math.max(domainsFromMetrics, domainsFromList);
+            document.getElementById('totalDomains').textContent = totalDomains;
+            
             document.getElementById('totalOwners').textContent = Object.keys(stats.byOwner || {}).length;
         }
 
@@ -1158,7 +1388,7 @@ export function getDashboardHTML(): string {
             }
 
             grid.innerHTML = filtered.map(metric => \`
-                <div class="metric-card">
+                <div class="metric-card" data-metric-id="\${metric.metric_id}">
                     <div onclick="showMetricDetail('\${metric.metric_id}')" style="cursor: pointer;">
                         <h3>\${metric.name}</h3>
                         <div class="id">ID: \${metric.metric_id}</div>
@@ -1308,7 +1538,17 @@ export function getDashboardHTML(): string {
                                         </div>
                                         \${kr.metric_ids && kr.metric_ids.length > 0 ? \`
                                             <div style="margin-top: 0.5rem; font-size: 0.85rem;">
-                                                <span style="color: #667eea;">📊 Metrics: \${kr.metric_ids.join(', ')}</span>
+                                                <span style="color: #667eea;">📊 Metrics: </span>
+                                                \${kr.metric_ids.map(metricId => \`
+                                                    <button 
+                                                        class="badge primary" 
+                                                        style="cursor: pointer; border: none; margin-right: 0.25rem; text-decoration: underline;"
+                                                        onclick="event.stopPropagation(); scrollToMetric('\${metricId}')"
+                                                        title="Click to view metric in grid"
+                                                    >
+                                                        \${metricId}
+                                                    </button>
+                                                \`).join('')}
                                             </div>
                                         \` : ''}
                                     </div>
@@ -1317,6 +1557,12 @@ export function getDashboardHTML(): string {
                         </div>
                     \` : ''}
                     <div class="action-buttons" style="justify-content: flex-end;">
+                        <button class="icon-btn success" onclick="event.stopPropagation(); openDownloadObjectiveModal('\${obj.objective_id}')">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            <span class="tooltip">Download Objective Report</span>
+                        </button>
                         <button class="icon-btn primary" onclick="event.stopPropagation(); openEditObjectiveForm('\${obj.objective_id}')">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -1337,6 +1583,38 @@ export function getDashboardHTML(): string {
 
         function refreshData() {
             fetchData();
+        }
+
+        // Function to scroll to and highlight a metric in the grid
+        function scrollToMetric(metricId) {
+            // Switch to Metrics tab
+            const metricsTab = document.querySelector('.tab-btn[data-tab="metrics"]');
+            if (metricsTab) {
+                metricsTab.click();
+            }
+
+            // Wait for tab to switch, then scroll to metric
+            setTimeout(() => {
+                const metricCard = document.querySelector(\`[data-metric-id="\${metricId}"]\`);
+                if (metricCard) {
+                    // Scroll the card into view with smooth behavior
+                    metricCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    
+                    // Add highlight effect
+                    metricCard.style.transition = 'all 0.3s ease';
+                    metricCard.style.boxShadow = '0 0 0 4px #667eea';
+                    metricCard.style.transform = 'scale(1.02)';
+                    
+                    // Remove highlight after 2 seconds
+                    setTimeout(() => {
+                        metricCard.style.boxShadow = '';
+                        metricCard.style.transform = '';
+                    }, 2000);
+                } else {
+                    // If metric not found in current view, show detail modal as fallback
+                    showMetricDetail(metricId);
+                }
+            }, 100);
         }
 
         // Metric Detail View Functions
@@ -1821,6 +2099,289 @@ export function getDashboardHTML(): string {
             editingDomainId = null;
         }
 
+        // Settings Functions
+        function openSettings() {
+            document.getElementById('settingsModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+            loadSettings();
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        function loadSettings() {
+            // Load app version from package.json
+            document.getElementById('appVersion').textContent = '1.0.0';
+            document.getElementById('appBuild').textContent = 'Production';
+            document.getElementById('appEnvironment').textContent = 'Web Browser';
+            
+            // Load storage settings from localStorage
+            const settings = JSON.parse(localStorage.getItem('mdl_settings') || '{"storageType":"local"}');
+            
+            if (settings.storageType === 'database') {
+                document.getElementById('storageDatabase').checked = true;
+                document.getElementById('databaseConfig').style.display = 'block';
+                
+                // Load saved DB config
+                if (settings.database) {
+                    document.getElementById('dbType').value = settings.database.type || 'postgresql';
+                    document.getElementById('dbHost').value = settings.database.host || '';
+                    document.getElementById('dbPort').value = settings.database.port || '';
+                    document.getElementById('dbName').value = settings.database.name || '';
+                    document.getElementById('dbUser').value = settings.database.user || '';
+                }
+            } else {
+                document.getElementById('storageLocal').checked = true;
+                document.getElementById('databaseConfig').style.display = 'none';
+            }
+        }
+
+        function selectStorageType(type) {
+            if (type === 'database') {
+                document.getElementById('storageDatabase').checked = true;
+                document.getElementById('databaseConfig').style.display = 'block';
+            } else {
+                document.getElementById('storageLocal').checked = true;
+                document.getElementById('databaseConfig').style.display = 'none';
+            }
+        }
+
+        async function testDatabaseConnection() {
+            const statusDiv = document.getElementById('dbConnectionStatus');
+            statusDiv.textContent = '⏳ Testing connection...';
+            statusDiv.style.background = '#fef3c7';
+            statusDiv.style.color = '#92400e';
+            statusDiv.style.display = 'flex';
+
+            // Simulate connection test (would be actual API call in production)
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
+            // For now, show that DB feature is coming soon
+            statusDiv.textContent = '⚠️ Database support coming soon';
+            statusDiv.style.background = '#fef3c7';
+            statusDiv.style.color = '#92400e';
+        }
+
+        function saveSettings() {
+            const storageType = document.querySelector('input[name="storageType"]:checked').value;
+            
+            const settings = {
+                storageType: storageType,
+                savedAt: new Date().toISOString()
+            };
+
+            if (storageType === 'database') {
+                settings.database = {
+                    type: document.getElementById('dbType').value,
+                    host: document.getElementById('dbHost').value,
+                    port: document.getElementById('dbPort').value,
+                    name: document.getElementById('dbName').value,
+                    user: document.getElementById('dbUser').value,
+                    // Note: In production, password should be encrypted and not stored in localStorage
+                };
+            }
+
+            localStorage.setItem('mdl_settings', JSON.stringify(settings));
+            
+            showToast('Settings saved successfully!', 'success');
+            
+            // Update the current storage info display
+            if (storageType === 'local') {
+                document.getElementById('currentStorageInfo').innerHTML = 
+                    'Using local file storage: <code style="background: white; padding: 0.25rem 0.5rem; border-radius: 3px; font-family: monospace;">.mdl/metrics.json</code>';
+            } else {
+                document.getElementById('currentStorageInfo').innerHTML = 
+                    'Using database storage: <code style="background: white; padding: 0.25rem 0.5rem; border-radius: 3px; font-family: monospace;">' + 
+                    settings.database.type + ' @ ' + settings.database.host + '</code> (Coming Soon)';
+            }
+            
+            closeSettings();
+        }
+
+        // Download Objective Report Functions
+        function openDownloadObjectiveModal(objectiveId) {
+            const objective = allObjectives.find(o => o.objective_id === objectiveId);
+            if (!objective) {
+                showToast('Objective not found', 'error');
+                return;
+            }
+
+            document.getElementById('downloadObjectiveName').textContent = objective.name;
+            document.getElementById('downloadObjectiveId').textContent = 'ID: ' + objectiveId;
+            document.getElementById('selectedObjectiveId').value = objectiveId;
+            
+            // Reset format selection
+            document.querySelectorAll('.format-btn').forEach(btn => btn.classList.remove('selected'));
+            document.querySelector('.format-btn[data-format="md"]').classList.add('selected');
+            document.getElementById('selectedDownloadFormat').value = 'md';
+            
+            document.getElementById('downloadObjectiveModal').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeDownloadObjectiveModal() {
+            document.getElementById('downloadObjectiveModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        function selectDownloadFormat(format) {
+            document.querySelectorAll('.format-btn').forEach(btn => btn.classList.remove('selected'));
+            document.querySelector('.format-btn[data-format="' + format + '"]').classList.add('selected');
+            document.getElementById('selectedDownloadFormat').value = format;
+        }
+
+        function downloadObjectiveReport() {
+            const objectiveId = document.getElementById('selectedObjectiveId').value;
+            const format = document.getElementById('selectedDownloadFormat').value;
+            
+            const objective = allObjectives.find(o => o.objective_id === objectiveId);
+            if (!objective) {
+                showToast('Objective not found', 'error');
+                return;
+            }
+
+            let content = '';
+            let mimeType = '';
+            let extension = '';
+            let filename = \`\${objective.objective_id}_\${objective.name.replace(/[^a-z0-9]/gi, '_')}\`;
+
+            if (format === 'md') {
+                content = generateMarkdownReport(objective);
+                mimeType = 'text/markdown';
+                extension = 'md';
+            } else if (format === 'pdf') {
+                // Generate HTML for PDF conversion
+                content = generateHTMLReport(objective);
+                mimeType = 'text/html';
+                extension = 'html';
+                showToast('PDF generation requires additional setup. Downloading HTML for now.', 'info');
+            } else if (format === 'docx') {
+                // Generate HTML for Word conversion
+                content = generateHTMLReport(objective);
+                mimeType = 'text/html';
+                extension = 'html';
+                showToast('Word document generation requires additional setup. Downloading HTML for now.', 'info');
+            }
+
+            // Create and download the file
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = \`\${filename}.\${extension}\`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            showToast(\`Report downloaded successfully!\`, 'success');
+            closeDownloadObjectiveModal();
+        }
+
+        function generateMarkdownReport(objective) {
+            const date = new Date().toISOString().split('T')[0];
+            
+            let md = '# Objective Report: ' + objective.name + '\\n\\n';
+            md += '**Generated:** ' + date + '\\n\\n';
+            md += '---\\n\\n';
+            
+            // Objective Details
+            md += '## 📋 Objective Details\\n\\n';
+            md += '- **Objective ID:** ' + objective.objective_id + '\\n';
+            md += '- **Name:** ' + objective.name + '\\n';
+            md += '- **Description:** ' + objective.description + '\\n';
+            md += '- **Owner Team:** ' + objective.owner_team + '\\n';
+            md += '- **Status:** ' + objective.status + '\\n';
+            md += '- **Priority:** ' + (objective.priority || 'Medium') + '\\n';
+            md += '- **Strategic Pillar:** ' + (objective.strategic_pillar || 'N/A') + '\\n';
+            md += '- **Timeframe:** ' + objective.timeframe.start + ' to ' + objective.timeframe.end + '\\n\\n';
+            
+            // Key Results
+            if (objective.key_results && objective.key_results.length > 0) {
+                md += '## 🎯 Key Results (' + objective.key_results.length + ')\\n\\n';
+                
+                objective.key_results.forEach((kr, index) => {
+                    const current = kr.current_value ?? kr.baseline_value;
+                    const range = Math.abs(kr.target_value - kr.baseline_value);
+                    const progress = range > 0 ? Math.min(100, Math.abs(current - kr.baseline_value) / range * 100) : 0;
+                    const isOnTrack = kr.direction === 'increase' 
+                        ? current >= (kr.baseline_value + range * 0.5)
+                        : current <= (kr.baseline_value - range * 0.5);
+                    
+                    md += '### ' + (index + 1) + '. ' + kr.name + '\\n\\n';
+                    md += '- **Baseline:** ' + kr.baseline_value + ' ' + kr.unit + '\\n';
+                    md += '- **Current:** ' + current + ' ' + kr.unit + '\\n';
+                    md += '- **Target:** ' + kr.target_value + ' ' + kr.unit + '\\n';
+                    md += '- **Direction:** ' + kr.direction + '\\n';
+                    md += '- **Progress:** ' + Math.round(progress) + '%\\n';
+                    md += '- **Status:** ' + (isOnTrack ? '✅ On Track' : '⚠️ Needs Attention') + '\\n';
+                    
+                    if (kr.metric_ids && kr.metric_ids.length > 0) {
+                        md += '- **Associated Metrics:** ' + kr.metric_ids.join(', ') + '\\n';
+                        
+                        // Include metric details
+                        md += '\\n#### Associated Metric Details\\n\\n';
+                        kr.metric_ids.forEach(metricId => {
+                            const metric = allMetrics.find(m => m.metric_id === metricId);
+                            if (metric) {
+                                md += '- **' + metric.name + '** (\`' + metric.metric_id + '\`)\\n';
+                                md += '  - Category: ' + metric.category + '\\n';
+                                md += '  - Owner: ' + (metric.governance?.owner_team || metric.owner?.team || 'N/A') + '\\n';
+                                if (metric.definition) {
+                                    md += '  - Formula: \`' + metric.definition.formula + '\`\\n';
+                                    md += '  - Unit: ' + metric.definition.unit + '\\n';
+                                }
+                            }
+                        });
+                    }
+                    
+                    md += '\\n';
+                });
+            } else {
+                md += '## 🎯 Key Results\\n\\nNo key results defined for this objective.\\n\\n';
+            }
+            
+            // Additional Information
+            md += '## 📊 Summary\\n\\n';
+            md += '- **Total Key Results:** ' + (objective.key_results?.length || 0) + '\\n';
+            md += '- **Total Metrics:** ' + (objective.key_results?.reduce((sum, kr) => sum + (kr.metric_ids?.length || 0), 0) || 0) + '\\n';
+            
+            const avgProgress = objective.key_results && objective.key_results.length > 0
+                ? objective.key_results.reduce((sum, kr) => {
+                    const current = kr.current_value ?? kr.baseline_value;
+                    const range = Math.abs(kr.target_value - kr.baseline_value);
+                    const progress = range > 0 ? Math.min(100, Math.abs(current - kr.baseline_value) / range * 100) : 0;
+                    return sum + progress;
+                }, 0) / objective.key_results.length
+                : 0;
+            
+            md += '- **Average Progress:** ' + Math.round(avgProgress) + '%\\n\\n';
+            
+            md += '---\\n\\n';
+            md += '*Report generated by MDL Dashboard v1.0.0*\\n';
+            
+            return md;
+        }
+
+        function generateHTMLReport(objective) {
+            const date = new Date().toISOString().split('T')[0];
+            
+            // For now, generate Markdown and wrap in HTML
+            const mdContent = generateMarkdownReport(objective);
+            const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Objective Report</title>' +
+                '<style>body{font-family:sans-serif;max-width:900px;margin:2rem auto;padding:2rem;line-height:1.6;}' +
+                'h1,h2,h3{color:#667eea;}code{background:#f4f4f4;padding:2px 6px;border-radius:3px;}</style>' +
+                '</head><body><pre style="white-space:pre-wrap;font-family:sans-serif;">' + mdContent + '</pre></body></html>';
+            return html;
+        }
+        
+        function generateHTMLReportOld(objective) {
+            // Old complex version - replaced with simpler Markdown wrapper
+            return generateHTMLReport(objective);
+        }
+        
         // Domain Form Submission
         document.addEventListener('DOMContentLoaded', function() {
             const domainForm = document.getElementById('domainForm');
@@ -2577,6 +3138,8 @@ export function getDashboardHTML(): string {
                 closeImportModal();
                 closeObjectiveFormModal();
                 closeDomainFormModal();
+                closeSettings();
+                closeDownloadObjectiveModal();
             }
         });
 
@@ -2608,6 +3171,18 @@ export function getDashboardHTML(): string {
         document.getElementById('domainFormModal').addEventListener('click', function(e) {
             if (e.target === this) {
                 closeDomainFormModal();
+            }
+        });
+
+        document.getElementById('downloadObjectiveModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeDownloadObjectiveModal();
+            }
+        });
+
+        document.getElementById('settingsModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeSettings();
             }
         });
 

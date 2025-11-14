@@ -81,13 +81,6 @@ out
 # Nuxt.js build / generate output
 .nuxt
 dist
-
-# Electron build output
-release/
-*.dmg
-*.zip
-*.exe
-*.deb
 *.rpm
 *.AppImage
 

@@ -22,7 +22,7 @@
           "unit": "score",
           "direction": "increase",
           "current_value": 4.2,
-          "metric_ids": []
+          "metric_ids": ["METRIC-CSAT"]
         },
         {
           "kr_id": "OBJ-001:KR-002",
@@ -92,7 +92,7 @@
           "unit": "percentage",
           "direction": "increase",
           "current_value": 99.7,
-          "metric_ids": []
+          "metric_ids": ["METRIC-SYSTEM-UPTIME"]
         }
       ]
     },
@@ -129,7 +129,7 @@
           "unit": "USD",
           "direction": "increase",
           "current_value": 85000,
-          "metric_ids": []
+          "metric_ids": ["METRIC-CUSTOMER-LTV"]
         },
         {
           "kr_id": "OBJ-003:KR-003",
@@ -140,7 +140,7 @@
           "unit": "percentage",
           "direction": "increase",
           "current_value": 21,
-          "metric_ids": []
+          "metric_ids": ["METRIC-TRIAL-CONVERSION-RATE"]
         }
       ]
     },
@@ -166,7 +166,7 @@
           "unit": "hours",
           "direction": "decrease",
           "current_value": 36,
-          "metric_ids": []
+          "metric_ids": ["METRIC-PR-CYCLE-TIME"]
         },
         {
           "kr_id": "OBJ-004:KR-002",
@@ -177,7 +177,7 @@
           "unit": "percentage",
           "direction": "increase",
           "current_value": 72,
-          "metric_ids": []
+          "metric_ids": ["METRIC-CODE-COVERAGE"]
         },
         {
           "kr_id": "OBJ-004:KR-003",
@@ -188,7 +188,7 @@
           "unit": "bugs",
           "direction": "decrease",
           "current_value": 8,
-          "metric_ids": []
+          "metric_ids": ["METRIC-BUG-ESCAPE-RATE"]
         }
       ]
     }
