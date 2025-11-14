@@ -1,0 +1,848 @@
+openapi: 3.0.3
+info:
+  title: Metrics Definition Library (MDL) API
+  description: |
+    The Metrics Definition Library API provides a comprehensive system for managing metric definitions,
+    objectives, key results, and generating OPA (Open Policy Agent) policies for governance.
+    
+    This API supports creating, reading, updating, and deleting metric definitions with rich metadata
+    including alignment, data sources, governance, targets, alerts, and operational usage information.
+  version: 1.0.0
+  contact:
+    name: MDL API Support
+    email: support@example.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+  - url: http://0.0.0.0:3000
+    description: Local server (all interfaces)
+
+tags:
+  - name: Health
+    description: Health check endpoints
+  - name: Metrics
+    description: Metric definition operations
+  - name: Policies
+    description: OPA policy generation
+  - name: Statistics
+    description: Metrics statistics and aggregations
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      description: Check if the API server is running and healthy
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: '2025-11-14T10:30:00.000Z'
+
+  /api/metrics:
+    get:
+      tags:
+        - Metrics
+      summary: Get all metrics
+      description: Retrieve all metric definitions with optional filtering
+      operationId: getAllMetrics
+      parameters:
+        - name: business_domain
+          in: query
+          description: Filter by business domain
+          required: false
+          schema:
+            type: string
+            example: Authentication
+        - name: metric_type
+          in: query
+          description: Filter by metric type
+          required: false
+          schema:
+            type: string
+            example: operational
+        - name: tier
+          in: query
+          description: Filter by tier
+          required: false
+          schema:
+            type: string
+            enum: [Tier-1, Tier-2, Tier-3]
+            example: Tier-1
+        - name: tags
+          in: query
+          description: Filter by tags (comma-separated)
+          required: false
+          schema:
+            type: string
+            example: security,authentication
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MetricDefinition'
+                  count:
+                    type: integer
+                    example: 10
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      tags:
+        - Metrics
+      summary: Create a new metric
+      description: Create a new metric definition
+      operationId: createMetric
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MetricDefinitionInput'
+      responses:
+        '201':
+          description: Metric created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/MetricDefinition'
+        '400':
+          description: Bad request - missing required fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error: 'Missing required fields: name, description'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/metrics/{id}:
+    get:
+      tags:
+        - Metrics
+      summary: Get metric by ID
+      description: Retrieve a specific metric definition by its ID
+      operationId: getMetricById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Metric ID
+          schema:
+            type: string
+            example: METRIC-LOGIN-SUCCESS-RATE
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/MetricDefinition'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      tags:
+        - Metrics
+      summary: Update a metric
+      description: Update an existing metric definition
+      operationId: updateMetric
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Metric ID
+          schema:
+            type: string
+            example: METRIC-LOGIN-SUCCESS-RATE
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MetricDefinitionInput'
+      responses:
+        '200':
+          description: Metric updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/MetricDefinition'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      tags:
+        - Metrics
+      summary: Delete a metric
+      description: Delete a metric definition
+      operationId: deleteMetric
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Metric ID
+          schema:
+            type: string
+            example: METRIC-LOGIN-SUCCESS-RATE
+      responses:
+        '200':
+          description: Metric deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Metric deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/metrics/{id}/policy:
+    get:
+      tags:
+        - Policies
+      summary: Generate OPA policy for a metric
+      description: Generate an Open Policy Agent (OPA) policy for a specific metric
+      operationId: getMetricPolicy
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Metric ID
+          schema:
+            type: string
+            example: METRIC-LOGIN-SUCCESS-RATE
+      responses:
+        '200':
+          description: OPA policy generated successfully
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: |
+                  package metrics.login_success_rate
+                  
+                  default allow = false
+                  
+                  allow {
+                    input.metric_id == "METRIC-LOGIN-SUCCESS-RATE"
+                    input.value >= 0.95
+                  }
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/policies:
+    get:
+      tags:
+        - Policies
+      summary: Generate OPA policies for all metrics
+      description: Generate a bundle of OPA policies for all metrics in the system
+      operationId: getAllPolicies
+      responses:
+        '200':
+          description: Policy bundle generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    additionalProperties:
+                      type: string
+                    example:
+                      login_success_rate.rego: |
+                        package metrics.login_success_rate
+                        default allow = false
+                  count:
+                    type: integer
+                    example: 5
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/stats:
+    get:
+      tags:
+        - Statistics
+      summary: Get metrics statistics
+      description: Get aggregated statistics about all metrics in the system
+      operationId: getStats
+      responses:
+        '200':
+          description: Statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                        description: Total number of metrics
+                        example: 25
+                      byTier:
+                        type: object
+                        additionalProperties:
+                          type: integer
+                        example:
+                          Tier-1: 5
+                          Tier-2: 15
+                          Tier-3: 5
+                      byMetricType:
+                        type: object
+                        additionalProperties:
+                          type: integer
+                        example:
+                          operational: 10
+                          business: 8
+                          technical: 7
+                      byBusinessDomain:
+                        type: object
+                        additionalProperties:
+                          type: integer
+                        example:
+                          Authentication: 5
+                          Performance: 8
+                          Revenue: 12
+                      byOwner:
+                        type: object
+                        additionalProperties:
+                          type: integer
+                        example:
+                          john.doe@example.com: 10
+                          jane.smith@example.com: 15
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  schemas:
+    MetricDefinition:
+      type: object
+      required:
+        - metric_id
+        - name
+        - short_name
+        - description
+        - category
+        - tier
+        - business_domain
+        - metric_type
+        - tags
+        - alignment
+        - definition
+        - data
+        - governance
+        - dimensions
+        - targets_and_alerts
+        - visualization
+        - relationships
+        - operational_usage
+        - metadata
+      properties:
+        metric_id:
+          type: string
+          description: Unique identifier for the metric
+          example: METRIC-LOGIN-SUCCESS-RATE
+        name:
+          type: string
+          description: Full name of the metric
+          example: Login Success Rate
+        short_name:
+          type: string
+          description: Short name or code for the metric
+          example: login_success_rate
+        description:
+          type: string
+          description: Detailed description of the metric
+          example: Percentage of successful login attempts
+        category:
+          type: string
+          description: Category of the metric
+          example: Authentication
+        tier:
+          type: string
+          description: Importance tier of the metric
+          enum: [Tier-1, Tier-2, Tier-3]
+          example: Tier-1
+        business_domain:
+          type: string
+          description: Business domain the metric belongs to
+          example: Authentication
+        metric_type:
+          type: string
+          description: Type of metric
+          example: operational
+        tags:
+          type: array
+          items:
+            type: string
+          description: Tags for categorization
+          example: [security, authentication, user-experience]
+        alignment:
+          $ref: '#/components/schemas/Alignment'
+        definition:
+          $ref: '#/components/schemas/Definition'
+        data:
+          $ref: '#/components/schemas/DataInfo'
+        governance:
+          $ref: '#/components/schemas/GovernanceInfo'
+        dimensions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Dimension'
+        targets_and_alerts:
+          $ref: '#/components/schemas/TargetsAndAlerts'
+        visualization:
+          $ref: '#/components/schemas/Visualization'
+        relationships:
+          $ref: '#/components/schemas/Relationships'
+        operational_usage:
+          $ref: '#/components/schemas/OperationalUsage'
+        metadata:
+          $ref: '#/components/schemas/MetricMetadata'
+
+    MetricDefinitionInput:
+      type: object
+      required:
+        - name
+        - description
+        - category
+        - dataType
+      properties:
+        name:
+          type: string
+          example: Login Success Rate
+        description:
+          type: string
+          example: Percentage of successful login attempts
+        category:
+          type: string
+          example: Authentication
+        dataType:
+          type: string
+          enum: [number, percentage, currency, count, ratio, duration, boolean, string]
+          example: percentage
+        unit:
+          type: string
+          example: percent
+        tags:
+          type: array
+          items:
+            type: string
+          example: [security, authentication]
+        validationRules:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationRule'
+        governance:
+          $ref: '#/components/schemas/GovernanceInfo'
+        source:
+          type: string
+          example: authentication_service
+        metadata:
+          type: object
+          additionalProperties: true
+
+    Alignment:
+      type: object
+      properties:
+        strategic_pillar:
+          type: string
+          example: User Experience Excellence
+        primary_objective_ids:
+          type: array
+          items:
+            type: string
+          example: [OBJ-001]
+        related_okr_ids:
+          type: array
+          items:
+            type: string
+          example: [KR-001, KR-002]
+        why_it_matters:
+          type: string
+          example: High login success rates indicate a frictionless authentication experience
+
+    Definition:
+      type: object
+      properties:
+        formula:
+          type: string
+          example: (successful_logins / total_login_attempts) * 100
+        formula_detail:
+          type: string
+          example: Successful logins divided by total login attempts, multiplied by 100
+        numerator:
+          $ref: '#/components/schemas/EventDefinition'
+        denominator:
+          $ref: '#/components/schemas/EventDefinition'
+        unit:
+          type: string
+          example: percent
+        expected_direction:
+          type: string
+          enum: [increase, decrease]
+          example: increase
+        example_calculation:
+          type: object
+          additionalProperties:
+            type: number
+          example:
+            successful_logins: 950
+            total_login_attempts: 1000
+            result: 95.0
+
+    EventDefinition:
+      type: object
+      properties:
+        event_name:
+          type: string
+          example: user_login
+        filters:
+          type: array
+          items: {}
+          example: [{ status: 'success' }]
+
+    DataInfo:
+      type: object
+      properties:
+        primary_sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/DataSource'
+        secondary_sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/DataSource'
+        data_freshness:
+          type: string
+          example: 5 minutes
+        update_frequency:
+          type: string
+          example: real-time
+        time_grain:
+          type: array
+          items:
+            type: string
+          example: [minute, hour, day]
+        data_retention:
+          type: string
+          example: 90_days
+
+    DataSource:
+      type: object
+      properties:
+        system:
+          type: string
+          example: authentication_service
+        table_or_stream:
+          type: string
+          example: auth_events
+        connection_id:
+          type: string
+          example: prod-db-001
+
+    GovernanceInfo:
+      type: object
+      properties:
+        data_classification:
+          type: string
+          example: internal
+        pii_involved:
+          type: boolean
+          example: false
+        regulatory_constraints:
+          type: array
+          items:
+            type: string
+          example: [SOC2, GDPR]
+        owner_team:
+          type: string
+          example: Platform Team
+        technical_owner:
+          type: string
+          example: john.doe@example.com
+        business_owner:
+          type: string
+          example: jane.smith@example.com
+        version:
+          type: string
+          example: 1.0.0
+        status:
+          type: string
+          example: active
+        created_at:
+          type: string
+          format: date-time
+          example: '2025-01-01T00:00:00.000Z'
+        updated_at:
+          type: string
+          format: date-time
+          example: '2025-11-14T10:30:00.000Z'
+
+    Dimension:
+      type: object
+      properties:
+        name:
+          type: string
+          example: region
+        allowed_values:
+          type: array
+          items:
+            type: string
+          example: [us-east, us-west, eu-central]
+        required:
+          type: boolean
+          example: true
+
+    TargetsAndAlerts:
+      type: object
+      properties:
+        target_value:
+          type: number
+          example: 95
+        warning_threshold:
+          type: number
+          example: 90
+        critical_threshold:
+          type: number
+          example: 85
+        comparison_baseline:
+          type: string
+          example: previous_period
+        alert_rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/AlertRule'
+
+    AlertRule:
+      type: object
+      properties:
+        rule_id:
+          type: string
+          example: ALERT-001
+        condition:
+          type: string
+          example: metric_value < warning_threshold
+        severity:
+          type: string
+          enum: [critical, warning, info]
+          example: warning
+        notify_channels:
+          type: array
+          items:
+            type: string
+          example: [slack, email, pagerduty]
+        evaluation_window:
+          type: string
+          example: 5 minutes
+
+    Visualization:
+      type: object
+      properties:
+        default_chart_type:
+          type: string
+          example: line
+        default_time_range:
+          type: string
+          example: last_30_days
+        dashboard_locations:
+          type: array
+          items:
+            $ref: '#/components/schemas/DashboardLocation'
+        drilldowns:
+          type: array
+          items:
+            type: string
+          example: [region, device_type]
+
+    DashboardLocation:
+      type: object
+      properties:
+        tool:
+          type: string
+          example: Grafana
+        url:
+          type: string
+          example: https://grafana.example.com/dashboard/auth-metrics
+
+    Relationships:
+      type: object
+      properties:
+        upstream_metric_ids:
+          type: array
+          items:
+            type: string
+          example: [METRIC-AUTH-ATTEMPTS]
+        downstream_metric_ids:
+          type: array
+          items:
+            type: string
+          example: [METRIC-USER-SATISFACTION]
+        tradeoffs:
+          type: array
+          items:
+            type: string
+          example: [Stricter security may reduce success rate]
+
+    OperationalUsage:
+      type: object
+      properties:
+        decision_use_cases:
+          type: array
+          items:
+            type: string
+          example: [Authentication system health monitoring]
+        review_cadence:
+          type: string
+          example: weekly
+        linked_playbooks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Playbook'
+
+    Playbook:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Low Login Success Rate Response
+        url:
+          type: string
+          example: https://docs.example.com/playbooks/auth-issues
+
+    MetricMetadata:
+      type: object
+      properties:
+        notes:
+          type: string
+          example: Monitor closely during authentication system changes
+        example_queries:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExampleQuery'
+
+    ExampleQuery:
+      type: object
+      properties:
+        language:
+          type: string
+          example: SQL
+        query:
+          type: string
+          example: SELECT COUNT(*) FROM auth_events WHERE status = 'success'
+
+    ValidationRule:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [min, max, range, required, pattern, enum]
+          example: min
+        value:
+          oneOf:
+            - type: number
+            - type: string
+            - type: array
+          example: 0
+        message:
+          type: string
+          example: Value must be greater than 0
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: Error message
+
+  responses:
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: Metric not found
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: Internal server error

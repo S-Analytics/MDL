@@ -1,7 +1,7 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import { DataType, MetricDefinitionInput } from '../models';
-import { InMemoryMetricStore } from './MetricStore';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { DataType, MetricDefinitionInput } from '../../src/models';
+import { InMemoryMetricStore } from '../../src/storage/MetricStore';
 
 describe('InMemoryMetricStore', () => {
   let store: InMemoryMetricStore;

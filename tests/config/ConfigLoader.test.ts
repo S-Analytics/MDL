@@ -1,7 +1,7 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import { DataType, MetricsCatalog } from '../models';
-import { ConfigLoader } from './ConfigLoader';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { ConfigLoader } from '../../src/config/ConfigLoader';
+import { DataType, MetricsCatalog } from '../../src/models';
 
 describe('ConfigLoader', () => {
   const testDir = '/tmp/mdl-test';

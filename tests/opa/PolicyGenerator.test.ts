@@ -1,5 +1,5 @@
-import { MetricDefinition } from '../models';
-import { PolicyGenerator } from './PolicyGenerator';
+import { MetricDefinition } from '../../src/models';
+import { PolicyGenerator } from '../../src/opa/PolicyGenerator';
 
 describe('PolicyGenerator', () => {
   const createSampleMetric = (): MetricDefinition => ({
