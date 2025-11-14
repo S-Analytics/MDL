@@ -1382,7 +1382,7 @@ export function getDashboardHTML(): string {
             }
 
             grid.innerHTML = filtered.map(metric => \`
-                <div class="metric-card">
+                <div class="metric-card" data-metric-id="\${metric.metric_id}">
                     <div onclick="showMetricDetail('\${metric.metric_id}')" style="cursor: pointer;">
                         <h3>\${metric.name}</h3>
                         <div class="id">ID: \${metric.metric_id}</div>
@@ -1532,7 +1532,17 @@ export function getDashboardHTML(): string {
                                         </div>
                                         \${kr.metric_ids && kr.metric_ids.length > 0 ? \`
                                             <div style="margin-top: 0.5rem; font-size: 0.85rem;">
-                                                <span style="color: #667eea;">📊 Metrics: \${kr.metric_ids.join(', ')}</span>
+                                                <span style="color: #667eea;">📊 Metrics: </span>
+                                                \${kr.metric_ids.map(metricId => \`
+                                                    <button 
+                                                        class="badge primary" 
+                                                        style="cursor: pointer; border: none; margin-right: 0.25rem; text-decoration: underline;"
+                                                        onclick="event.stopPropagation(); scrollToMetric('\${metricId}')"
+                                                        title="Click to view metric in grid"
+                                                    >
+                                                        \${metricId}
+                                                    </button>
+                                                \`).join('')}
                                             </div>
                                         \` : ''}
                                     </div>
@@ -1567,6 +1577,38 @@ export function getDashboardHTML(): string {
 
         function refreshData() {
             fetchData();
+        }
+
+        // Function to scroll to and highlight a metric in the grid
+        function scrollToMetric(metricId) {
+            // Switch to Metrics tab
+            const metricsTab = document.querySelector('.tab-btn[data-tab="metrics"]');
+            if (metricsTab) {
+                metricsTab.click();
+            }
+
+            // Wait for tab to switch, then scroll to metric
+            setTimeout(() => {
+                const metricCard = document.querySelector(\`[data-metric-id="\${metricId}"]\`);
+                if (metricCard) {
+                    // Scroll the card into view with smooth behavior
+                    metricCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    
+                    // Add highlight effect
+                    metricCard.style.transition = 'all 0.3s ease';
+                    metricCard.style.boxShadow = '0 0 0 4px #667eea';
+                    metricCard.style.transform = 'scale(1.02)';
+                    
+                    // Remove highlight after 2 seconds
+                    setTimeout(() => {
+                        metricCard.style.boxShadow = '';
+                        metricCard.style.transform = '';
+                    }, 2000);
+                } else {
+                    // If metric not found in current view, show detail modal as fallback
+                    showMetricDetail(metricId);
+                }
+            }, 100);
         }
 
         // Metric Detail View Functions

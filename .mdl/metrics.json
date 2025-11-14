@@ -885,5 +885,1083 @@
         }
       ]
     }
+  },
+  {
+    "metric_id": "METRIC-CSAT",
+    "name": "Customer Satisfaction Score (CSAT)",
+    "short_name": "csat",
+    "description": "Measure of customer satisfaction based on post-interaction surveys, typically on a 5-point scale.",
+    "category": "Customer Experience",
+    "tier": "Tier-1",
+    "business_domain": "Customer Success",
+    "metric_type": "lagging",
+    "tags": [
+      "customer_experience",
+      "satisfaction",
+      "feedback",
+      "nps"
+    ],
+    "alignment": {
+      "strategic_pillar": "Customer Experience",
+      "primary_objective_ids": [
+        "OBJ-001"
+      ],
+      "related_okr_ids": [
+        "OBJ-001:KR-001"
+      ],
+      "why_it_matters": "Direct indicator of customer happiness and likelihood to continue using the product."
+    },
+    "definition": {
+      "formula": "SUM(satisfaction_scores) / COUNT(responses)",
+      "formula_detail": "Average of all customer satisfaction ratings collected through post-interaction surveys.",
+      "numerator": {
+        "event_name": "csat_response",
+        "filters": []
+      },
+      "denominator": {
+        "event_name": "csat_survey_sent",
+        "filters": []
+      },
+      "unit": "score",
+      "expected_direction": "increase",
+      "example_calculation": {
+        "total_score": 450,
+        "total_responses": 100,
+        "result": 4.5
+      }
+    },
+    "data": {
+      "primary_sources": [
+        {
+          "system": "survey_platform",
+          "table_or_stream": "csat_responses",
+          "connection_id": "survey_db"
+        }
+      ],
+      "secondary_sources": [],
+      "data_freshness": "daily",
+      "update_frequency": "daily",
+      "time_grain": [
+        "day",
+        "week",
+        "month"
+      ],
+      "data_retention": "indefinite"
+    },
+    "governance": {
+      "data_classification": "internal",
+      "pii_involved": false,
+      "regulatory_constraints": [],
+      "owner_team": "Customer Success",
+      "technical_owner": "product_team",
+      "business_owner": "Chief Customer Officer",
+      "version": "1.0.0",
+      "status": "active",
+      "created_at": "2025-01-01T00:00:00Z",
+      "updated_at": "2025-01-01T00:00:00Z"
+    },
+    "dimensions": [
+      {
+        "name": "channel",
+        "allowed_values": [
+          "web",
+          "mobile",
+          "support",
+          "email"
+        ],
+        "required": true
+      },
+      {
+        "name": "customer_segment",
+        "allowed_values": [
+          "consumer",
+          "smb",
+          "enterprise"
+        ],
+        "required": false
+      }
+    ],
+    "targets_and_alerts": {
+      "target_value": 4.5,
+      "warning_threshold": 4,
+      "critical_threshold": 3.5,
+      "comparison_baseline": "previous_month",
+      "alert_rules": [
+        {
+          "rule_id": "ALERT-CSAT-001",
+          "condition": "value < critical_threshold",
+          "severity": "critical",
+          "notify_channels": [
+            "slack:#customer-success"
+          ],
+          "evaluation_window": "weekly"
+        }
+      ]
+    },
+    "visualization": {
+      "default_chart_type": "line",
+      "default_time_range": "last_30_days",
+      "dashboard_locations": [
+        {
+          "tool": "Looker",
+          "url": "https://bi.example.com/dashboards/csat"
+        }
+      ],
+      "drilldowns": [
+        "channel",
+        "customer_segment"
+      ]
+    },
+    "relationships": {
+      "upstream_metric_ids": [],
+      "downstream_metric_ids": [
+        "METRIC-CUSTOMER-CHURN-RATE"
+      ],
+      "tradeoffs": [
+        "Pushing for higher CSAT may slow down resolution times."
+      ]
+    },
+    "operational_usage": {
+      "decision_use_cases": [
+        "Identify areas for customer experience improvement",
+        "Track impact of product changes on satisfaction"
+      ],
+      "review_cadence": "weekly",
+      "linked_playbooks": []
+    },
+    "metadata": {
+      "notes": "CSAT is collected immediately after key interactions (purchase, support, etc.).",
+      "example_queries": []
+    }
+  },
+  {
+    "metric_id": "METRIC-SYSTEM-UPTIME",
+    "name": "System Uptime",
+    "short_name": "system_uptime",
+    "description": "Percentage of time the system is available and operational over a given period.",
+    "category": "Reliability",
+    "tier": "Tier-1",
+    "business_domain": "Platform",
+    "metric_type": "operational",
+    "tags": [
+      "reliability",
+      "slo",
+      "availability",
+      "uptime"
+    ],
+    "alignment": {
+      "strategic_pillar": "Platform Reliability",
+      "primary_objective_ids": [
+        "OBJ-002"
+      ],
+      "related_okr_ids": [
+        "OBJ-002:KR-003"
+      ],
+      "why_it_matters": "System availability directly impacts customer trust and revenue."
+    },
+    "definition": {
+      "formula": "(total_time - downtime) / total_time * 100",
+      "formula_detail": "Percentage of time the system was operational and accessible to users.",
+      "numerator": {
+        "event_name": "system_operational_minutes",
+        "filters": []
+      },
+      "denominator": {
+        "event_name": "total_minutes_in_period",
+        "filters": []
+      },
+      "unit": "percentage",
+      "expected_direction": "increase",
+      "example_calculation": {
+        "total_minutes": 43200,
+        "downtime_minutes": 43,
+        "result": 99.9
+      }
+    },
+    "data": {
+      "primary_sources": [
+        {
+          "system": "monitoring_platform",
+          "table_or_stream": "uptime_checks",
+          "connection_id": "monitoring_db"
+        }
+      ],
+      "secondary_sources": [
+        {
+          "system": "incident_management",
+          "table_or_stream": "incidents",
+          "connection_id": "pagerduty"
+        }
+      ],
+      "data_freshness": "real_time",
+      "update_frequency": "1_minute",
+      "time_grain": [
+        "minute",
+        "hour",
+        "day",
+        "month"
+      ],
+      "data_retention": "indefinite"
+    },
+    "governance": {
+      "data_classification": "internal",
+      "pii_involved": false,
+      "regulatory_constraints": [
+        "sla_compliance"
+      ],
+      "owner_team": "SRE",
+      "technical_owner": "sre_team",
+      "business_owner": "VP Engineering",
+      "version": "1.0.0",
+      "status": "active",
+      "created_at": "2025-01-01T00:00:00Z",
+      "updated_at": "2025-01-01T00:00:00Z"
+    },
+    "dimensions": [
+      {
+        "name": "service",
+        "allowed_values": [],
+        "required": true
+      },
+      {
+        "name": "region",
+        "allowed_values": [
+          "us-east",
+          "us-west",
+          "eu-west",
+          "ap-south"
+        ],
+        "required": false
+      }
+    ],
+    "targets_and_alerts": {
+      "target_value": 99.9,
+      "warning_threshold": 99.5,
+      "critical_threshold": 99,
+      "comparison_baseline": "slo_target",
+      "alert_rules": [
+        {
+          "rule_id": "ALERT-UPTIME-001",
+          "condition": "value < critical_threshold",
+          "severity": "critical",
+          "notify_channels": [
+            "pagerduty:sre-oncall",
+            "slack:#incidents"
+          ],
+          "evaluation_window": "monthly"
+        }
+      ]
+    },
+    "visualization": {
+      "default_chart_type": "line",
+      "default_time_range": "last_30_days",
+      "dashboard_locations": [
+        {
+          "tool": "Grafana",
+          "url": "https://grafana.example.com/d/uptime-slo"
+        }
+      ],
+      "drilldowns": [
+        "service",
+        "region"
+      ]
+    },
+    "relationships": {
+      "upstream_metric_ids": [],
+      "downstream_metric_ids": [
+        "METRIC-CUSTOMER-CHURN-RATE"
+      ],
+      "tradeoffs": [
+        "Maintenance windows reduce uptime but improve long-term reliability."
+      ]
+    },
+    "operational_usage": {
+      "decision_use_cases": [
+        "Track SLA compliance",
+        "Identify reliability improvement opportunities",
+        "Communicate system health to stakeholders"
+      ],
+      "review_cadence": "daily",
+      "linked_playbooks": [
+        {
+          "name": "Incident Response Runbook",
+          "url": "https://runbooks.example.com/incident-response"
+        }
+      ]
+    },
+    "metadata": {
+      "notes": "This is a key SLI for our 99.9% uptime SLO commitment.",
+      "example_queries": []
+    }
+  },
+  {
+    "metric_id": "METRIC-CUSTOMER-LTV",
+    "name": "Customer Lifetime Value (LTV)",
+    "short_name": "customer_ltv",
+    "description": "Predicted total revenue that a customer will generate over their entire relationship with the company.",
+    "category": "Finance",
+    "tier": "Tier-1",
+    "business_domain": "Revenue",
+    "metric_type": "lagging",
+    "tags": [
+      "revenue",
+      "retention",
+      "growth",
+      "customer_value"
+    ],
+    "alignment": {
+      "strategic_pillar": "Revenue Growth",
+      "primary_objective_ids": [
+        "OBJ-003"
+      ],
+      "related_okr_ids": [
+        "OBJ-003:KR-002"
+      ],
+      "why_it_matters": "LTV helps determine customer acquisition spend limits and long-term business health."
+    },
+    "definition": {
+      "formula": "ARPU * (1 / churn_rate)",
+      "formula_detail": "Average revenue per user multiplied by average customer lifetime (inverse of churn rate).",
+      "numerator": {
+        "event_name": "total_revenue_per_customer",
+        "filters": []
+      },
+      "denominator": {
+        "event_name": "customer_count",
+        "filters": []
+      },
+      "unit": "USD",
+      "expected_direction": "increase",
+      "example_calculation": {
+        "arpu": 500,
+        "monthly_churn_rate": 0.02,
+        "average_lifetime_months": 50,
+        "result": 25000
+      }
+    },
+    "data": {
+      "primary_sources": [
+        {
+          "system": "billing_system",
+          "table_or_stream": "customer_revenue",
+          "connection_id": "billing_db"
+        }
+      ],
+      "secondary_sources": [
+        {
+          "system": "analytics_warehouse",
+          "table_or_stream": "customer_cohorts",
+          "connection_id": "data_warehouse"
+        }
+      ],
+      "data_freshness": "daily",
+      "update_frequency": "daily",
+      "time_grain": [
+        "month",
+        "quarter"
+      ],
+      "data_retention": "indefinite"
+    },
+    "governance": {
+      "data_classification": "confidential",
+      "pii_involved": false,
+      "regulatory_constraints": [
+        "financial_reporting"
+      ],
+      "owner_team": "Finance",
+      "technical_owner": "finance_analytics",
+      "business_owner": "CFO",
+      "version": "1.0.0",
+      "status": "active",
+      "created_at": "2025-01-01T00:00:00Z",
+      "updated_at": "2025-01-01T00:00:00Z"
+    },
+    "dimensions": [
+      {
+        "name": "customer_segment",
+        "allowed_values": [
+          "smb",
+          "mid_market",
+          "enterprise"
+        ],
+        "required": true
+      },
+      {
+        "name": "acquisition_channel",
+        "allowed_values": [
+          "organic",
+          "paid",
+          "referral",
+          "partner"
+        ],
+        "required": false
+      }
+    ],
+    "targets_and_alerts": {
+      "target_value": 100000,
+      "warning_threshold": 80000,
+      "critical_threshold": 60000,
+      "comparison_baseline": "previous_quarter",
+      "alert_rules": []
+    },
+    "visualization": {
+      "default_chart_type": "bar",
+      "default_time_range": "last_12_months",
+      "dashboard_locations": [
+        {
+          "tool": "Looker",
+          "url": "https://bi.example.com/dashboards/ltv"
+        }
+      ],
+      "drilldowns": [
+        "customer_segment",
+        "acquisition_channel"
+      ]
+    },
+    "relationships": {
+      "upstream_metric_ids": [
+        "METRIC-REVENUE-ARR",
+        "METRIC-CUSTOMER-CHURN-RATE"
+      ],
+      "downstream_metric_ids": [
+        "METRIC-CAC-LTV-RATIO"
+      ],
+      "tradeoffs": [
+        "Aggressive upselling can increase LTV but may increase churn if not handled carefully."
+      ]
+    },
+    "operational_usage": {
+      "decision_use_cases": [
+        "Determine customer acquisition cost thresholds",
+        "Evaluate customer segment profitability",
+        "Guide pricing and packaging decisions"
+      ],
+      "review_cadence": "quarterly",
+      "linked_playbooks": []
+    },
+    "metadata": {
+      "notes": "LTV should be compared with CAC to ensure sustainable unit economics.",
+      "example_queries": []
+    }
+  },
+  {
+    "metric_id": "METRIC-TRIAL-CONVERSION-RATE",
+    "name": "Trial to Paid Conversion Rate",
+    "short_name": "trial_conversion_rate",
+    "description": "Percentage of trial users who convert to paying customers.",
+    "category": "Growth",
+    "tier": "Tier-1",
+    "business_domain": "Sales",
+    "metric_type": "leading",
+    "tags": [
+      "conversion",
+      "growth",
+      "sales",
+      "funnel"
+    ],
+    "alignment": {
+      "strategic_pillar": "Revenue Growth",
+      "primary_objective_ids": [
+        "OBJ-003"
+      ],
+      "related_okr_ids": [
+        "OBJ-003:KR-003"
+      ],
+      "why_it_matters": "Indicates product-market fit and effectiveness of trial experience."
+    },
+    "definition": {
+      "formula": "paid_conversions / trial_starts * 100",
+      "formula_detail": "Number of trial users who became paid customers divided by total trial starts.",
+      "numerator": {
+        "event_name": "trial_to_paid_conversion",
+        "filters": []
+      },
+      "denominator": {
+        "event_name": "trial_started",
+        "filters": []
+      },
+      "unit": "percentage",
+      "expected_direction": "increase",
+      "example_calculation": {
+        "conversions": 250,
+        "trial_starts": 1000,
+        "result": 25
+      }
+    },
+    "data": {
+      "primary_sources": [
+        {
+          "system": "billing_system",
+          "table_or_stream": "subscription_events",
+          "connection_id": "billing_db"
+        }
+      ],
+      "secondary_sources": [
+        {
+          "system": "product_analytics",
+          "table_or_stream": "user_events",
+          "connection_id": "analytics_warehouse"
+        }
+      ],
+      "data_freshness": "daily",
+      "update_frequency": "daily",
+      "time_grain": [
+        "day",
+        "week",
+        "month"
+      ],
+      "data_retention": "indefinite"
+    },
+    "governance": {
+      "data_classification": "internal",
+      "pii_involved": false,
+      "regulatory_constraints": [],
+      "owner_team": "Growth",
+      "technical_owner": "product_team",
+      "business_owner": "Chief Revenue Officer",
+      "version": "1.0.0",
+      "status": "active",
+      "created_at": "2025-01-01T00:00:00Z",
+      "updated_at": "2025-01-01T00:00:00Z"
+    },
+    "dimensions": [
+      {
+        "name": "acquisition_channel",
+        "allowed_values": [
+          "organic",
+          "paid",
+          "referral",
+          "partner"
+        ],
+        "required": true
+      },
+      {
+        "name": "product_tier",
+        "allowed_values": [
+          "pro",
+          "enterprise"
+        ],
+        "required": false
+      }
+    ],
+    "targets_and_alerts": {
+      "target_value": 25,
+      "warning_threshold": 20,
+      "critical_threshold": 15,
+      "comparison_baseline": "previous_month",
+      "alert_rules": [
+        {
+          "rule_id": "ALERT-CONV-001",
+          "condition": "value < critical_threshold",
+          "severity": "warning",
+          "notify_channels": [
+            "slack:#growth"
+          ],
+          "evaluation_window": "weekly"
+        }
+      ]
+    },
+    "visualization": {
+      "default_chart_type": "line",
+      "default_time_range": "last_90_days",
+      "dashboard_locations": [
+        {
+          "tool": "Looker",
+          "url": "https://bi.example.com/dashboards/conversion-funnel"
+        }
+      ],
+      "drilldowns": [
+        "acquisition_channel",
+        "product_tier"
+      ]
+    },
+    "relationships": {
+      "upstream_metric_ids": [
+        "METRIC-TRIAL-ACTIVATION-RATE"
+      ],
+      "downstream_metric_ids": [
+        "METRIC-REVENUE-ARR"
+      ],
+      "tradeoffs": [
+        "Shorter trial periods may increase urgency but could reduce conversion if users need more time."
+      ]
+    },
+    "operational_usage": {
+      "decision_use_cases": [
+        "Optimize trial experience and onboarding",
+        "Evaluate effectiveness of sales outreach during trial",
+        "Identify high-converting channels"
+      ],
+      "review_cadence": "weekly",
+      "linked_playbooks": []
+    },
+    "metadata": {
+      "notes": "Track cohort-based conversion rates to understand time-to-convert patterns.",
+      "example_queries": []
+    }
+  },
+  {
+    "metric_id": "METRIC-PR-CYCLE-TIME",
+    "name": "Pull Request Cycle Time",
+    "short_name": "pr_cycle_time",
+    "description": "Average time from PR creation to merge, measuring development velocity and review efficiency.",
+    "category": "Engineering",
+    "tier": "Tier-2",
+    "business_domain": "Engineering",
+    "metric_type": "operational",
+    "tags": [
+      "devops",
+      "velocity",
+      "code_review",
+      "efficiency"
+    ],
+    "alignment": {
+      "strategic_pillar": "Engineering Excellence",
+      "primary_objective_ids": [
+        "OBJ-004"
+      ],
+      "related_okr_ids": [
+        "OBJ-004:KR-001"
+      ],
+      "why_it_matters": "Faster cycle times enable quicker feature delivery and reduce context switching."
+    },
+    "definition": {
+      "formula": "AVG(pr_merge_time - pr_create_time)",
+      "formula_detail": "Average time elapsed between PR creation and merge for all merged PRs.",
+      "numerator": {
+        "event_name": "pr_merged",
+        "filters": []
+      },
+      "denominator": {
+        "event_name": "pr_created",
+        "filters": []
+      },
+      "unit": "hours",
+      "expected_direction": "decrease",
+      "example_calculation": {
+        "total_cycle_time_hours": 720,
+        "merged_prs": 30,
+        "result": 24
+      }
+    },
+    "data": {
+      "primary_sources": [
+        {
+          "system": "version_control",
+          "table_or_stream": "pull_requests",
+          "connection_id": "github"
+        }
+      ],
+      "secondary_sources": [],
+      "data_freshness": "real_time",
+      "update_frequency": "hourly",
+      "time_grain": [
+        "day",
+        "week",
+        "month"
+      ],
+      "data_retention": "indefinite"
+    },
+    "governance": {
+      "data_classification": "internal",
+      "pii_involved": false,
+      "regulatory_constraints": [],
+      "owner_team": "Engineering Leadership",
+      "technical_owner": "engineering_leadership",
+      "business_owner": "VP Engineering",
+      "version": "1.0.0",
+      "status": "active",
+      "created_at": "2025-01-01T00:00:00Z",
+      "updated_at": "2025-01-01T00:00:00Z"
+    },
+    "dimensions": [
+      {
+        "name": "repository",
+        "allowed_values": [],
+        "required": true
+      },
+      {
+        "name": "team",
+        "allowed_values": [],
+        "required": true
+      },
+      {
+        "name": "pr_size",
+        "allowed_values": [
+          "small",
+          "medium",
+          "large"
+        ],
+        "required": false
+      }
+    ],
+    "targets_and_alerts": {
+      "target_value": 24,
+      "warning_threshold": 36,
+      "critical_threshold": 48,
+      "comparison_baseline": "previous_month",
+      "alert_rules": []
+    },
+    "visualization": {
+      "default_chart_type": "line",
+      "default_time_range": "last_30_days",
+      "dashboard_locations": [
+        {
+          "tool": "Grafana",
+          "url": "https://grafana.example.com/d/engineering-metrics"
+        }
+      ],
+      "drilldowns": [
+        "repository",
+        "team",
+        "pr_size"
+      ]
+    },
+    "relationships": {
+      "upstream_metric_ids": [],
+      "downstream_metric_ids": [
+        "METRIC-DEPLOYMENT-FREQUENCY"
+      ],
+      "tradeoffs": [
+        "Rushing reviews to reduce cycle time can impact code quality."
+      ]
+    },
+    "operational_usage": {
+      "decision_use_cases": [
+        "Identify bottlenecks in code review process",
+        "Compare team performance and identify best practices",
+        "Track impact of process improvements"
+      ],
+      "review_cadence": "weekly",
+      "linked_playbooks": []
+    },
+    "metadata": {
+      "notes": "Smaller PRs typically have faster cycle times. Track PR size separately.",
+      "example_queries": []
+    }
+  },
+  {
+    "metric_id": "METRIC-CODE-COVERAGE",
+    "name": "Code Coverage",
+    "short_name": "code_coverage",
+    "description": "Percentage of code lines covered by automated tests.",
+    "category": "Engineering",
+    "tier": "Tier-2",
+    "business_domain": "Engineering",
+    "metric_type": "operational",
+    "tags": [
+      "testing",
+      "quality",
+      "ci_cd",
+      "reliability"
+    ],
+    "alignment": {
+      "strategic_pillar": "Engineering Excellence",
+      "primary_objective_ids": [
+        "OBJ-004"
+      ],
+      "related_okr_ids": [
+        "OBJ-004:KR-002"
+      ],
+      "why_it_matters": "Higher test coverage reduces bugs and enables confident refactoring."
+    },
+    "definition": {
+      "formula": "covered_lines / total_lines * 100",
+      "formula_detail": "Percentage of executable code lines that are executed by automated tests.",
+      "numerator": {
+        "event_name": "lines_covered_by_tests",
+        "filters": []
+      },
+      "denominator": {
+        "event_name": "total_executable_lines",
+        "filters": []
+      },
+      "unit": "percentage",
+      "expected_direction": "increase",
+      "example_calculation": {
+        "covered_lines": 8000,
+        "total_lines": 10000,
+        "result": 80
+      }
+    },
+    "data": {
+      "primary_sources": [
+        {
+          "system": "ci_cd_platform",
+          "table_or_stream": "test_coverage_reports",
+          "connection_id": "cicd_db"
+        }
+      ],
+      "secondary_sources": [
+        {
+          "system": "code_quality_platform",
+          "table_or_stream": "coverage_metrics",
+          "connection_id": "sonarqube"
+        }
+      ],
+      "data_freshness": "per_build",
+      "update_frequency": "per_commit",
+      "time_grain": [
+        "commit",
+        "day",
+        "week"
+      ],
+      "data_retention": "indefinite"
+    },
+    "governance": {
+      "data_classification": "internal",
+      "pii_involved": false,
+      "regulatory_constraints": [],
+      "owner_team": "Engineering Leadership",
+      "technical_owner": "engineering_leadership",
+      "business_owner": "VP Engineering",
+      "version": "1.0.0",
+      "status": "active",
+      "created_at": "2025-01-01T00:00:00Z",
+      "updated_at": "2025-01-01T00:00:00Z"
+    },
+    "dimensions": [
+      {
+        "name": "repository",
+        "allowed_values": [],
+        "required": true
+      },
+      {
+        "name": "service",
+        "allowed_values": [],
+        "required": true
+      },
+      {
+        "name": "coverage_type",
+        "allowed_values": [
+          "line",
+          "branch",
+          "function"
+        ],
+        "required": false
+      }
+    ],
+    "targets_and_alerts": {
+      "target_value": 80,
+      "warning_threshold": 70,
+      "critical_threshold": 60,
+      "comparison_baseline": "previous_build",
+      "alert_rules": [
+        {
+          "rule_id": "ALERT-COV-001",
+          "condition": "value < critical_threshold",
+          "severity": "warning",
+          "notify_channels": [
+            "slack:#engineering"
+          ],
+          "evaluation_window": "per_build"
+        }
+      ]
+    },
+    "visualization": {
+      "default_chart_type": "line",
+      "default_time_range": "last_30_days",
+      "dashboard_locations": [
+        {
+          "tool": "SonarQube",
+          "url": "https://sonar.example.com/dashboard"
+        }
+      ],
+      "drilldowns": [
+        "repository",
+        "service"
+      ]
+    },
+    "relationships": {
+      "upstream_metric_ids": [],
+      "downstream_metric_ids": [
+        "METRIC-BUG-ESCAPE-RATE"
+      ],
+      "tradeoffs": [
+        "High coverage doesn't guarantee quality if tests are not meaningful."
+      ]
+    },
+    "operational_usage": {
+      "decision_use_cases": [
+        "Enforce minimum coverage requirements in CI/CD",
+        "Identify under-tested code areas",
+        "Track testing discipline over time"
+      ],
+      "review_cadence": "continuous",
+      "linked_playbooks": []
+    },
+    "metadata": {
+      "notes": "Focus on meaningful tests rather than just hitting coverage percentages.",
+      "example_queries": []
+    }
+  },
+  {
+    "metric_id": "METRIC-BUG-ESCAPE-RATE",
+    "name": "Bug Escape Rate",
+    "short_name": "bug_escape_rate",
+    "description": "Number of bugs found in production per release, indicating test effectiveness.",
+    "category": "Engineering",
+    "tier": "Tier-2",
+    "business_domain": "Engineering",
+    "metric_type": "lagging",
+    "tags": [
+      "quality",
+      "bugs",
+      "testing",
+      "reliability"
+    ],
+    "alignment": {
+      "strategic_pillar": "Engineering Excellence",
+      "primary_objective_ids": [
+        "OBJ-004"
+      ],
+      "related_okr_ids": [
+        "OBJ-004:KR-003"
+      ],
+      "why_it_matters": "Lower escape rates indicate better testing and reduce customer impact."
+    },
+    "definition": {
+      "formula": "COUNT(production_bugs) / COUNT(releases)",
+      "formula_detail": "Average number of bugs discovered in production per release.",
+      "numerator": {
+        "event_name": "production_bug_reported",
+        "filters": []
+      },
+      "denominator": {
+        "event_name": "release_deployed",
+        "filters": []
+      },
+      "unit": "bugs_per_release",
+      "expected_direction": "decrease",
+      "example_calculation": {
+        "production_bugs": 40,
+        "releases": 10,
+        "result": 4
+      }
+    },
+    "data": {
+      "primary_sources": [
+        {
+          "system": "issue_tracker",
+          "table_or_stream": "bugs",
+          "connection_id": "jira"
+        }
+      ],
+      "secondary_sources": [
+        {
+          "system": "ci_cd_platform",
+          "table_or_stream": "releases",
+          "connection_id": "cicd_db"
+        }
+      ],
+      "data_freshness": "daily",
+      "update_frequency": "daily",
+      "time_grain": [
+        "release",
+        "week",
+        "month"
+      ],
+      "data_retention": "indefinite"
+    },
+    "governance": {
+      "data_classification": "internal",
+      "pii_involved": false,
+      "regulatory_constraints": [],
+      "owner_team": "Engineering Leadership",
+      "technical_owner": "engineering_leadership",
+      "business_owner": "VP Engineering",
+      "version": "1.0.0",
+      "status": "active",
+      "created_at": "2025-01-01T00:00:00Z",
+      "updated_at": "2025-01-01T00:00:00Z"
+    },
+    "dimensions": [
+      {
+        "name": "severity",
+        "allowed_values": [
+          "critical",
+          "high",
+          "medium",
+          "low"
+        ],
+        "required": true
+      },
+      {
+        "name": "service",
+        "allowed_values": [],
+        "required": true
+      },
+      {
+        "name": "root_cause",
+        "allowed_values": [
+          "code",
+          "config",
+          "infrastructure",
+          "data"
+        ],
+        "required": false
+      }
+    ],
+    "targets_and_alerts": {
+      "target_value": 5,
+      "warning_threshold": 8,
+      "critical_threshold": 12,
+      "comparison_baseline": "previous_month",
+      "alert_rules": [
+        {
+          "rule_id": "ALERT-BUG-001",
+          "condition": "value > critical_threshold",
+          "severity": "warning",
+          "notify_channels": [
+            "slack:#engineering"
+          ],
+          "evaluation_window": "monthly"
+        }
+      ]
+    },
+    "visualization": {
+      "default_chart_type": "bar",
+      "default_time_range": "last_12_weeks",
+      "dashboard_locations": [
+        {
+          "tool": "Jira",
+          "url": "https://jira.example.com/dashboard/quality-metrics"
+        }
+      ],
+      "drilldowns": [
+        "severity",
+        "service",
+        "root_cause"
+      ]
+    },
+    "relationships": {
+      "upstream_metric_ids": [
+        "METRIC-CODE-COVERAGE"
+      ],
+      "downstream_metric_ids": [
+        "METRIC-CUSTOMER-CHURN-RATE"
+      ],
+      "tradeoffs": [
+        "More thorough testing reduces escape rate but may slow delivery velocity."
+      ]
+    },
+    "operational_usage": {
+      "decision_use_cases": [
+        "Evaluate testing effectiveness",
+        "Identify quality trends by service or team",
+        "Guide investment in test automation"
+      ],
+      "review_cadence": "weekly",
+      "linked_playbooks": [
+        {
+          "name": "Bug Triage Process",
+          "url": "https://docs.example.com/bug-triage"
+        }
+      ]
+    },
+    "metadata": {
+      "notes": "Track by severity to focus on critical and high severity bugs separately.",
+      "example_queries": []
+    }
   }
 ]
