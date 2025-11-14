@@ -9,16 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-#### Desktop Application
-- **Electron Integration**: Cross-platform desktop application support
-  - macOS support (DMG and ZIP installers for Intel and Apple Silicon)
-  - Windows support (NSIS installer and portable executable for 64-bit and 32-bit)
-  - Linux support (AppImage, DEB, and RPM packages)
-  - Auto-starting Express server on application launch
-  - Application menu with File, Edit, View, and Help menus
-  - Window management with proper lifecycle handling
-  - Security implementation with context isolation and preload script
-
 #### User Interface Enhancements
 - **Icon-Based UI**: Replaced text buttons with professional SVG icons
   - Add Domain button with plus icon
@@ -140,12 +130,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Comprehensive Documentation**
   - README.md with quick start guide
   - USAGE.md with detailed API usage
-  - ELECTRON.md with desktop app setup
-  - BUILD.md with build instructions
-  - QUICKSTART_ELECTRON.md for quick setup
   - SETTINGS.md for configuration guide
   - USAGE_COMPARISON.md comparing usage modes
-  - ELECTRON_SUMMARY.md with technical details
   - OpenAPI specification (openapi.yaml)
   - Code examples and sample data
 
@@ -168,13 +154,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Node.js 18+ support
   - Express.js for API server
   - TypeScript 5.x
-  - Electron 39.2.0 for desktop app
 
 - **Development**
-  - electron-builder 26.0.12 for installers
   - Jest for testing
-  - concurrently for parallel processes
-  - wait-on for process coordination
+  - TypeScript compiler
+  - ESLint and Prettier for code quality
 
 #### Project Structure
 ```
@@ -201,17 +185,15 @@ MDL/
 - Responsive UI interactions
 
 #### Security
-- Context isolation in Electron
 - Secure credential handling (ready)
 - Input validation on all forms
 - Safe file operations
 - CORS configuration
 
 ### Changed
-- Main entry point changed from `dist/index.js` to `electron.js` for desktop app
-- Package.json updated with Electron scripts and build configuration
 - Dashboard header updated with Settings button
 - Button styling updated to icon-based design throughout application
+- Package.json updated with streamlined scripts
 
 ### Developer Notes
 - Database backend integration is prepared but not yet implemented
@@ -230,22 +212,18 @@ MDL/
 npm install
 npm run dev
 
-# Desktop app (development)
-npm run electron:dev
+# Production mode
+npm run build
+npm start
 
-# Build desktop app
-npm run electron:build        # Current platform
-npm run electron:build:all    # All platforms
-npm run electron:build:mac    # macOS only
-npm run electron:build:win    # Windows only
-npm run electron:build:linux  # Linux only
+# Load sample data
+npm run load:samples
 ```
 
 ### Usage Modes
-1. **Desktop Application**: Install and run as native app
-2. **Web Application**: Run server and access via browser
-3. **CLI Mode**: Command-line interface for automation
-4. **API Mode**: RESTful API for integration
+1. **Web Application**: Run server and access via browser at http://localhost:3000/dashboard
+2. **CLI Mode**: Command-line interface for automation
+3. **API Mode**: RESTful API for integration at http://localhost:3000/api
 
 ### Breaking Changes
 None - Initial release

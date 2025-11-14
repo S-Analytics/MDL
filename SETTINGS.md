@@ -117,7 +117,7 @@ When database storage is configured:
 ### Security Considerations
 - Database passwords should not be stored in localStorage
 - Future implementation will use:
-  - Environment variables (Electron app)
+  - Environment variables
   - Secure credential storage APIs
   - Server-side session management
 
@@ -251,8 +251,7 @@ Response:
 
 - Database storage is currently in development
 - Local file storage is production-ready and recommended
-- Settings are user-specific (not shared across users in web mode)
-- In Electron app, settings are per-installation
+- Settings are stored in browser localStorage
 - Database passwords are handled securely (not stored in localStorage)
 
 ---
@@ -260,4 +259,3 @@ Response:
 For more information, see:
 - [Main Documentation](../README.md)
 - [API Documentation](../USAGE.md)
-- [Electron App Guide](../ELECTRON.md)

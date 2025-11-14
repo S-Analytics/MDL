@@ -747,21 +747,21 @@ export function getDashboardHTML(): string {
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                             </svg>
                             <div style="font-weight: 600;">PDF</div>
-                            <div style="font-size: 0.8rem; color: #666;">Portable Document</div>
+                            <div style="font-size: 0.8rem;">Portable Document</div>
                         </button>
                         <button type="button" class="format-btn" onclick="selectDownloadFormat('docx')" data-format="docx">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 32px; height: 32px; margin-bottom: 0.5rem;">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
                             <div style="font-weight: 600;">Word</div>
-                            <div style="font-size: 0.8rem; color: #666;">Microsoft Word</div>
+                            <div style="font-size: 0.8rem; ">Microsoft Word</div>
                         </button>
                         <button type="button" class="format-btn" onclick="selectDownloadFormat('md')" data-format="md">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 32px; height: 32px; margin-bottom: 0.5rem;">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
                             <div style="font-weight: 600;">Markdown</div>
-                            <div style="font-size: 0.8rem; color: #666;">Plain Text</div>
+                            <div style="font-size: 0.8rem; ">Plain Text</div>
                         </button>
                     </div>
                 </div>
@@ -1315,7 +1315,13 @@ export function getDashboardHTML(): string {
         function updateStats() {
             document.getElementById('totalMetrics').textContent = stats.total || 0;
             document.getElementById('totalObjectives').textContent = stats.objectives || 0;
-            document.getElementById('totalDomains').textContent = Object.keys(stats.byDomain || {}).length;
+            
+            // Count unique business domains from both metrics and loaded domains
+            const domainsFromMetrics = Object.keys(stats.byBusinessDomain || {}).length;
+            const domainsFromList = allDomains.length;
+            const totalDomains = Math.max(domainsFromMetrics, domainsFromList);
+            document.getElementById('totalDomains').textContent = totalDomains;
+            
             document.getElementById('totalOwners').textContent = Object.keys(stats.byOwner || {}).length;
         }
 
@@ -2109,7 +2115,7 @@ export function getDashboardHTML(): string {
             // Load app version from package.json
             document.getElementById('appVersion').textContent = '1.0.0';
             document.getElementById('appBuild').textContent = 'Production';
-            document.getElementById('appEnvironment').textContent = typeof window.electronAPI !== 'undefined' ? 'Desktop App' : 'Web Browser';
+            document.getElementById('appEnvironment').textContent = 'Web Browser';
             
             // Load storage settings from localStorage
             const settings = JSON.parse(localStorage.getItem('mdl_settings') || '{"storageType":"local"}');
