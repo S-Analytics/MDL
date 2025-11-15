@@ -281,6 +281,18 @@ Not applicable - Initial release
   - Added PostgresConfig, BusinessDomain, Objective, KeyResult schemas
   - Examples for all database operations
 
+- **Comprehensive Test Suite**: Full test coverage for PostgreSQL stores
+  - `PostgresMetricStore.test.ts` - 40+ tests for metric CRUD operations
+  - `PostgresDomainStore.test.ts` - 30+ tests for domain management
+  - `PostgresObjectiveStore.test.ts` - 35+ tests for objectives with key results
+  - Test helpers for database setup and cleanup (`tests/helpers/database.ts`)
+  - Automatic test data cleanup with TEST- and test- prefixes
+  - Connection pooling and concurrency tests
+  - Transaction and rollback tests
+  - Error handling and validation tests
+  - Tests skip gracefully when database not configured
+  - Updated tests/README.md with PostgreSQL testing guide
+
 #### Database Cleaning Script
 - **clean-sample-data-postgres.js**: Safe data deletion utility
   - Interactive confirmation prompt (requires typing "DELETE ALL DATA")
