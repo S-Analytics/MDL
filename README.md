@@ -227,6 +227,22 @@ mdl stats
 
 - `GET /health` - Health check endpoint
 
+### 🧪 API Testing with Insomnia
+
+An Insomnia collection with 20+ pre-configured requests is available for easy API testing:
+
+```bash
+# Import insomnia-collection.json into Insomnia
+```
+
+The collection includes:
+- ✅ All API endpoints with sample requests
+- ✅ Environment variables for easy configuration
+- ✅ PostgreSQL operations (metrics, domains, objectives)
+- ✅ Request examples with realistic data
+
+**See [INSOMNIA_COLLECTION.md](./INSOMNIA_COLLECTION.md) for detailed usage instructions.**
+
 ## Configuration Files
 
 ### JSON Format

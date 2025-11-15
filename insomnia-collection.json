@@ -1,0 +1,397 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2025-11-15T00:00:00.000Z",
+  "__export_source": "insomnia.desktop.app:v2023.5.8",
+  "resources": [
+    {
+      "_id": "wrk_mdl",
+      "_type": "workspace",
+      "name": "MDL - Metrics Definition Library API",
+      "description": "API testing collection for Metrics Definition Library with support for file storage and PostgreSQL database operations",
+      "scope": "collection"
+    },
+    {
+      "_id": "env_mdl_base",
+      "_type": "environment",
+      "parentId": "wrk_mdl",
+      "name": "Base Environment",
+      "data": {
+        "base_url": "http://localhost:3000",
+        "db_host": "localhost",
+        "db_port": "5432",
+        "db_name": "mdl",
+        "db_user": "postgres",
+        "db_password": "",
+        "sample_metric_id": "METRIC-LOGIN-SUCCESS-RATE",
+        "sample_domain_id": "auth-5678",
+        "sample_objective_id": "OBJ-20251115041315"
+      }
+    },
+    {
+      "_id": "fld_health",
+      "_type": "request_group",
+      "parentId": "wrk_mdl",
+      "name": "Health",
+      "description": "Health check endpoints"
+    },
+    {
+      "_id": "fld_metrics",
+      "_type": "request_group",
+      "parentId": "wrk_mdl",
+      "name": "Metrics (File Storage)",
+      "description": "Metric CRUD operations using file storage"
+    },
+    {
+      "_id": "fld_policies",
+      "_type": "request_group",
+      "parentId": "wrk_mdl",
+      "name": "Policies",
+      "description": "OPA policy generation endpoints"
+    },
+    {
+      "_id": "fld_statistics",
+      "_type": "request_group",
+      "parentId": "wrk_mdl",
+      "name": "Statistics",
+      "description": "Metrics statistics and aggregations"
+    },
+    {
+      "_id": "fld_postgres_metrics",
+      "_type": "request_group",
+      "parentId": "wrk_mdl",
+      "name": "PostgreSQL - Metrics",
+      "description": "PostgreSQL metric operations"
+    },
+    {
+      "_id": "fld_postgres_domains",
+      "_type": "request_group",
+      "parentId": "wrk_mdl",
+      "name": "PostgreSQL - Domains",
+      "description": "PostgreSQL business domain operations"
+    },
+    {
+      "_id": "fld_postgres_objectives",
+      "_type": "request_group",
+      "parentId": "wrk_mdl",
+      "name": "PostgreSQL - Objectives",
+      "description": "PostgreSQL objectives and key results operations"
+    },
+    {
+      "_id": "req_health_check",
+      "_type": "request",
+      "parentId": "fld_health",
+      "name": "Health Check",
+      "url": "{{ _.base_url }}/health",
+      "method": "GET",
+      "headers": [],
+      "body": {},
+      "description": "Check if the API server is running and healthy"
+    },
+    {
+      "_id": "req_get_all_metrics",
+      "_type": "request",
+      "parentId": "fld_metrics",
+      "name": "Get All Metrics",
+      "url": "{{ _.base_url }}/api/metrics",
+      "method": "GET",
+      "headers": [],
+      "body": {},
+      "description": "Retrieve all metric definitions"
+    },
+    {
+      "_id": "req_get_metrics_filtered",
+      "_type": "request",
+      "parentId": "fld_metrics",
+      "name": "Get Metrics (Filtered)",
+      "url": "{{ _.base_url }}/api/metrics?business_domain=Authentication&tier=Tier-1",
+      "method": "GET",
+      "headers": [],
+      "body": {},
+      "description": "Retrieve metrics with filters: business_domain, tier, metric_type, tags"
+    },
+    {
+      "_id": "req_get_metric_by_id",
+      "_type": "request",
+      "parentId": "fld_metrics",
+      "name": "Get Metric by ID",
+      "url": "{{ _.base_url }}/api/metrics/{{ _.sample_metric_id }}",
+      "method": "GET",
+      "headers": [],
+      "body": {},
+      "description": "Retrieve a specific metric definition by ID"
+    },
+    {
+      "_id": "req_create_metric",
+      "_type": "request",
+      "parentId": "fld_metrics",
+      "name": "Create Metric",
+      "url": "{{ _.base_url }}/api/metrics",
+      "method": "POST",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"metric_id\": \"METRIC-TEST-{{ _.timestamp }}\",\n  \"name\": \"Test Metric\",\n  \"short_name\": \"test_metric\",\n  \"description\": \"A test metric for API validation\",\n  \"category\": \"Testing\",\n  \"tier\": \"Tier-3\",\n  \"business_domain\": \"Quality Assurance\",\n  \"metric_type\": \"operational\",\n  \"tags\": [\"test\", \"api\"],\n  \"alignment\": {\n    \"objectives\": [\"Ensure API quality\"],\n    \"kpis\": [\"API success rate\"],\n    \"stakeholders\": [\"QA Team\"]\n  },\n  \"definition\": {\n    \"calculation\": \"count(test_passes) / count(total_tests)\",\n    \"unit\": \"percentage\",\n    \"format\": \"0.00%\"\n  },\n  \"data\": {\n    \"sources\": [\"Test Database\"],\n    \"refresh_frequency\": \"On demand\",\n    \"latency\": \"Real-time\"\n  },\n  \"governance\": {\n    \"owner\": \"qa@example.com\",\n    \"steward\": \"test-lead@example.com\",\n    \"approvers\": [\"qa-manager@example.com\"]\n  },\n  \"dimensions\": [],\n  \"targets_and_alerts\": {\n    \"targets\": [],\n    \"alerts\": []\n  },\n  \"visualization\": {\n    \"chart_type\": \"line\",\n    \"default_view\": \"Last 7 days\"\n  },\n  \"relationships\": {\n    \"depends_on\": [],\n    \"influences\": []\n  },\n  \"operational_usage\": {\n    \"dashboards\": [\"QA Dashboard\"],\n    \"reports\": [],\n    \"automations\": []\n  },\n  \"metadata\": {\n    \"created_date\": \"2025-11-15T00:00:00Z\",\n    \"last_updated\": \"2025-11-15T00:00:00Z\",\n    \"version\": \"1.0\",\n    \"status\": \"draft\"\n  }\n}"
+      },
+      "description": "Create a new metric definition"
+    },
+    {
+      "_id": "req_update_metric",
+      "_type": "request",
+      "parentId": "fld_metrics",
+      "name": "Update Metric",
+      "url": "{{ _.base_url }}/api/metrics/{{ _.sample_metric_id }}",
+      "method": "PUT",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"metric_id\": \"{{ _.sample_metric_id }}\",\n  \"name\": \"Login Success Rate (Updated)\",\n  \"short_name\": \"login_success_rate\",\n  \"description\": \"Updated: Percentage of successful login attempts\",\n  \"category\": \"Authentication\",\n  \"tier\": \"Tier-1\",\n  \"business_domain\": \"Authentication\",\n  \"metric_type\": \"operational\",\n  \"tags\": [\"security\", \"authentication\", \"user-experience\", \"updated\"],\n  \"alignment\": {\n    \"objectives\": [\"Improve user experience\"],\n    \"kpis\": [\"User satisfaction\"],\n    \"stakeholders\": [\"Product Team\", \"Security Team\"]\n  },\n  \"definition\": {\n    \"calculation\": \"(successful_logins / total_login_attempts) * 100\",\n    \"unit\": \"percentage\",\n    \"format\": \"0.00%\"\n  },\n  \"data\": {\n    \"sources\": [\"Auth Service Database\"],\n    \"refresh_frequency\": \"Real-time\",\n    \"latency\": \"< 1 minute\"\n  },\n  \"governance\": {\n    \"owner\": \"auth-team@example.com\",\n    \"steward\": \"data-team@example.com\",\n    \"approvers\": [\"security-lead@example.com\"]\n  },\n  \"dimensions\": [\n    {\n      \"name\": \"Region\",\n      \"values\": [\"US\", \"EU\", \"APAC\"]\n    },\n    {\n      \"name\": \"Auth Method\",\n      \"values\": [\"Password\", \"OAuth\", \"SSO\"]\n    }\n  ],\n  \"targets_and_alerts\": {\n    \"targets\": [\n      {\n        \"type\": \"threshold\",\n        \"value\": 95,\n        \"operator\": \">=\"\n      }\n    ],\n    \"alerts\": [\n      {\n        \"condition\": \"value < 90\",\n        \"severity\": \"high\",\n        \"recipients\": [\"oncall@example.com\"]\n      }\n    ]\n  },\n  \"visualization\": {\n    \"chart_type\": \"line\",\n    \"default_view\": \"Last 24 hours\"\n  },\n  \"relationships\": {\n    \"depends_on\": [\"METRIC-TOTAL-LOGIN-ATTEMPTS\"],\n    \"influences\": [\"METRIC-USER-SATISFACTION\"]\n  },\n  \"operational_usage\": {\n    \"dashboards\": [\"Auth Dashboard\", \"Executive Dashboard\"],\n    \"reports\": [\"Weekly Auth Report\"],\n    \"automations\": [\"Auto-scaling trigger\"]\n  },\n  \"metadata\": {\n    \"created_date\": \"2025-01-01T00:00:00Z\",\n    \"last_updated\": \"2025-11-15T00:00:00Z\",\n    \"version\": \"2.0\",\n    \"status\": \"active\"\n  }\n}"
+      },
+      "description": "Update an existing metric definition"
+    },
+    {
+      "_id": "req_delete_metric",
+      "_type": "request",
+      "parentId": "fld_metrics",
+      "name": "Delete Metric",
+      "url": "{{ _.base_url }}/api/metrics/{{ _.sample_metric_id }}",
+      "method": "DELETE",
+      "headers": [],
+      "body": {},
+      "description": "Delete a metric definition by ID"
+    },
+    {
+      "_id": "req_get_metric_policy",
+      "_type": "request",
+      "parentId": "fld_policies",
+      "name": "Get Metric Policy",
+      "url": "{{ _.base_url }}/api/metrics/{{ _.sample_metric_id }}/policy",
+      "method": "GET",
+      "headers": [],
+      "body": {},
+      "description": "Generate OPA policy for a specific metric"
+    },
+    {
+      "_id": "req_get_all_policies",
+      "_type": "request",
+      "parentId": "fld_policies",
+      "name": "Get All Policies",
+      "url": "{{ _.base_url }}/api/policies",
+      "method": "GET",
+      "headers": [],
+      "body": {},
+      "description": "Generate OPA policies bundle for all metrics"
+    },
+    {
+      "_id": "req_get_stats",
+      "_type": "request",
+      "parentId": "fld_statistics",
+      "name": "Get Statistics",
+      "url": "{{ _.base_url }}/api/stats",
+      "method": "GET",
+      "headers": [],
+      "body": {},
+      "description": "Get aggregated statistics about all metrics"
+    },
+    {
+      "_id": "req_pg_test_connection",
+      "_type": "request",
+      "parentId": "fld_postgres_metrics",
+      "name": "Test Database Connection",
+      "url": "{{ _.base_url }}/api/database/test",
+      "method": "POST",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"host\": \"{{ _.db_host }}\",\n  \"port\": {{ _.db_port }},\n  \"database\": \"{{ _.db_name }}\",\n  \"user\": \"{{ _.db_user }}\",\n  \"password\": \"{{ _.db_password }}\"\n}"
+      },
+      "description": "Test PostgreSQL database connection"
+    },
+    {
+      "_id": "req_pg_fetch_metrics",
+      "_type": "request",
+      "parentId": "fld_postgres_metrics",
+      "name": "Fetch Metrics from PostgreSQL",
+      "url": "{{ _.base_url }}/api/postgres/metrics",
+      "method": "POST",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"host\": \"{{ _.db_host }}\",\n  \"port\": {{ _.db_port }},\n  \"database\": \"{{ _.db_name }}\",\n  \"user\": \"{{ _.db_user }}\",\n  \"password\": \"{{ _.db_password }}\"\n}"
+      },
+      "description": "Retrieve all metrics from PostgreSQL database"
+    },
+    {
+      "_id": "req_pg_save_metric",
+      "_type": "request",
+      "parentId": "fld_postgres_metrics",
+      "name": "Save Metric to PostgreSQL",
+      "url": "{{ _.base_url }}/api/postgres/metrics/save",
+      "method": "POST",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"dbConfig\": {\n    \"host\": \"{{ _.db_host }}\",\n    \"port\": {{ _.db_port }},\n    \"database\": \"{{ _.db_name }}\",\n    \"user\": \"{{ _.db_user }}\",\n    \"password\": \"{{ _.db_password }}\"\n  },\n  \"metric\": {\n    \"metric_id\": \"METRIC-PG-TEST-{{ _.timestamp }}\",\n    \"name\": \"PostgreSQL Test Metric\",\n    \"short_name\": \"pg_test_metric\",\n    \"description\": \"A test metric for PostgreSQL operations\",\n    \"category\": \"Database\",\n    \"tier\": \"Tier-2\",\n    \"business_domain\": \"Data Platform\",\n    \"metric_type\": \"technical\",\n    \"tags\": [\"postgresql\", \"database\", \"test\"],\n    \"alignment\": {\n      \"objectives\": [\"Validate PostgreSQL integration\"],\n      \"kpis\": [\"Database performance\"],\n      \"stakeholders\": [\"Data Team\"]\n    },\n    \"definition\": {\n      \"calculation\": \"count(successful_queries) / count(total_queries)\",\n      \"unit\": \"percentage\",\n      \"format\": \"0.00%\"\n    },\n    \"data\": {\n      \"sources\": [\"PostgreSQL Metrics DB\"],\n      \"refresh_frequency\": \"Real-time\",\n      \"latency\": \"< 1 second\"\n    },\n    \"governance\": {\n      \"owner\": \"data-team@example.com\",\n      \"steward\": \"dba@example.com\",\n      \"approvers\": [\"data-lead@example.com\"]\n    },\n    \"dimensions\": [],\n    \"targets_and_alerts\": {\n      \"targets\": [\n        {\n          \"type\": \"threshold\",\n          \"value\": 99.5,\n          \"operator\": \">=\"\n        }\n      ],\n      \"alerts\": []\n    },\n    \"visualization\": {\n      \"chart_type\": \"gauge\",\n      \"default_view\": \"Current value\"\n    },\n    \"relationships\": {\n      \"depends_on\": [],\n      \"influences\": []\n    },\n    \"operational_usage\": {\n      \"dashboards\": [\"Database Health Dashboard\"],\n      \"reports\": [],\n      \"automations\": []\n    },\n    \"metadata\": {\n      \"created_date\": \"2025-11-15T00:00:00Z\",\n      \"last_updated\": \"2025-11-15T00:00:00Z\",\n      \"version\": \"1.0\",\n      \"status\": \"active\"\n    }\n  },\n  \"isUpdate\": false\n}"
+      },
+      "description": "Create or update a metric in PostgreSQL database"
+    },
+    {
+      "_id": "req_pg_delete_metric",
+      "_type": "request",
+      "parentId": "fld_postgres_metrics",
+      "name": "Delete Metric from PostgreSQL",
+      "url": "{{ _.base_url }}/api/postgres/metrics/delete",
+      "method": "POST",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"dbConfig\": {\n    \"host\": \"{{ _.db_host }}\",\n    \"port\": {{ _.db_port }},\n    \"database\": \"{{ _.db_name }}\",\n    \"user\": \"{{ _.db_user }}\",\n    \"password\": \"{{ _.db_password }}\"\n  },\n  \"metricId\": \"{{ _.sample_metric_id }}\"\n}"
+      },
+      "description": "Delete a metric from PostgreSQL database"
+    },
+    {
+      "_id": "req_pg_fetch_domains",
+      "_type": "request",
+      "parentId": "fld_postgres_domains",
+      "name": "Fetch Domains from PostgreSQL",
+      "url": "{{ _.base_url }}/api/postgres/domains",
+      "method": "POST",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"host\": \"{{ _.db_host }}\",\n  \"port\": {{ _.db_port }},\n  \"database\": \"{{ _.db_name }}\",\n  \"user\": \"{{ _.db_user }}\",\n  \"password\": \"{{ _.db_password }}\"\n}"
+      },
+      "description": "Retrieve all business domains from PostgreSQL"
+    },
+    {
+      "_id": "req_pg_save_domain",
+      "_type": "request",
+      "parentId": "fld_postgres_domains",
+      "name": "Save Domain to PostgreSQL",
+      "url": "{{ _.base_url }}/api/postgres/domains/save",
+      "method": "POST",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"dbConfig\": {\n    \"host\": \"{{ _.db_host }}\",\n    \"port\": {{ _.db_port }},\n    \"database\": \"{{ _.db_name }}\",\n    \"user\": \"{{ _.db_user }}\",\n    \"password\": \"{{ _.db_password }}\"\n  },\n  \"domain\": {\n    \"id\": \"test-domain-{{ _.timestamp }}\",\n    \"name\": \"Test Domain\",\n    \"description\": \"A test business domain for API validation\",\n    \"owner\": \"domain-owner@example.com\",\n    \"stakeholders\": [\"stakeholder1@example.com\", \"stakeholder2@example.com\"],\n    \"objectives\": [\"Validate domain operations\"],\n    \"key_metrics\": [\"METRIC-TEST-1\", \"METRIC-TEST-2\"],\n    \"metadata\": {\n      \"industry\": \"Technology\",\n      \"priority\": \"high\"\n    }\n  },\n  \"isUpdate\": false\n}"
+      },
+      "description": "Create or update a business domain in PostgreSQL"
+    },
+    {
+      "_id": "req_pg_delete_domain",
+      "_type": "request",
+      "parentId": "fld_postgres_domains",
+      "name": "Delete Domain from PostgreSQL",
+      "url": "{{ _.base_url }}/api/postgres/domains/delete",
+      "method": "POST",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"dbConfig\": {\n    \"host\": \"{{ _.db_host }}\",\n    \"port\": {{ _.db_port }},\n    \"database\": \"{{ _.db_name }}\",\n    \"user\": \"{{ _.db_user }}\",\n    \"password\": \"{{ _.db_password }}\"\n  },\n  \"domainId\": \"{{ _.sample_domain_id }}\"\n}"
+      },
+      "description": "Delete a business domain from PostgreSQL"
+    },
+    {
+      "_id": "req_pg_fetch_objectives",
+      "_type": "request",
+      "parentId": "fld_postgres_objectives",
+      "name": "Fetch Objectives from PostgreSQL",
+      "url": "{{ _.base_url }}/api/postgres/objectives",
+      "method": "POST",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"host\": \"{{ _.db_host }}\",\n  \"port\": {{ _.db_port }},\n  \"database\": \"{{ _.db_name }}\",\n  \"user\": \"{{ _.db_user }}\",\n  \"password\": \"{{ _.db_password }}\"\n}"
+      },
+      "description": "Retrieve all objectives with key results from PostgreSQL"
+    },
+    {
+      "_id": "req_pg_save_objective",
+      "_type": "request",
+      "parentId": "fld_postgres_objectives",
+      "name": "Save Objective to PostgreSQL",
+      "url": "{{ _.base_url }}/api/postgres/objectives/save",
+      "method": "POST",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"dbConfig\": {\n    \"host\": \"{{ _.db_host }}\",\n    \"port\": {{ _.db_port }},\n    \"database\": \"{{ _.db_name }}\",\n    \"user\": \"{{ _.db_user }}\",\n    \"password\": \"{{ _.db_password }}\"\n  },\n  \"objective\": {\n    \"objective_id\": \"OBJ-TEST-{{ _.timestamp }}\",\n    \"title\": \"Test Objective\",\n    \"description\": \"A test objective for API validation\",\n    \"owner\": \"objective-owner@example.com\",\n    \"start_date\": \"2025-01-01\",\n    \"end_date\": \"2025-12-31\",\n    \"status\": \"in_progress\",\n    \"business_domain\": \"Test Domain\",\n    \"metric_ids\": [\"METRIC-TEST-1\", \"METRIC-TEST-2\"],\n    \"key_results\": [\n      {\n        \"kr_id\": \"KR-TEST-1-{{ _.timestamp }}\",\n        \"description\": \"Achieve 95% success rate\",\n        \"target_value\": 95,\n        \"current_value\": 85,\n        \"unit\": \"percentage\",\n        \"metric_id\": \"METRIC-TEST-1\",\n        \"status\": \"on_track\"\n      },\n      {\n        \"kr_id\": \"KR-TEST-2-{{ _.timestamp }}\",\n        \"description\": \"Reduce latency to under 100ms\",\n        \"target_value\": 100,\n        \"current_value\": 150,\n        \"unit\": \"milliseconds\",\n        \"metric_id\": \"METRIC-TEST-2\",\n        \"status\": \"at_risk\"\n      }\n    ]\n  },\n  \"isUpdate\": false\n}"
+      },
+      "description": "Create or update an objective with key results in PostgreSQL"
+    },
+    {
+      "_id": "req_pg_delete_objective",
+      "_type": "request",
+      "parentId": "fld_postgres_objectives",
+      "name": "Delete Objective from PostgreSQL",
+      "url": "{{ _.base_url }}/api/postgres/objectives/delete",
+      "method": "POST",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"dbConfig\": {\n    \"host\": \"{{ _.db_host }}\",\n    \"port\": {{ _.db_port }},\n    \"database\": \"{{ _.db_name }}\",\n    \"user\": \"{{ _.db_user }}\",\n    \"password\": \"{{ _.db_password }}\"\n  },\n  \"objectiveId\": \"{{ _.sample_objective_id }}\"\n}"
+      },
+      "description": "Delete an objective and its key results from PostgreSQL (CASCADE)"
+    }
+  ]
+}
