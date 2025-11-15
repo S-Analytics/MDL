@@ -2232,7 +2232,7 @@ export function getDashboardHTML(): string {
             document.getElementById('selectedDownloadFormat').value = format;
         }
 
-        function downloadObjectiveReport() {
+        async function downloadObjectiveReport() {
             const objectiveId = document.getElementById('selectedObjectiveId').value;
             const format = document.getElementById('selectedDownloadFormat').value;
             
@@ -2258,11 +2258,41 @@ export function getDashboardHTML(): string {
                 extension = 'html';
                 showToast('PDF generation requires additional setup. Downloading HTML for now.', 'info');
             } else if (format === 'docx') {
-                // Generate HTML for Word conversion
-                content = generateHTMLReport(objective);
-                mimeType = 'text/html';
-                extension = 'html';
-                showToast('Word document generation requires additional setup. Downloading HTML for now.', 'info');
+                // Generate DOCX using server-side API
+                try {
+                    const response = await fetch('/api/export/objective/docx', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            objective: objective,
+                            metrics: allMetrics
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to generate DOCX');
+                    }
+
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = \`\${filename}.docx\`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+
+                    showToast(\`Word document downloaded successfully!\`, 'success');
+                    closeDownloadObjectiveModal();
+                    return;
+                } catch (error) {
+                    showToast('Error generating Word document: ' + error.message, 'error');
+                    closeDownloadObjectiveModal();
+                    return;
+                }
             }
 
             // Create and download the file

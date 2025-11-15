@@ -182,6 +182,250 @@ export function createServer(store: IMetricStore, _config: ServerConfig = {}) {
     }
   });
 
+  // Generate DOCX report for an objective
+  app.post('/api/export/objective/docx', async (req: Request, res: Response) => {
+    try {
+      const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, TabStopType, TabStopPosition } = require('docx');
+      const { objective, metrics } = req.body;
+      
+      if (!objective) {
+        return res.status(400).json({ success: false, error: 'Objective data required' });
+      }
+
+      const date = new Date().toISOString().split('T')[0];
+      const children: any[] = [];
+
+      // Title
+      children.push(
+        new Paragraph({
+          text: 'Objective Report: ' + objective.name,
+          heading: HeadingLevel.HEADING_1,
+          spacing: { after: 200 }
+        }),
+        new Paragraph({
+          text: 'Generated: ' + date,
+          spacing: { after: 400 }
+        }),
+        new Paragraph({ text: '' })
+      );
+
+      // Objective Details
+      children.push(
+        new Paragraph({
+          text: '📋 Objective Details',
+          heading: HeadingLevel.HEADING_2,
+          spacing: { before: 200, after: 200 }
+        })
+      );
+
+      const details = [
+        ['Objective ID:', objective.objective_id],
+        ['Name:', objective.name],
+        ['Description:', objective.description],
+        ['Owner Team:', objective.owner_team],
+        ['Status:', objective.status],
+        ['Priority:', objective.priority || 'Medium'],
+        ['Strategic Pillar:', objective.strategic_pillar || 'N/A'],
+        ['Timeframe:', `${objective.timeframe.start} to ${objective.timeframe.end}`]
+      ];
+
+      details.forEach(([label, value]) => {
+        children.push(
+          new Paragraph({
+            children: [
+              new TextRun({ text: label + ' ', bold: true }),
+              new TextRun({ text: value })
+            ],
+            spacing: { after: 100 }
+          })
+        );
+      });
+
+      // Key Results
+      if (objective.key_results && objective.key_results.length > 0) {
+        children.push(
+          new Paragraph({ text: '', spacing: { after: 200 } }),
+          new Paragraph({
+            text: `🎯 Key Results (${objective.key_results.length})`,
+            heading: HeadingLevel.HEADING_2,
+            spacing: { before: 200, after: 200 }
+          })
+        );
+
+        objective.key_results.forEach((kr: any, index: number) => {
+          const current = kr.current_value ?? kr.baseline_value;
+          const range = Math.abs(kr.target_value - kr.baseline_value);
+          const progress = range > 0 ? Math.min(100, Math.abs(current - kr.baseline_value) / range * 100) : 0;
+          const isOnTrack = kr.direction === 'increase' 
+            ? current >= (kr.baseline_value + range * 0.5)
+            : current <= (kr.baseline_value - range * 0.5);
+
+          children.push(
+            new Paragraph({
+              text: `${index + 1}. ${kr.name}`,
+              heading: HeadingLevel.HEADING_3,
+              spacing: { before: 200, after: 100 }
+            })
+          );
+
+          const krDetails = [
+            ['Baseline:', `${kr.baseline_value} ${kr.unit}`],
+            ['Current:', `${current} ${kr.unit}`],
+            ['Target:', `${kr.target_value} ${kr.unit}`],
+            ['Direction:', kr.direction],
+            ['Progress:', `${Math.round(progress)}%`],
+            ['Status:', isOnTrack ? '✅ On Track' : '⚠️ Needs Attention']
+          ];
+
+          krDetails.forEach(([label, value]) => {
+            children.push(
+              new Paragraph({
+                children: [
+                  new TextRun({ text: label + ' ', bold: true }),
+                  new TextRun({ text: value })
+                ],
+                spacing: { after: 80 }
+              })
+            );
+          });
+
+          // Associated Metrics
+          if (kr.metric_ids && kr.metric_ids.length > 0 && metrics) {
+            children.push(
+              new Paragraph({
+                children: [
+                  new TextRun({ text: 'Associated Metrics: ', bold: true }),
+                  new TextRun({ text: kr.metric_ids.join(', ') })
+                ],
+                spacing: { after: 100, before: 100 }
+              })
+            );
+
+            kr.metric_ids.forEach((metricId: string) => {
+              const metric = metrics.find((m: any) => m.metric_id === metricId);
+              if (metric) {
+                children.push(
+                  new Paragraph({
+                    text: `• ${metric.name} (${metric.metric_id})`,
+                    spacing: { after: 80 },
+                    indent: { left: 720 }
+                  })
+                );
+                if (metric.category) {
+                  children.push(
+                    new Paragraph({
+                      text: `Category: ${metric.category}`,
+                      spacing: { after: 60 },
+                      indent: { left: 1080 }
+                    })
+                  );
+                }
+                if (metric.governance?.owner_team || metric.owner?.team) {
+                  children.push(
+                    new Paragraph({
+                      text: `Owner: ${metric.governance?.owner_team || metric.owner?.team}`,
+                      spacing: { after: 60 },
+                      indent: { left: 1080 }
+                    })
+                  );
+                }
+                if (metric.definition?.formula) {
+                  children.push(
+                    new Paragraph({
+                      text: `Formula: ${metric.definition.formula}`,
+                      spacing: { after: 60 },
+                      indent: { left: 1080 }
+                    })
+                  );
+                }
+              }
+            });
+          }
+
+          children.push(new Paragraph({ text: '', spacing: { after: 200 } }));
+        });
+      } else {
+        children.push(
+          new Paragraph({
+            text: '🎯 Key Results',
+            heading: HeadingLevel.HEADING_2,
+            spacing: { before: 200, after: 100 }
+          }),
+          new Paragraph({
+            text: 'No key results defined for this objective.',
+            spacing: { after: 200 }
+          })
+        );
+      }
+
+      // Summary
+      const totalMetrics = objective.key_results?.reduce((sum: number, kr: any) => sum + (kr.metric_ids?.length || 0), 0) || 0;
+      const avgProgress = objective.key_results && objective.key_results.length > 0
+        ? objective.key_results.reduce((sum: number, kr: any) => {
+            const current = kr.current_value ?? kr.baseline_value;
+            const range = Math.abs(kr.target_value - kr.baseline_value);
+            const progress = range > 0 ? Math.min(100, Math.abs(current - kr.baseline_value) / range * 100) : 0;
+            return sum + progress;
+          }, 0) / objective.key_results.length
+        : 0;
+
+      children.push(
+        new Paragraph({
+          text: '📊 Summary',
+          heading: HeadingLevel.HEADING_2,
+          spacing: { before: 400, after: 200 }
+        }),
+        new Paragraph({
+          children: [
+            new TextRun({ text: 'Total Key Results: ', bold: true }),
+            new TextRun({ text: String(objective.key_results?.length || 0) })
+          ],
+          spacing: { after: 100 }
+        }),
+        new Paragraph({
+          children: [
+            new TextRun({ text: 'Total Metrics: ', bold: true }),
+            new TextRun({ text: String(totalMetrics) })
+          ],
+          spacing: { after: 100 }
+        }),
+        new Paragraph({
+          children: [
+            new TextRun({ text: 'Average Progress: ', bold: true }),
+            new TextRun({ text: `${Math.round(avgProgress)}%` })
+          ],
+          spacing: { after: 200 }
+        })
+      );
+
+      // Footer
+      children.push(
+        new Paragraph({ text: '', spacing: { before: 400 } }),
+        new Paragraph({
+          text: 'Report generated by MDL Dashboard v1.0.0',
+          italics: true,
+          alignment: AlignmentType.CENTER
+        })
+      );
+
+      const doc = new Document({
+        sections: [{
+          properties: {},
+          children: children
+        }]
+      });
+
+      const buffer = await Packer.toBuffer(doc);
+      
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+      res.setHeader('Content-Disposition', `attachment; filename="${objective.objective_id}_${objective.name.replace(/[^a-z0-9]/gi, '_')}.docx"`);
+      res.send(Buffer.from(buffer));
+    } catch (error: any) {
+      console.error('DOCX generation error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
   // Note: Do not add 404 handler here - it should be added after dashboard routes
   // Error handling middleware
   app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
