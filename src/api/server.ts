@@ -1,5 +1,6 @@
 import cors from 'cors';
 import express, { NextFunction, Request, Response } from 'express';
+import { Client } from 'pg';
 import { MetricDefinitionInput } from '../models';
 import { PolicyGenerator } from '../opa';
 import { IMetricStore } from '../storage';
@@ -178,6 +179,346 @@ export function createServer(store: IMetricStore, _config: ServerConfig = {}) {
 
       res.json({ success: true, data: stats });
     } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Get metrics from PostgreSQL
+  app.post('/api/postgres/metrics', async (req: Request, res: Response) => {
+    try {
+      const { host, port, name, user, password } = req.body;
+
+      if (!host || !port || !name || !user) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Missing required database connection fields' 
+        });
+      }
+
+      const { PostgresMetricStore } = require('../storage/PostgresMetricStore');
+      const pgStore = new PostgresMetricStore({
+        host,
+        port: parseInt(port),
+        database: name,
+        user,
+        password: password || ''
+      });
+
+      const metrics = await pgStore.findAll();
+      await pgStore.close();
+
+      res.json({ success: true, data: metrics });
+    } catch (error: any) {
+      console.error('PostgreSQL metrics fetch error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Get domains from PostgreSQL
+  app.post('/api/postgres/domains', async (req: Request, res: Response) => {
+    try {
+      const { host, port, name, user, password } = req.body;
+
+      if (!host || !port || !name || !user) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Missing required database connection fields' 
+        });
+      }
+
+      const { PostgresDomainStore } = require('../storage/PostgresDomainStore');
+      const pgStore = new PostgresDomainStore({
+        host,
+        port: parseInt(port),
+        database: name,
+        user,
+        password: password || ''
+      });
+
+      const domains = await pgStore.findAll();
+      await pgStore.close();
+
+      res.json({ success: true, data: domains });
+    } catch (error: any) {
+      console.error('PostgreSQL domains fetch error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Get objectives from PostgreSQL
+  app.post('/api/postgres/objectives', async (req: Request, res: Response) => {
+    try {
+      const { host, port, name, user, password } = req.body;
+
+      if (!host || !port || !name || !user) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Missing required database connection fields' 
+        });
+      }
+
+      const { PostgresObjectiveStore } = require('../storage/PostgresObjectiveStore');
+      const pgStore = new PostgresObjectiveStore({
+        host,
+        port: parseInt(port),
+        database: name,
+        user,
+        password: password || ''
+      });
+
+      const objectives = await pgStore.findAll();
+      await pgStore.close();
+
+      res.json({ success: true, data: objectives });
+    } catch (error: any) {
+      console.error('PostgreSQL objectives fetch error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Save/Create domain in PostgreSQL
+  // Save/Create/Update domain in PostgreSQL
+  app.post('/api/postgres/domains/save', async (req: Request, res: Response) => {
+    try {
+      const { dbConfig, domain, isUpdate } = req.body;
+
+      if (!dbConfig || !domain) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Missing dbConfig or domain data' 
+        });
+      }
+
+      const { PostgresDomainStore } = require('../storage/PostgresDomainStore');
+      const pgStore = new PostgresDomainStore({
+        host: dbConfig.host,
+        port: parseInt(dbConfig.port),
+        database: dbConfig.name,
+        user: dbConfig.user,
+        password: dbConfig.password || ''
+      });
+
+      let result;
+      if (isUpdate) {
+        // Check if domain exists first
+        const existing = await pgStore.findById(domain.domain_id);
+        if (existing) {
+          result = await pgStore.update(domain);
+        } else {
+          result = await pgStore.create(domain);
+        }
+      } else {
+        result = await pgStore.create(domain);
+      }
+      
+      await pgStore.close();
+
+      res.json({ success: true, data: result });
+    } catch (error: any) {
+      console.error('PostgreSQL domain save error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Save/Create/Update objective in PostgreSQL
+  app.post('/api/postgres/objectives/save', async (req: Request, res: Response) => {
+    try {
+      const { dbConfig, objective, isUpdate } = req.body;
+
+      // Debug logging
+      console.log('=== Objective Save Request ===');
+      console.log('Objective ID:', objective?.objective_id);
+      console.log('isUpdate flag:', isUpdate);
+      if (objective && objective.key_results) {
+        console.log('Key result IDs:', objective.key_results.map((kr: any) => kr.kr_id));
+      }
+
+      if (!dbConfig || !objective) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Missing dbConfig or objective data' 
+        });
+      }
+
+      const { PostgresObjectiveStore } = require('../storage/PostgresObjectiveStore');
+      const pgStore = new PostgresObjectiveStore({
+        host: dbConfig.host,
+        port: parseInt(dbConfig.port),
+        database: dbConfig.name,
+        user: dbConfig.user,
+        password: dbConfig.password || ''
+      });
+
+      let result;
+      if (isUpdate) {
+        // Check if objective exists first
+        const existing = await pgStore.findById(objective.objective_id);
+        console.log('Existing objective found:', !!existing);
+        if (existing) {
+          console.log('Calling UPDATE operation');
+          result = await pgStore.update(objective);
+        } else {
+          console.log('Objective not found, calling CREATE operation');
+          result = await pgStore.create(objective);
+        }
+      } else {
+        console.log('isUpdate=false, calling CREATE operation');
+        result = await pgStore.create(objective);
+      }
+      
+      await pgStore.close();
+
+      res.json({ success: true, data: result });
+    } catch (error: any) {
+      console.error('PostgreSQL objective save error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Save/Create/Update metric in PostgreSQL
+  app.post('/api/postgres/metrics/save', async (req: Request, res: Response) => {
+    try {
+      const { dbConfig, metric, isUpdate } = req.body;
+
+      // Debug logging
+      console.log('=== Metric Save Request ===');
+      console.log('Metric ID:', metric?.metric_id);
+      console.log('isUpdate flag:', isUpdate);
+
+      if (!dbConfig || !metric) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Missing dbConfig or metric data' 
+        });
+      }
+
+      const { PostgresMetricStore } = require('../storage/PostgresMetricStore');
+      const pgStore = new PostgresMetricStore({
+        host: dbConfig.host,
+        port: parseInt(dbConfig.port),
+        database: dbConfig.name,
+        user: dbConfig.user,
+        password: dbConfig.password || ''
+      });
+
+      let result;
+      if (isUpdate) {
+        // Check if metric exists first
+        const existing = await pgStore.findById(metric.metric_id);
+        console.log('Existing metric found:', !!existing);
+        if (existing) {
+          console.log('Calling UPDATE operation');
+          result = await pgStore.update(metric.metric_id, metric);
+        } else {
+          console.log('Metric not found, calling CREATE operation');
+          result = await pgStore.create(metric);
+        }
+      } else {
+        console.log('isUpdate=false, calling CREATE operation');
+        result = await pgStore.create(metric);
+      }
+      
+      await pgStore.close();
+
+      res.json({ success: true, data: result });
+    } catch (error: any) {
+      console.error('PostgreSQL metric save error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Delete metric from PostgreSQL
+  app.post('/api/postgres/metrics/delete', async (req: Request, res: Response) => {
+    try {
+      const { dbConfig, metricId } = req.body;
+
+      if (!dbConfig || !metricId) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Missing dbConfig or metricId' 
+        });
+      }
+
+      const { PostgresMetricStore } = require('../storage/PostgresMetricStore');
+      const pgStore = new PostgresMetricStore({
+        host: dbConfig.host,
+        port: parseInt(dbConfig.port),
+        database: dbConfig.name,
+        user: dbConfig.user,
+        password: dbConfig.password || ''
+      });
+
+      await pgStore.delete(metricId);
+      await pgStore.close();
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('PostgreSQL metric delete error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Delete domain from PostgreSQL
+  app.post('/api/postgres/domains/delete', async (req: Request, res: Response) => {
+    try {
+      const { dbConfig, domainId } = req.body;
+
+      if (!dbConfig || !domainId) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Missing dbConfig or domainId' 
+        });
+      }
+
+      const { Client } = require('pg');
+      const client = new Client({
+        host: dbConfig.host,
+        port: parseInt(dbConfig.port),
+        database: dbConfig.name,
+        user: dbConfig.user,
+        password: dbConfig.password || ''
+      });
+
+      await client.connect();
+      await client.query('DELETE FROM business_domains WHERE domain_id = $1', [domainId]);
+      await client.end();
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('PostgreSQL domain delete error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Delete objective from PostgreSQL
+  app.post('/api/postgres/objectives/delete', async (req: Request, res: Response) => {
+    try {
+      const { dbConfig, objectiveId } = req.body;
+
+      if (!dbConfig || !objectiveId) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Missing dbConfig or objectiveId' 
+        });
+      }
+
+      const { Client } = require('pg');
+      const client = new Client({
+        host: dbConfig.host,
+        port: parseInt(dbConfig.port),
+        database: dbConfig.name,
+        user: dbConfig.user,
+        password: dbConfig.password || ''
+      });
+
+      await client.connect();
+      // Key results will be deleted automatically due to CASCADE
+      await client.query('DELETE FROM objectives WHERE objective_id = $1', [objectiveId]);
+      await client.end();
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('PostgreSQL objective delete error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   });
@@ -423,6 +764,48 @@ export function createServer(store: IMetricStore, _config: ServerConfig = {}) {
     } catch (error: any) {
       console.error('DOCX generation error:', error);
       res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Test database connection
+  app.post('/api/database/test', async (req: Request, res: Response) => {
+    try {
+      const { host, port, name, user, password } = req.body;
+
+      if (!host || !port || !name || !user) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Missing required fields: host, port, name, user' 
+        });
+      }
+
+      const client = new Client({
+        host,
+        port: parseInt(port),
+        database: name,
+        user,
+        password: password || ''
+      });
+
+      await client.connect();
+      
+      // Test query
+      await client.query('SELECT 1');
+      
+      await client.end();
+
+      res.json({ 
+        success: true, 
+        message: 'Connection successful',
+        database: { host, port, name, user }
+      });
+    } catch (error) {
+      const err = error as Error;
+      console.error('Database connection test error:', err);
+      res.status(500).json({ 
+        success: false, 
+        error: err.message || 'Connection failed'
+      });
     }
   });
 

@@ -235,10 +235,116 @@ Not applicable - Initial release
 
 ## [Unreleased]
 
+### Added
+
+#### PostgreSQL Database Integration (Full CRUD)
+- **Complete PostgreSQL Backend**: Full database storage implementation
+  - PostgresMetricStore: Create, read, update, delete metrics
+  - PostgresDomainStore: Create, read, update, delete business domains
+  - PostgresObjectiveStore: Create, read, update, delete objectives with key results
+  - Connection pooling with configurable parameters
+  - Transaction support for atomic operations
+  - JSONB fields for flexible schema storage
+
+- **REST API Endpoints**: Comprehensive PostgreSQL operations
+  - `POST /api/postgres/metrics` - Fetch metrics from database
+  - `POST /api/postgres/metrics/save` - Create or update metric
+  - `POST /api/postgres/metrics/delete` - Delete metric
+  - `POST /api/postgres/domains` - Fetch business domains
+  - `POST /api/postgres/domains/save` - Create or update domain
+  - `POST /api/postgres/domains/delete` - Delete domain
+  - `POST /api/postgres/objectives` - Fetch objectives with key results
+  - `POST /api/postgres/objectives/save` - Create or update objective
+  - `POST /api/postgres/objectives/delete` - Delete objective (CASCADE)
+  - `POST /api/database/test` - Test database connection
+  - All endpoints support both create and update operations with `isUpdate` flag
+
+- **Dashboard Integration**: Seamless storage switching
+  - Automatic routing to PostgreSQL endpoints when database storage enabled
+  - Storage type indicator in UI (🗄️ Database / 💾 Local)
+  - Settings persistence with database configuration
+  - Real-time storage type display
+  - Graceful fallback to local file storage
+
+- **Database Scripts**: Comprehensive database management
+  - `scripts/setup-database.js` - Create database schema
+  - `scripts/load-sample-data-postgres.js` - Load sample data
+  - `scripts/clean-sample-data-postgres.js` - Clean all data (NEW)
+  - `scripts/db-setup.sql` - DDL for manual setup
+  - npm scripts: `db:setup`, `db:load`, `db:clean`
+
+- **OpenAPI Specification Updates**: Complete API documentation
+  - Added PostgreSQL tag for database operations
+  - Added Domains tag for business domain operations
+  - Added Objectives tag for objective/key result operations
+  - Documented all PostgreSQL endpoints with request/response schemas
+  - Added PostgresConfig, BusinessDomain, Objective, KeyResult schemas
+  - Examples for all database operations
+
+#### Database Cleaning Script
+- **clean-sample-data-postgres.js**: Safe data deletion utility
+  - Interactive confirmation prompt (requires typing "DELETE ALL DATA")
+  - `--confirm` flag to skip confirmation for automation
+  - Shows current record counts before deletion
+  - Deletes in correct order respecting foreign key constraints
+  - Verification of successful deletion
+  - Detailed deletion summary with row counts
+  - Comprehensive error handling and user-friendly messages
+  - Full documentation in scripts/README.md
+
+### Fixed
+
+#### Critical Form Field Bug
+- **Disabled Field FormData Issue**: Fixed ID regeneration bug
+  - Problem: Disabled form fields (metric_id, objective_id, domain_id) were not included in FormData during edit operations
+  - Impact: FormData.get() returned null, causing code to generate new IDs and create duplicates
+  - Solution: Use JavaScript variables (editingMetricId, editingObjectiveId, editingDomainId) directly when in edit mode
+  - Applied fix to all three entity types: metrics, domains, objectives
+  - Prevents duplicate records and ensures proper updates
+
+#### ID Generation Strategy
+- **Smart ID Management**: Generate only when necessary
+  - Objectives: `OBJ-YYYYMMDDHHMMSS` format (only if empty)
+  - Domains: `{name-slug}-{last4digits}` format (only if empty)
+  - Key Results: `{objective_id}:KR-{index}` format (objective-scoped)
+  - Preserves existing IDs during edit operations
+  - No timestamp-based IDs that caused duplicates
+
+### Changed
+
+- **Update Operations**: Improved database update behavior
+  - Objectives: DELETE all existing key results, then INSERT new ones (prevents duplicates)
+  - Transactional updates for atomicity (BEGIN/COMMIT/ROLLBACK)
+  - Proper handling of created_at vs updated_at timestamps
+
+- **Debug Logging**: Enhanced troubleshooting
+  - Server logs show isUpdate flag, existing record checks
+  - Logs display whether CREATE or UPDATE operation is called
+  - Metric IDs and key result IDs logged for verification
+
+- **Cache Control**: Browser caching prevention
+  - Added cache control headers to dashboard route
+  - Prevents stale JavaScript from being served
+  - Headers: no-store, no-cache, must-revalidate, proxy-revalidate
+
+### Technical Details
+
+#### Database Schema
+- **Tables**: business_domains, metrics, objectives, key_results
+- **Views**: metrics_with_domains, objectives_summary, key_results_with_objectives
+- **Foreign Keys**: CASCADE deletes for objectives → key results, SET NULL for domain references
+- **Indexes**: Primary keys, foreign keys, GIN indexes on JSONB fields
+- **Triggers**: Automatic updated_at timestamp management
+
+#### Storage Architecture
+- **Dual Storage Support**: Seamless switching between local files and PostgreSQL
+- **Store Interfaces**: IMetricStore, IDomainStore, IObjectiveStore
+- **Implementation**: PostgresMetricStore, PostgresDomainStore, PostgresObjectiveStore
+- **Connection Management**: Pooling with max 10 connections, 30s idle timeout, 2s connection timeout
+
 ### Planned Features
-- Complete database backend implementation
-- PostgreSQL, MySQL, and MongoDB adapters
-- Data migration tools (local to database)
+- MySQL and MongoDB adapters
+- Data migration tools (local to database, database to database)
 - Theme selection (light/dark mode)
 - Advanced settings options
 - Enhanced policy evaluation
