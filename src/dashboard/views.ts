@@ -640,6 +640,7 @@ export function getDashboardHTML(): string {
             <div>
                 <h1>📊 MDL Dashboard</h1>
                 <p>Metrics Definition Library - Governance & Transparency</p>
+                <div id="storageIndicator" style="margin-top: 0.5rem; font-size: 0.85rem; opacity: 0.9;"></div>
             </div>
             <button class="icon-btn icon-btn-large" onclick="openSettings()" style="background: rgba(255,255,255,0.2); color: white;">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1087,21 +1088,22 @@ export function getDashboardHTML(): string {
                             <input type="radio" name="storageType" value="database" id="storageDatabase" style="margin-right: 1rem; width: 20px; height: 20px;">
                             <div style="flex: 1;">
                                 <div style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.25rem;">🗄️ Database Storage</div>
-                                <div style="color: #666; font-size: 0.9rem;">Connect to MySQL, PostgreSQL, or MongoDB</div>
-                                <div style="color: #f59e0b; font-size: 0.85rem; margin-top: 0.5rem;">⚠️ Requires database setup • ⚠️ Coming soon</div>
+                                <div style="color: #666; font-size: 0.9rem;">PostgreSQL database connection</div>
+                                <div style="color: #10b981; font-size: 0.85rem; margin-top: 0.5rem;">✓ PostgreSQL support available • Run scripts/db-setup.sql first</div>
                             </div>
                         </label>
                     </div>
 
                     <div id="databaseConfig" style="display: none; padding: 1.5rem; background: #f9fafb; border-radius: 6px; margin-top: 1rem;">
-                        <h4 style="margin-bottom: 1rem;">Database Connection</h4>
+                        <h4 style="margin-bottom: 0.5rem;">PostgreSQL Connection</h4>
+                        <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;">
+                            Configure your PostgreSQL database connection. Run <code style="background: white; padding: 0.125rem 0.375rem; border-radius: 3px;">DB_PASSWORD=yourpass node scripts/setup-database.js</code> to initialize the schema first.
+                        </p>
                         
-                        <div class="form-group" style="margin-bottom: 1rem;">
+                        <div class="form-group" style="margin-bottom: 1rem; display: none;">
                             <label>Database Type</label>
                             <select id="dbType" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px;">
-                                <option value="postgresql">PostgreSQL</option>
-                                <option value="mysql">MySQL</option>
-                                <option value="mongodb">MongoDB</option>
+                                <option value="postgresql" selected>PostgreSQL</option>
                             </select>
                         </div>
 
@@ -1274,41 +1276,135 @@ export function getDashboardHTML(): string {
 
         async function fetchData() {
             try {
-                const [metricsRes, statsRes, domainsRes, objectivesRes] = await Promise.all([
-                    fetch('/api/metrics'),
-                    fetch('/api/stats'),
-                    fetch('/examples/sample-domains.json').catch(() => ({ json: async () => ({ domains: [] }) })),
-                    fetch('/examples/sample-objectives.json').catch(() => ({ json: async () => ({ objectives: [] }) }))
-                ]);
-                
-                const metricsData = await metricsRes.json();
-                const statsData = await statsRes.json();
-                const domainsData = await domainsRes.json();
-                const objectivesData = await objectivesRes.json();
-                
-                allMetrics = metricsData.data || [];
-                
-                // Load domains from localStorage first, then fall back to sample data
-                const storedDomains = await loadDomainsFromStorage();
-                allDomains = storedDomains || domainsData.domains || [];
-                
-                // Load objectives from localStorage first, then fall back to sample data
-                const storedObjectives = await loadObjectivesFromStorage();
-                allObjectives = storedObjectives || objectivesData.objectives || [];
-                
-                stats = statsData.data || {};
-                
-                // Update objectives count
-                stats.objectives = allObjectives.length;
+                // Check if PostgreSQL is configured
+                const settings = loadSettings();
+                const usePostgres = settings.storage === 'postgresql' && 
+                                   settings.postgres?.host && 
+                                   settings.postgres?.port && 
+                                   settings.postgres?.database && 
+                                   settings.postgres?.user;
+
+                if (usePostgres) {
+                    // Fetch from PostgreSQL
+                    console.log('Fetching data from PostgreSQL...');
+                    const dbConfig = {
+                        host: settings.postgres.host,
+                        port: settings.postgres.port,
+                        name: settings.postgres.database,
+                        user: settings.postgres.user,
+                        password: settings.postgres.password || ''
+                    };
+
+                    const [metricsRes, domainsRes, objectivesRes] = await Promise.all([
+                        fetch('/api/postgres/metrics', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(dbConfig)
+                        }),
+                        fetch('/api/postgres/domains', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(dbConfig)
+                        }),
+                        fetch('/api/postgres/objectives', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(dbConfig)
+                        })
+                    ]);
+
+                    const metricsData = await metricsRes.json();
+                    const domainsData = await domainsRes.json();
+                    const objectivesData = await objectivesRes.json();
+
+                    if (!metricsData.success) {
+                        throw new Error('Failed to fetch metrics from PostgreSQL: ' + metricsData.error);
+                    }
+                    if (!domainsData.success) {
+                        throw new Error('Failed to fetch domains from PostgreSQL: ' + domainsData.error);
+                    }
+                    if (!objectivesData.success) {
+                        throw new Error('Failed to fetch objectives from PostgreSQL: ' + objectivesData.error);
+                    }
+
+                    allMetrics = metricsData.data || [];
+                    allDomains = domainsData.data || [];
+                    allObjectives = objectivesData.data || [];
+
+                    // Calculate stats from fetched data
+                    stats = {
+                        total: allMetrics.length,
+                        objectives: allObjectives.length,
+                        byBusinessDomain: {},
+                        byTier: {},
+                        byOwner: {}
+                    };
+
+                    allMetrics.forEach(m => {
+                        if (m.business_domain) {
+                            stats.byBusinessDomain[m.business_domain] = (stats.byBusinessDomain[m.business_domain] || 0) + 1;
+                        }
+                        if (m.tier) {
+                            stats.byTier[m.tier] = (stats.byTier[m.tier] || 0) + 1;
+                        }
+                        if (m.governance?.owner) {
+                            stats.byOwner[m.governance.owner] = (stats.byOwner[m.governance.owner] || 0) + 1;
+                        }
+                    });
+
+                } else {
+                    // Fetch from file storage (default)
+                    console.log('Fetching data from file storage...');
+                    const [metricsRes, statsRes, domainsRes, objectivesRes] = await Promise.all([
+                        fetch('/api/metrics'),
+                        fetch('/api/stats'),
+                        fetch('/examples/sample-domains.json').catch(() => ({ json: async () => ({ domains: [] }) })),
+                        fetch('/examples/sample-objectives.json').catch(() => ({ json: async () => ({ objectives: [] }) }))
+                    ]);
+                    
+                    const metricsData = await metricsRes.json();
+                    const statsData = await statsRes.json();
+                    const domainsData = await domainsRes.json();
+                    const objectivesData = await objectivesRes.json();
+                    
+                    allMetrics = metricsData.data || [];
+                    
+                    // Load domains from localStorage first, then fall back to sample data
+                    const storedDomains = await loadDomainsFromStorage();
+                    allDomains = storedDomains || domainsData.domains || [];
+                    
+                    // Load objectives from localStorage first, then fall back to sample data
+                    const storedObjectives = await loadObjectivesFromStorage();
+                    allObjectives = storedObjectives || objectivesData.objectives || [];
+                    
+                    stats = statsData.data || {};
+                    
+                    // Update objectives count
+                    stats.objectives = allObjectives.length;
+                }
                 
                 updateStats();
                 updateCharts();
                 renderDomains();
                 renderMetrics();
+                updateStorageIndicator();
             } catch (error) {
                 console.error('Error fetching data:', error);
                 document.getElementById('metricsGrid').innerHTML = 
-                    '<div class="empty-state">Error loading data. Please refresh the page.</div>';
+                    '<div class="empty-state">Error loading data: ' + error.message + '</div>';
+            }
+        }
+
+        function updateStorageIndicator() {
+            const settings = loadSettings();
+            const indicator = document.getElementById('storageIndicator');
+            
+            if (settings.storage === 'postgresql' && settings.postgres?.host) {
+                indicator.innerHTML = '🗄️ Connected to PostgreSQL: ' + settings.postgres.host + ':' + settings.postgres.port + '/' + settings.postgres.database;
+                indicator.style.color = '#10b981';
+            } else {
+                indicator.innerHTML = '📁 Using local file storage';
+                indicator.style.color = '#f59e0b';
             }
         }
 
@@ -2117,25 +2213,50 @@ export function getDashboardHTML(): string {
             document.getElementById('appBuild').textContent = 'Production';
             document.getElementById('appEnvironment').textContent = 'Web Browser';
             
-            // Load storage settings from localStorage
-            const settings = JSON.parse(localStorage.getItem('mdl_settings') || '{"storageType":"local"}');
+            // Load storage settings from localStorage with proper structure
+            const defaultSettings = { storage: 'local', postgres: null };
+            const settingsStr = localStorage.getItem('mdl_settings');
+            let settings = defaultSettings;
             
-            if (settings.storageType === 'database') {
+            if (settingsStr) {
+                try {
+                    const parsed = JSON.parse(settingsStr);
+                    // Handle old format (storageType) and new format (storage)
+                    if (parsed.storageType) {
+                        settings = {
+                            storage: parsed.storageType === 'database' ? 'postgresql' : 'local',
+                            postgres: parsed.database ? {
+                                host: parsed.database.host,
+                                port: parsed.database.port,
+                                database: parsed.database.name,
+                                user: parsed.database.user,
+                                password: parsed.database.password || ''
+                            } : null
+                        };
+                    } else {
+                        settings = parsed;
+                    }
+                } catch (e) {
+                    console.error('Error parsing settings:', e);
+                }
+            }
+            
+            if (settings.storage === 'postgresql' && settings.postgres) {
                 document.getElementById('storageDatabase').checked = true;
                 document.getElementById('databaseConfig').style.display = 'block';
                 
                 // Load saved DB config
-                if (settings.database) {
-                    document.getElementById('dbType').value = settings.database.type || 'postgresql';
-                    document.getElementById('dbHost').value = settings.database.host || '';
-                    document.getElementById('dbPort').value = settings.database.port || '';
-                    document.getElementById('dbName').value = settings.database.name || '';
-                    document.getElementById('dbUser').value = settings.database.user || '';
-                }
+                document.getElementById('dbType').value = 'postgresql';
+                document.getElementById('dbHost').value = settings.postgres.host || '';
+                document.getElementById('dbPort').value = settings.postgres.port || '';
+                document.getElementById('dbName').value = settings.postgres.database || '';
+                document.getElementById('dbUser').value = settings.postgres.user || '';
             } else {
                 document.getElementById('storageLocal').checked = true;
                 document.getElementById('databaseConfig').style.display = 'none';
             }
+            
+            return settings;
         }
 
         function selectStorageType(type) {
@@ -2155,37 +2276,63 @@ export function getDashboardHTML(): string {
             statusDiv.style.color = '#92400e';
             statusDiv.style.display = 'flex';
 
-            // Simulate connection test (would be actual API call in production)
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            const dbConfig = {
+                type: document.getElementById('dbType').value,
+                host: document.getElementById('dbHost').value,
+                port: document.getElementById('dbPort').value,
+                name: document.getElementById('dbName').value,
+                user: document.getElementById('dbUser').value,
+                password: document.getElementById('dbPassword').value
+            };
 
-            // For now, show that DB feature is coming soon
-            statusDiv.textContent = '⚠️ Database support coming soon';
-            statusDiv.style.background = '#fef3c7';
-            statusDiv.style.color = '#92400e';
+            try {
+                const response = await fetch('/api/database/test', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dbConfig)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    statusDiv.textContent = '✓ Connection successful';
+                    statusDiv.style.background = '#d1fae5';
+                    statusDiv.style.color = '#065f46';
+                } else {
+                    statusDiv.textContent = '✗ Connection failed: ' + (result.error || 'Unknown error');
+                    statusDiv.style.background = '#fee2e2';
+                    statusDiv.style.color = '#991b1b';
+                }
+            } catch (error) {
+                statusDiv.textContent = '✗ Test endpoint not available yet';
+                statusDiv.style.background = '#fef3c7';
+                statusDiv.style.color = '#92400e';
+            }
         }
 
         function saveSettings() {
             const storageType = document.querySelector('input[name="storageType"]:checked').value;
             
             const settings = {
-                storageType: storageType,
+                storage: storageType === 'database' ? 'postgresql' : 'local',
                 savedAt: new Date().toISOString()
             };
 
             if (storageType === 'database') {
-                settings.database = {
-                    type: document.getElementById('dbType').value,
+                settings.postgres = {
                     host: document.getElementById('dbHost').value,
-                    port: document.getElementById('dbPort').value,
-                    name: document.getElementById('dbName').value,
+                    port: parseInt(document.getElementById('dbPort').value),
+                    database: document.getElementById('dbName').value,
                     user: document.getElementById('dbUser').value,
-                    // Note: In production, password should be encrypted and not stored in localStorage
+                    password: document.getElementById('dbPassword').value || ''
                 };
+            } else {
+                settings.postgres = null;
             }
 
             localStorage.setItem('mdl_settings', JSON.stringify(settings));
             
-            showToast('Settings saved successfully!', 'success');
+            showToast('Settings saved successfully! Reloading data...', 'success');
             
             // Update the current storage info display
             if (storageType === 'local') {
@@ -2194,10 +2341,13 @@ export function getDashboardHTML(): string {
             } else {
                 document.getElementById('currentStorageInfo').innerHTML = 
                     'Using database storage: <code style="background: white; padding: 0.25rem 0.5rem; border-radius: 3px; font-family: monospace;">' + 
-                    settings.database.type + ' @ ' + settings.database.host + '</code> (Coming Soon)';
+                    'postgresql @ ' + settings.postgres.host + ':' + settings.postgres.port + '/' + settings.postgres.database + '</code>';
             }
             
             closeSettings();
+            
+            // Reload data from the new storage backend
+            fetchData();
         }
 
         // Download Objective Report Functions
@@ -2232,7 +2382,7 @@ export function getDashboardHTML(): string {
             document.getElementById('selectedDownloadFormat').value = format;
         }
 
-        function downloadObjectiveReport() {
+        async function downloadObjectiveReport() {
             const objectiveId = document.getElementById('selectedObjectiveId').value;
             const format = document.getElementById('selectedDownloadFormat').value;
             
@@ -2258,11 +2408,41 @@ export function getDashboardHTML(): string {
                 extension = 'html';
                 showToast('PDF generation requires additional setup. Downloading HTML for now.', 'info');
             } else if (format === 'docx') {
-                // Generate HTML for Word conversion
-                content = generateHTMLReport(objective);
-                mimeType = 'text/html';
-                extension = 'html';
-                showToast('Word document generation requires additional setup. Downloading HTML for now.', 'info');
+                // Generate DOCX using server-side API
+                try {
+                    const response = await fetch('/api/export/objective/docx', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            objective: objective,
+                            metrics: allMetrics
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to generate DOCX');
+                    }
+
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = \`\${filename}.docx\`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+
+                    showToast(\`Word document downloaded successfully!\`, 'success');
+                    closeDownloadObjectiveModal();
+                    return;
+                } catch (error) {
+                    showToast('Error generating Word document: ' + error.message, 'error');
+                    closeDownloadObjectiveModal();
+                    return;
+                }
             }
 
             // Create and download the file
@@ -2391,8 +2571,20 @@ export function getDashboardHTML(): string {
                     
                     const formData = new FormData(e.target);
                     
+                    // Get domain_id - if in edit mode, use editingDomainId since field is disabled
+                    let domainId = isEditModeDomain ? editingDomainId : formData.get('domain_id');
+                    
+                    // Generate domain_id if not provided (for new domains only)
+                    if (!domainId || domainId.trim() === '') {
+                        // Generate ID from domain name: lowercase, hyphenated
+                        const domainName = formData.get('name');
+                        domainId = domainName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+                        // Add short suffix for uniqueness (last 4 digits of timestamp)
+                        domainId = \`\${domainId}-\${Date.now().toString().slice(-4)}\`;
+                    }
+                    
                     const domainData = {
-                        domain_id: formData.get('domain_id'),
+                        domain_id: domainId,
                         name: formData.get('name'),
                         description: formData.get('description'),
                         owner_team: formData.get('owner_team'),
@@ -2407,21 +2599,58 @@ export function getDashboardHTML(): string {
                     };
 
                     try {
-                        if (isEditModeDomain) {
-                            const index = allDomains.findIndex(d => d.domain_id === editingDomainId);
-                            if (index !== -1) {
-                                allDomains[index] = domainData;
-                            }
-                        } else {
-                            allDomains.push(domainData);
-                        }
+                        const settings = loadSettings();
+                        const usePostgres = settings.storage === 'postgresql' && 
+                                           settings.postgres?.host && 
+                                           settings.postgres?.port && 
+                                           settings.postgres?.database && 
+                                           settings.postgres?.user;
 
-                        await saveDomainsToStorage();
+                        if (usePostgres) {
+                            // Save to PostgreSQL via API
+                            const dbConfig = {
+                                host: settings.postgres.host,
+                                port: parseInt(settings.postgres.port),
+                                name: settings.postgres.database,
+                                user: settings.postgres.user,
+                                password: settings.postgres.password || ''
+                            };
+
+                            const response = await fetch('/api/postgres/domains/save', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ 
+                                    dbConfig, 
+                                    domain: domainData,
+                                    isUpdate: isEditModeDomain 
+                                })
+                            });
+
+                            const result = await response.json();
+                            if (!response.ok || result.error) {
+                                throw new Error(result.error || 'Failed to save domain to PostgreSQL');
+                            }
+
+                            // Refresh data from database
+                            await fetchData();
+                        } else {
+                            // Save to localStorage
+                            if (isEditModeDomain) {
+                                const index = allDomains.findIndex(d => d.domain_id === editingDomainId);
+                                if (index !== -1) {
+                                    allDomains[index] = domainData;
+                                }
+                            } else {
+                                allDomains.push(domainData);
+                            }
+
+                            await saveDomainsToStorage();
+                            renderDomains();
+                            updateStats();
+                        }
                         
                         showToast(\`Domain \${isEditModeDomain ? 'updated' : 'created'} successfully!\`, 'success');
                         closeDomainFormModal();
-                        renderDomains();
-                        updateStats();
                     } catch (error) {
                         showToast(\`Error: \${error.message}\`, 'error');
                     }
@@ -2431,8 +2660,22 @@ export function getDashboardHTML(): string {
 
         async function saveDomainsToStorage() {
             try {
-                localStorage.setItem('mdl_domains', JSON.stringify(allDomains));
-                return true;
+                const settings = loadSettings();
+                const usePostgres = settings.storage === 'postgresql' && 
+                                   settings.postgres?.host && 
+                                   settings.postgres?.port && 
+                                   settings.postgres?.database && 
+                                   settings.postgres?.user;
+
+                if (usePostgres) {
+                    // Note: For PostgreSQL, domains are saved individually via API
+                    // This function is kept for compatibility but domains should be saved via saveNewDomain
+                    console.log('Using PostgreSQL - domains are saved individually');
+                    return true;
+                } else {
+                    localStorage.setItem('mdl_domains', JSON.stringify(allDomains));
+                    return true;
+                }
             } catch (error) {
                 console.error('Error saving domains:', error);
                 throw error;
@@ -2466,16 +2709,51 @@ export function getDashboardHTML(): string {
             }
 
             try {
-                const index = allDomains.findIndex(d => d.domain_id === domainId);
-                if (index !== -1) {
-                    allDomains.splice(index, 1);
-                    await saveDomainsToStorage();
-                    showToast('Domain deleted successfully!', 'success');
-                    renderDomains();
-                    updateStats();
+                const settings = loadSettings();
+                const usePostgres = settings.storage === 'postgresql' && 
+                                   settings.postgres?.host && 
+                                   settings.postgres?.port && 
+                                   settings.postgres?.database && 
+                                   settings.postgres?.user;
+
+                if (usePostgres) {
+                    // Delete from PostgreSQL via API
+                    const dbConfig = {
+                        host: settings.postgres.host,
+                        port: parseInt(settings.postgres.port),
+                        name: settings.postgres.database,
+                        user: settings.postgres.user,
+                        password: settings.postgres.password || ''
+                    };
+
+                    const response = await fetch('/api/postgres/domains/delete', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ dbConfig, domainId })
+                    });
+
+                    const result = await response.json();
+                    if (!response.ok || result.error) {
+                        throw new Error(result.error || 'Failed to delete domain from PostgreSQL');
+                    }
+
+                    // Refresh data from database
+                    await fetchData();
                 } else {
-                    showToast('Domain not found', 'error');
+                    // Delete from localStorage
+                    const index = allDomains.findIndex(d => d.domain_id === domainId);
+                    if (index !== -1) {
+                        allDomains.splice(index, 1);
+                        await saveDomainsToStorage();
+                        renderDomains();
+                        updateStats();
+                    } else {
+                        showToast('Domain not found', 'error');
+                        return;
+                    }
                 }
+                
+                showToast('Domain deleted successfully!', 'success');
             } catch (error) {
                 showToast(\`Error: \${error.message}\`, 'error');
             }
@@ -2632,10 +2910,20 @@ export function getDashboardHTML(): string {
                     const container = document.getElementById('keyResultsContainer');
                     const krItems = container.querySelectorAll('.key-result-item');
                     
-                    krItems.forEach(item => {
+                    krItems.forEach((item, index) => {
                         const krId = item.id.replace('kr_', '');
+                        let krIdValue = formData.get(\`kr_id_\${krId}\`);
+                        
+                        // Only generate kr_id if not provided AND not in edit mode
+                        // In edit mode, the form should already have the kr_id value
+                        if (!krIdValue || krIdValue.trim() === '') {
+                            // For new KRs, use objective_id as prefix to scope them
+                            const objId = formData.get('objective_id') || 'OBJ';
+                            krIdValue = \`\${objId}:KR-\${index + 1}\`;
+                        }
+                        
                         const kr = {
-                            kr_id: formData.get(\`kr_id_\${krId}\`),
+                            kr_id: krIdValue,
                             name: formData.get(\`kr_name_\${krId}\`),
                             description: formData.get(\`kr_description_\${krId}\`) || '',
                             target_value: parseFloat(formData.get(\`kr_target_\${krId}\`)),
@@ -2650,8 +2938,19 @@ export function getDashboardHTML(): string {
                         keyResults.push(kr);
                     });
 
+                    // Get objective_id - if in edit mode, use editingObjectiveId since field is disabled
+                    let objectiveId = isEditModeObjective ? editingObjectiveId : formData.get('objective_id');
+                    
+                    // Generate objective_id if not provided (for new objectives only)
+                    if (!objectiveId || objectiveId.trim() === '') {
+                        // Generate ID: OBJ-YYYYMMDD-HHMMSS
+                        const now = new Date();
+                        const dateStr = now.toISOString().replace(/[-:T]/g, '').substring(0, 14);
+                        objectiveId = \`OBJ-\${dateStr}\`;
+                    }
+
                     const objectiveData = {
-                        objective_id: formData.get('objective_id'),
+                        objective_id: objectiveId,
                         name: formData.get('name'),
                         description: formData.get('description'),
                         timeframe: {
@@ -2666,23 +2965,58 @@ export function getDashboardHTML(): string {
                     };
 
                     try {
-                        // Save to local storage or update allObjectives array
-                        if (isEditModeObjective) {
-                            const index = allObjectives.findIndex(o => o.objective_id === editingObjectiveId);
-                            if (index !== -1) {
-                                allObjectives[index] = objectiveData;
-                            }
-                        } else {
-                            allObjectives.push(objectiveData);
-                        }
+                        const settings = loadSettings();
+                        const usePostgres = settings.storage === 'postgresql' && 
+                                           settings.postgres?.host && 
+                                           settings.postgres?.port && 
+                                           settings.postgres?.database && 
+                                           settings.postgres?.user;
 
-                        // Save to file (we'll need to create an endpoint or save to localStorage)
-                        await saveObjectivesToStorage();
+                        if (usePostgres) {
+                            // Save to PostgreSQL via API
+                            const dbConfig = {
+                                host: settings.postgres.host,
+                                port: parseInt(settings.postgres.port),
+                                name: settings.postgres.database,
+                                user: settings.postgres.user,
+                                password: settings.postgres.password || ''
+                            };
+
+                            const response = await fetch('/api/postgres/objectives/save', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ 
+                                    dbConfig, 
+                                    objective: objectiveData,
+                                    isUpdate: isEditModeObjective 
+                                })
+                            });
+
+                            const result = await response.json();
+                            if (!response.ok || result.error) {
+                                throw new Error(result.error || 'Failed to save objective to PostgreSQL');
+                            }
+
+                            // Refresh data from database
+                            await fetchData();
+                        } else {
+                            // Save to localStorage
+                            if (isEditModeObjective) {
+                                const index = allObjectives.findIndex(o => o.objective_id === editingObjectiveId);
+                                if (index !== -1) {
+                                    allObjectives[index] = objectiveData;
+                                }
+                            } else {
+                                allObjectives.push(objectiveData);
+                            }
+
+                            await saveObjectivesToStorage();
+                            renderObjectives(allObjectives);
+                            updateStats();
+                        }
                         
                         showToast(\`Objective \${isEditModeObjective ? 'updated' : 'created'} successfully!\`, 'success');
                         closeObjectiveFormModal();
-                        renderObjectives(allObjectives);
-                        updateStats();
                     } catch (error) {
                         showToast(\`Error: \${error.message}\`, 'error');
                     }
@@ -2719,16 +3053,51 @@ export function getDashboardHTML(): string {
             }
 
             try {
-                const index = allObjectives.findIndex(o => o.objective_id === objectiveId);
-                if (index !== -1) {
-                    allObjectives.splice(index, 1);
-                    await saveObjectivesToStorage();
-                    showToast('Objective deleted successfully!', 'success');
-                    renderObjectives(allObjectives);
-                    updateStats();
+                const settings = loadSettings();
+                const usePostgres = settings.storage === 'postgresql' && 
+                                   settings.postgres?.host && 
+                                   settings.postgres?.port && 
+                                   settings.postgres?.database && 
+                                   settings.postgres?.user;
+
+                if (usePostgres) {
+                    // Delete from PostgreSQL via API
+                    const dbConfig = {
+                        host: settings.postgres.host,
+                        port: parseInt(settings.postgres.port),
+                        name: settings.postgres.database,
+                        user: settings.postgres.user,
+                        password: settings.postgres.password || ''
+                    };
+
+                    const response = await fetch('/api/postgres/objectives/delete', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ dbConfig, objectiveId })
+                    });
+
+                    const result = await response.json();
+                    if (!response.ok || result.error) {
+                        throw new Error(result.error || 'Failed to delete objective from PostgreSQL');
+                    }
+
+                    // Refresh data from database
+                    await fetchData();
                 } else {
-                    showToast('Objective not found', 'error');
+                    // Delete from localStorage
+                    const index = allObjectives.findIndex(o => o.objective_id === objectiveId);
+                    if (index !== -1) {
+                        allObjectives.splice(index, 1);
+                        await saveObjectivesToStorage();
+                        renderObjectives(allObjectives);
+                        updateStats();
+                    } else {
+                        showToast('Objective not found', 'error');
+                        return;
+                    }
                 }
+                
+                showToast('Objective deleted successfully!', 'success');
             } catch (error) {
                 showToast(\`Error: \${error.message}\`, 'error');
             }
@@ -3043,8 +3412,12 @@ export function getDashboardHTML(): string {
             e.preventDefault();
             
             const formData = new FormData(e.target);
+            
+            // Use editingMetricId when in edit mode (form_metric_id field is disabled, so not in FormData)
+            let metricId = isEditMode ? editingMetricId : formData.get('metric_id');
+            
             const metricData = {
-                metric_id: formData.get('metric_id'),
+                metric_id: metricId,
                 name: formData.get('name'),
                 short_name: formData.get('short_name'),
                 description: formData.get('description'),
@@ -3078,18 +3451,34 @@ export function getDashboardHTML(): string {
 
             try {
                 let response;
-                if (isEditMode) {
-                    response = await fetch(\`/api/metrics/\${editingMetricId}\`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(metricData)
-                    });
-                } else {
-                    response = await fetch('/api/metrics', {
+                const settings = getSettings();
+                
+                // Route to PostgreSQL if enabled
+                if (settings.storageType === 'postgres' && settings.postgresConfig) {
+                    response = await fetch('/api/postgres/metrics/save', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(metricData)
+                        body: JSON.stringify({
+                            dbConfig: settings.postgresConfig,
+                            metric: metricData,
+                            isUpdate: isEditMode
+                        })
                     });
+                } else {
+                    // Local file storage
+                    if (isEditMode) {
+                        response = await fetch(\`/api/metrics/\${editingMetricId}\`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(metricData)
+                        });
+                    } else {
+                        response = await fetch('/api/metrics', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(metricData)
+                        });
+                    }
                 }
 
                 const result = await response.json();
@@ -3113,9 +3502,25 @@ export function getDashboardHTML(): string {
             }
 
             try {
-                const response = await fetch(\`/api/metrics/\${metricId}\`, {
-                    method: 'DELETE'
-                });
+                const settings = getSettings();
+                let response;
+                
+                // Route to PostgreSQL if enabled
+                if (settings.storageType === 'postgres' && settings.postgresConfig) {
+                    response = await fetch('/api/postgres/metrics/delete', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            dbConfig: settings.postgresConfig,
+                            metricId: metricId
+                        })
+                    });
+                } else {
+                    // Local file storage
+                    response = await fetch(\`/api/metrics/\${metricId}\`, {
+                        method: 'DELETE'
+                    });
+                }
 
                 const result = await response.json();
                 

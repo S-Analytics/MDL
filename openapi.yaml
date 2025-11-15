@@ -30,6 +30,12 @@ tags:
     description: OPA policy generation
   - name: Statistics
     description: Metrics statistics and aggregations
+  - name: PostgreSQL
+    description: PostgreSQL database operations for metrics, domains, and objectives
+  - name: Domains
+    description: Business domain operations
+  - name: Objectives
+    description: Objective and key results operations
 
 paths:
   /health:
@@ -378,6 +384,381 @@ paths:
                         example:
                           john.doe@example.com: 10
                           jane.smith@example.com: 15
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/postgres/metrics:
+    post:
+      tags:
+        - PostgreSQL
+      summary: Fetch metrics from PostgreSQL
+      description: Retrieve all metrics from PostgreSQL database
+      operationId: fetchPostgresMetrics
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostgresConfig'
+      responses:
+        '200':
+          description: Metrics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MetricDefinition'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/postgres/metrics/save:
+    post:
+      tags:
+        - PostgreSQL
+      summary: Save metric to PostgreSQL
+      description: Create or update a metric in PostgreSQL database
+      operationId: savePostgresMetric
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - dbConfig
+                - metric
+                - isUpdate
+              properties:
+                dbConfig:
+                  $ref: '#/components/schemas/PostgresConfig'
+                metric:
+                  $ref: '#/components/schemas/MetricDefinition'
+                isUpdate:
+                  type: boolean
+                  description: Whether this is an update (true) or create (false) operation
+                  example: true
+      responses:
+        '200':
+          description: Metric saved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/MetricDefinition'
+        '400':
+          description: Bad request - missing required fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/postgres/metrics/delete:
+    post:
+      tags:
+        - PostgreSQL
+      summary: Delete metric from PostgreSQL
+      description: Delete a metric from PostgreSQL database
+      operationId: deletePostgresMetric
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - dbConfig
+                - metricId
+              properties:
+                dbConfig:
+                  $ref: '#/components/schemas/PostgresConfig'
+                metricId:
+                  type: string
+                  example: METRIC-LOGIN-SUCCESS-RATE
+      responses:
+        '200':
+          description: Metric deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/postgres/domains:
+    post:
+      tags:
+        - PostgreSQL
+      summary: Fetch domains from PostgreSQL
+      description: Retrieve all business domains from PostgreSQL database
+      operationId: fetchPostgresDomains
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostgresConfig'
+      responses:
+        '200':
+          description: Domains retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BusinessDomain'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/postgres/domains/save:
+    post:
+      tags:
+        - PostgreSQL
+      summary: Save domain to PostgreSQL
+      description: Create or update a business domain in PostgreSQL database
+      operationId: savePostgresDomain
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - dbConfig
+                - domain
+                - isUpdate
+              properties:
+                dbConfig:
+                  $ref: '#/components/schemas/PostgresConfig'
+                domain:
+                  $ref: '#/components/schemas/BusinessDomain'
+                isUpdate:
+                  type: boolean
+                  description: Whether this is an update (true) or create (false) operation
+                  example: false
+      responses:
+        '200':
+          description: Domain saved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/BusinessDomain'
+        '400':
+          description: Bad request - missing required fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/postgres/domains/delete:
+    post:
+      tags:
+        - PostgreSQL
+      summary: Delete domain from PostgreSQL
+      description: Delete a business domain from PostgreSQL database
+      operationId: deletePostgresDomain
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - dbConfig
+                - domainId
+              properties:
+                dbConfig:
+                  $ref: '#/components/schemas/PostgresConfig'
+                domainId:
+                  type: string
+                  example: auth-5678
+      responses:
+        '200':
+          description: Domain deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/postgres/objectives:
+    post:
+      tags:
+        - PostgreSQL
+      summary: Fetch objectives from PostgreSQL
+      description: Retrieve all objectives with key results from PostgreSQL database
+      operationId: fetchPostgresObjectives
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostgresConfig'
+      responses:
+        '200':
+          description: Objectives retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Objective'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/postgres/objectives/save:
+    post:
+      tags:
+        - PostgreSQL
+      summary: Save objective to PostgreSQL
+      description: Create or update an objective with key results in PostgreSQL database
+      operationId: savePostgresObjective
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - dbConfig
+                - objective
+                - isUpdate
+              properties:
+                dbConfig:
+                  $ref: '#/components/schemas/PostgresConfig'
+                objective:
+                  $ref: '#/components/schemas/Objective'
+                isUpdate:
+                  type: boolean
+                  description: Whether this is an update (true) or create (false) operation
+                  example: true
+      responses:
+        '200':
+          description: Objective saved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Objective'
+        '400':
+          description: Bad request - missing required fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/postgres/objectives/delete:
+    post:
+      tags:
+        - PostgreSQL
+      summary: Delete objective from PostgreSQL
+      description: Delete an objective and its key results from PostgreSQL database (CASCADE)
+      operationId: deletePostgresObjective
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - dbConfig
+                - objectiveId
+              properties:
+                dbConfig:
+                  $ref: '#/components/schemas/PostgresConfig'
+                objectiveId:
+                  type: string
+                  example: OBJ-20251115041315
+      responses:
+        '200':
+          description: Objective deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/database/test:
+    post:
+      tags:
+        - PostgreSQL
+      summary: Test database connection
+      description: Test the connection to PostgreSQL database
+      operationId: testDatabaseConnection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostgresConfig'
+      responses:
+        '200':
+          description: Connection test successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: PostgreSQL connection successful
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -825,6 +1206,234 @@ components:
         error:
           type: string
           example: Error message
+
+    PostgresConfig:
+      type: object
+      required:
+        - host
+        - port
+        - name
+        - user
+      properties:
+        host:
+          type: string
+          description: PostgreSQL host address
+          example: localhost
+        port:
+          type: string
+          description: PostgreSQL port number
+          example: "5432"
+        name:
+          type: string
+          description: Database name
+          example: mdl_db
+        user:
+          type: string
+          description: Database user
+          example: postgres
+        password:
+          type: string
+          description: Database password
+          example: password123
+
+    BusinessDomain:
+      type: object
+      required:
+        - domain_id
+        - name
+        - description
+      properties:
+        domain_id:
+          type: string
+          description: Unique identifier for the domain
+          example: auth-5678
+        name:
+          type: string
+          description: Name of the business domain
+          example: Authentication & Authorization
+        description:
+          type: string
+          description: Detailed description of the domain
+          example: Core systems managing user authentication, authorization, and access control
+        owner_team:
+          type: string
+          description: Team responsible for this domain
+          example: Platform Security Team
+        contact_email:
+          type: string
+          format: email
+          description: Contact email for the domain owner
+          example: security-team@example.com
+        tier_focus:
+          type: string
+          enum: [Tier-1, Tier-2, Tier-3, Mixed]
+          description: Primary tier focus of the domain
+          example: Tier-1
+        key_areas:
+          type: array
+          items:
+            type: string
+          description: Key areas covered by this domain
+          example: [User Login, OAuth2, MFA, Session Management]
+        color:
+          type: string
+          description: Color code for UI representation
+          example: "#FF5722"
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when domain was created
+          example: "2025-11-14T10:30:00.000Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: Timestamp when domain was last updated
+          example: "2025-11-14T10:30:00.000Z"
+
+    Objective:
+      type: object
+      required:
+        - objective_id
+        - name
+        - description
+        - business_domain
+        - tier
+        - key_results
+      properties:
+        objective_id:
+          type: string
+          description: Unique identifier for the objective
+          example: OBJ-20251115041315
+        name:
+          type: string
+          description: Name of the objective
+          example: Improve Authentication Experience
+        description:
+          type: string
+          description: Detailed description of the objective
+          example: Enhance user authentication to be faster and more reliable
+        business_domain:
+          type: string
+          description: Business domain this objective belongs to
+          example: Authentication & Authorization
+        tier:
+          type: string
+          enum: [Tier-1, Tier-2, Tier-3]
+          description: Importance tier of the objective
+          example: Tier-1
+        quarter:
+          type: string
+          description: Target quarter for the objective
+          example: Q1 2025
+        owner:
+          type: string
+          description: Owner of the objective
+          example: john.doe@example.com
+        target_value:
+          type: number
+          description: Target value to achieve
+          example: 95
+        current_value:
+          type: number
+          description: Current value
+          example: 85
+        start_date:
+          type: string
+          format: date
+          description: Start date of the objective
+          example: "2025-01-01"
+        end_date:
+          type: string
+          format: date
+          description: End date of the objective
+          example: "2025-03-31"
+        status:
+          type: string
+          enum: [not_started, in_progress, at_risk, completed]
+          description: Current status of the objective
+          example: in_progress
+        progress:
+          type: number
+          description: Progress percentage (0-100)
+          example: 60
+        key_results:
+          type: array
+          description: Key results associated with this objective
+          items:
+            $ref: '#/components/schemas/KeyResult'
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when objective was created
+          example: "2025-11-14T10:30:00.000Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: Timestamp when objective was last updated
+          example: "2025-11-14T10:30:00.000Z"
+
+    KeyResult:
+      type: object
+      required:
+        - kr_id
+        - objective_id
+        - name
+        - description
+        - metric_ids
+      properties:
+        kr_id:
+          type: string
+          description: Unique identifier for the key result
+          example: OBJ-20251115041315:KR-1
+        objective_id:
+          type: string
+          description: ID of the parent objective
+          example: OBJ-20251115041315
+        name:
+          type: string
+          description: Name of the key result
+          example: Increase Login Success Rate
+        description:
+          type: string
+          description: Detailed description of the key result
+          example: Improve the percentage of successful login attempts to 95% or higher
+        metric_ids:
+          type: array
+          items:
+            type: string
+          description: IDs of metrics associated with this key result
+          example: [METRIC-LOGIN-SUCCESS-RATE]
+        target_value:
+          type: number
+          description: Target value to achieve
+          example: 95
+        current_value:
+          type: number
+          description: Current value
+          example: 85
+        unit:
+          type: string
+          description: Unit of measurement
+          example: percent
+        status:
+          type: string
+          enum: [not_started, on_track, at_risk, achieved]
+          description: Current status of the key result
+          example: on_track
+        weight:
+          type: number
+          description: Weight/importance of this key result (0-100)
+          example: 40
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when key result was created
+          example: "2025-11-14T10:30:00.000Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: Timestamp when key result was last updated
+          example: "2025-11-14T10:30:00.000Z"
 
   responses:
     NotFound:

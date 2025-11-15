@@ -1,5 +1,6 @@
 import cors from 'cors';
 import express, { NextFunction, Request, Response } from 'express';
+import { Client } from 'pg';
 import { MetricDefinitionInput } from '../models';
 import { PolicyGenerator } from '../opa';
 import { IMetricStore } from '../storage';
@@ -179,6 +180,632 @@ export function createServer(store: IMetricStore, _config: ServerConfig = {}) {
       res.json({ success: true, data: stats });
     } catch (error: any) {
       res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Get metrics from PostgreSQL
+  app.post('/api/postgres/metrics', async (req: Request, res: Response) => {
+    try {
+      const { host, port, name, user, password } = req.body;
+
+      if (!host || !port || !name || !user) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Missing required database connection fields' 
+        });
+      }
+
+      const { PostgresMetricStore } = require('../storage/PostgresMetricStore');
+      const pgStore = new PostgresMetricStore({
+        host,
+        port: parseInt(port),
+        database: name,
+        user,
+        password: password || ''
+      });
+
+      const metrics = await pgStore.findAll();
+      await pgStore.close();
+
+      res.json({ success: true, data: metrics });
+    } catch (error: any) {
+      console.error('PostgreSQL metrics fetch error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Get domains from PostgreSQL
+  app.post('/api/postgres/domains', async (req: Request, res: Response) => {
+    try {
+      const { host, port, name, user, password } = req.body;
+
+      if (!host || !port || !name || !user) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Missing required database connection fields' 
+        });
+      }
+
+      const { PostgresDomainStore } = require('../storage/PostgresDomainStore');
+      const pgStore = new PostgresDomainStore({
+        host,
+        port: parseInt(port),
+        database: name,
+        user,
+        password: password || ''
+      });
+
+      const domains = await pgStore.findAll();
+      await pgStore.close();
+
+      res.json({ success: true, data: domains });
+    } catch (error: any) {
+      console.error('PostgreSQL domains fetch error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Get objectives from PostgreSQL
+  app.post('/api/postgres/objectives', async (req: Request, res: Response) => {
+    try {
+      const { host, port, name, user, password } = req.body;
+
+      if (!host || !port || !name || !user) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Missing required database connection fields' 
+        });
+      }
+
+      const { PostgresObjectiveStore } = require('../storage/PostgresObjectiveStore');
+      const pgStore = new PostgresObjectiveStore({
+        host,
+        port: parseInt(port),
+        database: name,
+        user,
+        password: password || ''
+      });
+
+      const objectives = await pgStore.findAll();
+      await pgStore.close();
+
+      res.json({ success: true, data: objectives });
+    } catch (error: any) {
+      console.error('PostgreSQL objectives fetch error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Save/Create domain in PostgreSQL
+  // Save/Create/Update domain in PostgreSQL
+  app.post('/api/postgres/domains/save', async (req: Request, res: Response) => {
+    try {
+      const { dbConfig, domain, isUpdate } = req.body;
+
+      if (!dbConfig || !domain) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Missing dbConfig or domain data' 
+        });
+      }
+
+      const { PostgresDomainStore } = require('../storage/PostgresDomainStore');
+      const pgStore = new PostgresDomainStore({
+        host: dbConfig.host,
+        port: parseInt(dbConfig.port),
+        database: dbConfig.name,
+        user: dbConfig.user,
+        password: dbConfig.password || ''
+      });
+
+      let result;
+      if (isUpdate) {
+        // Check if domain exists first
+        const existing = await pgStore.findById(domain.domain_id);
+        if (existing) {
+          result = await pgStore.update(domain);
+        } else {
+          result = await pgStore.create(domain);
+        }
+      } else {
+        result = await pgStore.create(domain);
+      }
+      
+      await pgStore.close();
+
+      res.json({ success: true, data: result });
+    } catch (error: any) {
+      console.error('PostgreSQL domain save error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Save/Create/Update objective in PostgreSQL
+  app.post('/api/postgres/objectives/save', async (req: Request, res: Response) => {
+    try {
+      const { dbConfig, objective, isUpdate } = req.body;
+
+      // Debug logging
+      console.log('=== Objective Save Request ===');
+      console.log('Objective ID:', objective?.objective_id);
+      console.log('isUpdate flag:', isUpdate);
+      if (objective && objective.key_results) {
+        console.log('Key result IDs:', objective.key_results.map((kr: any) => kr.kr_id));
+      }
+
+      if (!dbConfig || !objective) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Missing dbConfig or objective data' 
+        });
+      }
+
+      const { PostgresObjectiveStore } = require('../storage/PostgresObjectiveStore');
+      const pgStore = new PostgresObjectiveStore({
+        host: dbConfig.host,
+        port: parseInt(dbConfig.port),
+        database: dbConfig.name,
+        user: dbConfig.user,
+        password: dbConfig.password || ''
+      });
+
+      let result;
+      if (isUpdate) {
+        // Check if objective exists first
+        const existing = await pgStore.findById(objective.objective_id);
+        console.log('Existing objective found:', !!existing);
+        if (existing) {
+          console.log('Calling UPDATE operation');
+          result = await pgStore.update(objective);
+        } else {
+          console.log('Objective not found, calling CREATE operation');
+          result = await pgStore.create(objective);
+        }
+      } else {
+        console.log('isUpdate=false, calling CREATE operation');
+        result = await pgStore.create(objective);
+      }
+      
+      await pgStore.close();
+
+      res.json({ success: true, data: result });
+    } catch (error: any) {
+      console.error('PostgreSQL objective save error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Save/Create/Update metric in PostgreSQL
+  app.post('/api/postgres/metrics/save', async (req: Request, res: Response) => {
+    try {
+      const { dbConfig, metric, isUpdate } = req.body;
+
+      // Debug logging
+      console.log('=== Metric Save Request ===');
+      console.log('Metric ID:', metric?.metric_id);
+      console.log('isUpdate flag:', isUpdate);
+
+      if (!dbConfig || !metric) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Missing dbConfig or metric data' 
+        });
+      }
+
+      const { PostgresMetricStore } = require('../storage/PostgresMetricStore');
+      const pgStore = new PostgresMetricStore({
+        host: dbConfig.host,
+        port: parseInt(dbConfig.port),
+        database: dbConfig.name,
+        user: dbConfig.user,
+        password: dbConfig.password || ''
+      });
+
+      let result;
+      if (isUpdate) {
+        // Check if metric exists first
+        const existing = await pgStore.findById(metric.metric_id);
+        console.log('Existing metric found:', !!existing);
+        if (existing) {
+          console.log('Calling UPDATE operation');
+          result = await pgStore.update(metric.metric_id, metric);
+        } else {
+          console.log('Metric not found, calling CREATE operation');
+          result = await pgStore.create(metric);
+        }
+      } else {
+        console.log('isUpdate=false, calling CREATE operation');
+        result = await pgStore.create(metric);
+      }
+      
+      await pgStore.close();
+
+      res.json({ success: true, data: result });
+    } catch (error: any) {
+      console.error('PostgreSQL metric save error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Delete metric from PostgreSQL
+  app.post('/api/postgres/metrics/delete', async (req: Request, res: Response) => {
+    try {
+      const { dbConfig, metricId } = req.body;
+
+      if (!dbConfig || !metricId) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Missing dbConfig or metricId' 
+        });
+      }
+
+      const { PostgresMetricStore } = require('../storage/PostgresMetricStore');
+      const pgStore = new PostgresMetricStore({
+        host: dbConfig.host,
+        port: parseInt(dbConfig.port),
+        database: dbConfig.name,
+        user: dbConfig.user,
+        password: dbConfig.password || ''
+      });
+
+      await pgStore.delete(metricId);
+      await pgStore.close();
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('PostgreSQL metric delete error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Delete domain from PostgreSQL
+  app.post('/api/postgres/domains/delete', async (req: Request, res: Response) => {
+    try {
+      const { dbConfig, domainId } = req.body;
+
+      if (!dbConfig || !domainId) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Missing dbConfig or domainId' 
+        });
+      }
+
+      const { Client } = require('pg');
+      const client = new Client({
+        host: dbConfig.host,
+        port: parseInt(dbConfig.port),
+        database: dbConfig.name,
+        user: dbConfig.user,
+        password: dbConfig.password || ''
+      });
+
+      await client.connect();
+      await client.query('DELETE FROM business_domains WHERE domain_id = $1', [domainId]);
+      await client.end();
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('PostgreSQL domain delete error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Delete objective from PostgreSQL
+  app.post('/api/postgres/objectives/delete', async (req: Request, res: Response) => {
+    try {
+      const { dbConfig, objectiveId } = req.body;
+
+      if (!dbConfig || !objectiveId) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Missing dbConfig or objectiveId' 
+        });
+      }
+
+      const { Client } = require('pg');
+      const client = new Client({
+        host: dbConfig.host,
+        port: parseInt(dbConfig.port),
+        database: dbConfig.name,
+        user: dbConfig.user,
+        password: dbConfig.password || ''
+      });
+
+      await client.connect();
+      // Key results will be deleted automatically due to CASCADE
+      await client.query('DELETE FROM objectives WHERE objective_id = $1', [objectiveId]);
+      await client.end();
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('PostgreSQL objective delete error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Generate DOCX report for an objective
+  app.post('/api/export/objective/docx', async (req: Request, res: Response) => {
+    try {
+      const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, TabStopType, TabStopPosition } = require('docx');
+      const { objective, metrics } = req.body;
+      
+      if (!objective) {
+        return res.status(400).json({ success: false, error: 'Objective data required' });
+      }
+
+      const date = new Date().toISOString().split('T')[0];
+      const children: any[] = [];
+
+      // Title
+      children.push(
+        new Paragraph({
+          text: 'Objective Report: ' + objective.name,
+          heading: HeadingLevel.HEADING_1,
+          spacing: { after: 200 }
+        }),
+        new Paragraph({
+          text: 'Generated: ' + date,
+          spacing: { after: 400 }
+        }),
+        new Paragraph({ text: '' })
+      );
+
+      // Objective Details
+      children.push(
+        new Paragraph({
+          text: '📋 Objective Details',
+          heading: HeadingLevel.HEADING_2,
+          spacing: { before: 200, after: 200 }
+        })
+      );
+
+      const details = [
+        ['Objective ID:', objective.objective_id],
+        ['Name:', objective.name],
+        ['Description:', objective.description],
+        ['Owner Team:', objective.owner_team],
+        ['Status:', objective.status],
+        ['Priority:', objective.priority || 'Medium'],
+        ['Strategic Pillar:', objective.strategic_pillar || 'N/A'],
+        ['Timeframe:', `${objective.timeframe.start} to ${objective.timeframe.end}`]
+      ];
+
+      details.forEach(([label, value]) => {
+        children.push(
+          new Paragraph({
+            children: [
+              new TextRun({ text: label + ' ', bold: true }),
+              new TextRun({ text: value })
+            ],
+            spacing: { after: 100 }
+          })
+        );
+      });
+
+      // Key Results
+      if (objective.key_results && objective.key_results.length > 0) {
+        children.push(
+          new Paragraph({ text: '', spacing: { after: 200 } }),
+          new Paragraph({
+            text: `🎯 Key Results (${objective.key_results.length})`,
+            heading: HeadingLevel.HEADING_2,
+            spacing: { before: 200, after: 200 }
+          })
+        );
+
+        objective.key_results.forEach((kr: any, index: number) => {
+          const current = kr.current_value ?? kr.baseline_value;
+          const range = Math.abs(kr.target_value - kr.baseline_value);
+          const progress = range > 0 ? Math.min(100, Math.abs(current - kr.baseline_value) / range * 100) : 0;
+          const isOnTrack = kr.direction === 'increase' 
+            ? current >= (kr.baseline_value + range * 0.5)
+            : current <= (kr.baseline_value - range * 0.5);
+
+          children.push(
+            new Paragraph({
+              text: `${index + 1}. ${kr.name}`,
+              heading: HeadingLevel.HEADING_3,
+              spacing: { before: 200, after: 100 }
+            })
+          );
+
+          const krDetails = [
+            ['Baseline:', `${kr.baseline_value} ${kr.unit}`],
+            ['Current:', `${current} ${kr.unit}`],
+            ['Target:', `${kr.target_value} ${kr.unit}`],
+            ['Direction:', kr.direction],
+            ['Progress:', `${Math.round(progress)}%`],
+            ['Status:', isOnTrack ? '✅ On Track' : '⚠️ Needs Attention']
+          ];
+
+          krDetails.forEach(([label, value]) => {
+            children.push(
+              new Paragraph({
+                children: [
+                  new TextRun({ text: label + ' ', bold: true }),
+                  new TextRun({ text: value })
+                ],
+                spacing: { after: 80 }
+              })
+            );
+          });
+
+          // Associated Metrics
+          if (kr.metric_ids && kr.metric_ids.length > 0 && metrics) {
+            children.push(
+              new Paragraph({
+                children: [
+                  new TextRun({ text: 'Associated Metrics: ', bold: true }),
+                  new TextRun({ text: kr.metric_ids.join(', ') })
+                ],
+                spacing: { after: 100, before: 100 }
+              })
+            );
+
+            kr.metric_ids.forEach((metricId: string) => {
+              const metric = metrics.find((m: any) => m.metric_id === metricId);
+              if (metric) {
+                children.push(
+                  new Paragraph({
+                    text: `• ${metric.name} (${metric.metric_id})`,
+                    spacing: { after: 80 },
+                    indent: { left: 720 }
+                  })
+                );
+                if (metric.category) {
+                  children.push(
+                    new Paragraph({
+                      text: `Category: ${metric.category}`,
+                      spacing: { after: 60 },
+                      indent: { left: 1080 }
+                    })
+                  );
+                }
+                if (metric.governance?.owner_team || metric.owner?.team) {
+                  children.push(
+                    new Paragraph({
+                      text: `Owner: ${metric.governance?.owner_team || metric.owner?.team}`,
+                      spacing: { after: 60 },
+                      indent: { left: 1080 }
+                    })
+                  );
+                }
+                if (metric.definition?.formula) {
+                  children.push(
+                    new Paragraph({
+                      text: `Formula: ${metric.definition.formula}`,
+                      spacing: { after: 60 },
+                      indent: { left: 1080 }
+                    })
+                  );
+                }
+              }
+            });
+          }
+
+          children.push(new Paragraph({ text: '', spacing: { after: 200 } }));
+        });
+      } else {
+        children.push(
+          new Paragraph({
+            text: '🎯 Key Results',
+            heading: HeadingLevel.HEADING_2,
+            spacing: { before: 200, after: 100 }
+          }),
+          new Paragraph({
+            text: 'No key results defined for this objective.',
+            spacing: { after: 200 }
+          })
+        );
+      }
+
+      // Summary
+      const totalMetrics = objective.key_results?.reduce((sum: number, kr: any) => sum + (kr.metric_ids?.length || 0), 0) || 0;
+      const avgProgress = objective.key_results && objective.key_results.length > 0
+        ? objective.key_results.reduce((sum: number, kr: any) => {
+            const current = kr.current_value ?? kr.baseline_value;
+            const range = Math.abs(kr.target_value - kr.baseline_value);
+            const progress = range > 0 ? Math.min(100, Math.abs(current - kr.baseline_value) / range * 100) : 0;
+            return sum + progress;
+          }, 0) / objective.key_results.length
+        : 0;
+
+      children.push(
+        new Paragraph({
+          text: '📊 Summary',
+          heading: HeadingLevel.HEADING_2,
+          spacing: { before: 400, after: 200 }
+        }),
+        new Paragraph({
+          children: [
+            new TextRun({ text: 'Total Key Results: ', bold: true }),
+            new TextRun({ text: String(objective.key_results?.length || 0) })
+          ],
+          spacing: { after: 100 }
+        }),
+        new Paragraph({
+          children: [
+            new TextRun({ text: 'Total Metrics: ', bold: true }),
+            new TextRun({ text: String(totalMetrics) })
+          ],
+          spacing: { after: 100 }
+        }),
+        new Paragraph({
+          children: [
+            new TextRun({ text: 'Average Progress: ', bold: true }),
+            new TextRun({ text: `${Math.round(avgProgress)}%` })
+          ],
+          spacing: { after: 200 }
+        })
+      );
+
+      // Footer
+      children.push(
+        new Paragraph({ text: '', spacing: { before: 400 } }),
+        new Paragraph({
+          text: 'Report generated by MDL Dashboard v1.0.0',
+          italics: true,
+          alignment: AlignmentType.CENTER
+        })
+      );
+
+      const doc = new Document({
+        sections: [{
+          properties: {},
+          children: children
+        }]
+      });
+
+      const buffer = await Packer.toBuffer(doc);
+      
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+      res.setHeader('Content-Disposition', `attachment; filename="${objective.objective_id}_${objective.name.replace(/[^a-z0-9]/gi, '_')}.docx"`);
+      res.send(Buffer.from(buffer));
+    } catch (error: any) {
+      console.error('DOCX generation error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Test database connection
+  app.post('/api/database/test', async (req: Request, res: Response) => {
+    try {
+      const { host, port, name, user, password } = req.body;
+
+      if (!host || !port || !name || !user) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Missing required fields: host, port, name, user' 
+        });
+      }
+
+      const client = new Client({
+        host,
+        port: parseInt(port),
+        database: name,
+        user,
+        password: password || ''
+      });
+
+      await client.connect();
+      
+      // Test query
+      await client.query('SELECT 1');
+      
+      await client.end();
+
+      res.json({ 
+        success: true, 
+        message: 'Connection successful',
+        database: { host, port, name, user }
+      });
+    } catch (error) {
+      const err = error as Error;
+      console.error('Database connection test error:', err);
+      res.status(500).json({ 
+        success: false, 
+        error: err.message || 'Connection failed'
+      });
     }
   });
 

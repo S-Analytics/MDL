@@ -20,6 +20,12 @@ app.get('/', (req, res) => {
 });
 
 app.get('/dashboard', (req, res) => {
+  // Prevent browser caching of dashboard HTML/JS
+  res.set({
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  });
   res.send(getDashboardHTML());
 });
 
@@ -43,7 +49,19 @@ app.listen(PORT, HOST, () => {
   console.log(`🔌 API: http://${HOST}:${PORT}/api/metrics`);
   console.log(`💚 Health: http://${HOST}:${PORT}/health`);
   console.log('');
-  console.log(`💾 Storage: ${DEFAULT_STORAGE_PATH}`);
+  
+  // Show storage configuration
+  const pgHost = process.env.DB_HOST || process.env.POSTGRES_HOST;
+  const pgPort = process.env.DB_PORT || process.env.POSTGRES_PORT;
+  const pgDb = process.env.DB_NAME || process.env.POSTGRES_DB;
+  
+  if (pgHost && pgPort && pgDb) {
+    console.log(`💾 Storage: PostgreSQL (${pgHost}:${pgPort}/${pgDb})`);
+    console.log(`   Note: Configure PostgreSQL in dashboard settings to use database`);
+  } else {
+    console.log(`💾 Default Storage: ${DEFAULT_STORAGE_PATH}`);
+    console.log(`   Note: Configure PostgreSQL in dashboard settings for database storage`);
+  }
   console.log('');
 });
 
