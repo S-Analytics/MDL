@@ -5,6 +5,85 @@ All notable changes to the Metric Definition Language (MDL) project will be docu
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2025-11-18
+
+### Added
+
+#### Local Storage Management
+- **Clean Local Storage Script**: New utility script to clear all data from JSON file storage
+  - File: `scripts/clean-local-storage.js` - Clears metrics, domains, and objectives
+  - NPM command: `npm run storage:clean` - Easy-to-use command
+  - Features:
+    - Interactive confirmation prompt (requires typing "DELETE ALL DATA")
+    - `--confirm` flag to skip confirmation for automation
+    - `--path` option to specify custom metrics.json location
+    - Automatic backup creation with timestamps before deletion
+    - Clears `.mdl/metrics.json`, `examples/sample-domains.json`, and `examples/sample-objectives.json`
+    - Shows before/after record counts for verification
+    - Provides recovery instructions for backups
+  - Safety features:
+    - Creates timestamped backups (e.g., `.mdl/metrics.json.backup-2025-11-18T12-30-00-000Z`)
+    - Verification of deletion success
+    - Clear warning messages about data loss
+    - Instructions for backup restoration
+  - Similar to `clean-sample-data-postgres.js` but for file storage
+  - Updated `scripts/README.md` with comprehensive documentation
+
+## [Unreleased] - 2025-11-15
+
+### Added
+
+#### API Testing Collection
+- **Insomnia Collection**: Comprehensive API testing collection with 20+ pre-configured requests
+  - File: `insomnia-collection.json` - Ready to import into Insomnia
+  - Documentation: `INSOMNIA_COLLECTION.md` - Detailed usage guide
+  - Quick Reference: `INSOMNIA_QUICK_REFERENCE.md` - At-a-glance request overview
+  - Organized into 8 logical groups:
+    1. Health checks
+    2. Metrics (File Storage) - CRUD operations
+    3. Policies - OPA policy generation
+    4. Statistics - Aggregated metrics data
+    5. PostgreSQL Metrics - Database operations
+    6. PostgreSQL Domains - Business domain management
+    7. PostgreSQL Objectives - Objectives and key results
+    8. Database testing - Connection validation
+  - Pre-configured environment variables for easy setup
+  - Sample request bodies with realistic data
+  - Dynamic variables for unique IDs (timestamps)
+  - All endpoints from OpenAPI specification included
+  - Full CRUD workflows for metrics, domains, and objectives
+  - PostgreSQL operations with proper database config structure
+
+#### Dashboard Visualization
+- **Sunburst Chart**: Interactive hierarchical visualization combining Business Domain and Tier data
+  - D3.js integration for advanced data visualization
+  - Two-level hierarchy: Tier (inner ring) → Business Domain (outer ring)
+  - 12-color palette with automatic cycling
+  - Interactive features:
+    - Hover tooltips with detailed information
+    - Dynamic center text updates
+    - Opacity changes on hover
+    - Click interactions for exploration
+  - Responsive design (300x300px, scales with container)
+  - Automatic data grouping and counting
+  - Handles missing/unassigned categories gracefully
+  - Labels on larger segments for readability
+  - White stroke separation between segments
+  - Replaces previous side-by-side pie charts
+
+### Changed
+- **Dashboard Charts**: Replaced two separate pie charts with single combined sunburst chart
+  - Provides better visualization of hierarchical relationships
+  - Reduces vertical space usage
+  - More intuitive understanding of metric distribution
+  - Shows cross-dimensional relationships (Tier × Domain)
+
+### Documentation
+- Updated `README.md` with Insomnia collection information
+- Added comprehensive API testing documentation
+- Included quick start workflows for API testing
+- Provided troubleshooting guide for common issues
+
 ## [1.0.0] - 2025-11-14
 
 ### Added

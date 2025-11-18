@@ -20,6 +20,7 @@
     "db:setup": "node scripts/setup-database.js",
     "db:load": "node scripts/load-sample-data-postgres.js",
     "db:clean": "node scripts/clean-sample-data-postgres.js",
+    "storage:clean": "node scripts/clean-local-storage.js",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
     "format": "prettier --write \"src/**/*.ts\"",

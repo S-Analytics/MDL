@@ -9,6 +9,7 @@ export function getDashboardHTML(): string {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MDL - Metrics Definition Library Dashboard</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -187,8 +188,75 @@ export function getDashboardHTML(): string {
             color: #667eea;
             font-size: 1.2rem;
         }
+        .chart-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .chart-section h2 {
+            margin-top: 0;
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            color: #333;
+            text-align: center;
+        }
         .chart-container {
             margin-top: 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #sunburstChart {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #sunburstChart svg {
+            max-width: 100%;
+            height: auto;
+        }
+        .sunburst-tooltip {
+            position: absolute;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            border-radius: 4px;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .sunburst-center-text {
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+            margin-top: 1rem;
+        }
+        .sunburst-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #e2e8f0;
+        }
+        .sunburst-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .sunburst-legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+        }
+        .sunburst-legend-label {
+            font-size: 0.9rem;
+            color: #4a5568;
         }
         .bar-chart {
             display: flex;
@@ -962,7 +1030,9 @@ export function getDashboardHTML(): string {
                         </div>
                         <div class="form-group">
                             <label class="required">Business Domain</label>
-                            <input type="text" id="form_business_domain" name="business_domain" required placeholder="e.g., Digital Experience">
+                            <select id="form_business_domain" name="business_domain" required>
+                                <option value="">Select business domain...</option>
+                            </select>
                         </div>
                         <div class="form-group">
                             <label class="required">Metric Type</label>
@@ -989,7 +1059,8 @@ export function getDashboardHTML(): string {
                         <div class="form-grid">
                             <div class="form-group">
                                 <label>Formula</label>
-                                <input type="text" id="form_formula" name="formula" placeholder="numerator / denominator">
+                                <input type="text" id="form_formula" name="formula" placeholder="numerator / denominator" pattern=".*" title="Use metric IDs, operators (+, -, *, /), and parentheses">
+                                <div style="font-size: 0.85rem; color: #666; margin-top: 0.25rem;">💡 Example: (METRIC-001 + METRIC-002) / METRIC-003</div>
                             </div>
                             <div class="form-group">
                                 <label>Unit</label>
@@ -1221,13 +1292,15 @@ export function getDashboardHTML(): string {
         </div>
 
         <div class="section">
-            <h2>Metrics by Business Domain</h2>
-            <div class="chart-container" id="domainChart"></div>
-        </div>
-
-        <div class="section">
-            <h2>Metrics by Tier</h2>
-            <div class="chart-container" id="tierChart"></div>
+            <div class="chart-section">
+                <h2>Metrics Distribution: Tier → Business Domain</h2>
+                <div class="chart-container">
+                    <div id="sunburstChart"></div>
+                    <div class="sunburst-center-text" id="sunburstCenterText">
+                        Hover over segments to explore
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="section">
@@ -1422,8 +1495,7 @@ export function getDashboardHTML(): string {
         }
 
         function updateCharts() {
-            renderBarChart('domainChart', stats.byBusinessDomain || {});
-            renderBarChart('tierChart', stats.byTier || {});
+            renderSunburstChart();
             
             // Update category filter - extract unique categories from metrics
             const categoryFilter = document.getElementById('categoryFilter');
@@ -1438,6 +1510,196 @@ export function getDashboardHTML(): string {
             
             // Render objectives
             renderObjectives(allObjectives || []);
+        }
+
+        function renderSunburstChart() {
+            const container = document.getElementById('sunburstChart');
+            
+            // Build hierarchical data structure: Root -> Tier -> Business Domain -> Metrics
+            const hierarchyData = {
+                name: 'All Metrics',
+                children: []
+            };
+
+            // Group metrics by tier first, then by business domain
+            const tierMap = new Map();
+            
+            allMetrics.forEach(metric => {
+                const tier = metric.tier || 'No Tier';
+                const domain = metric.business_domain || 'Unassigned';
+                
+                if (!tierMap.has(tier)) {
+                    tierMap.set(tier, new Map());
+                }
+                
+                const domainMap = tierMap.get(tier);
+                if (!domainMap.has(domain)) {
+                    domainMap.set(domain, []);
+                }
+                
+                domainMap.get(domain).push(metric);
+            });
+
+            // Convert to hierarchical structure
+            tierMap.forEach((domainMap, tierName) => {
+                const tierNode = {
+                    name: tierName,
+                    children: []
+                };
+                
+                domainMap.forEach((metrics, domainName) => {
+                    tierNode.children.push({
+                        name: domainName,
+                        value: metrics.length,
+                        metrics: metrics
+                    });
+                });
+                
+                hierarchyData.children.push(tierNode);
+            });
+
+            if (hierarchyData.children.length === 0) {
+                container.innerHTML = '<div class="empty-state">No data available</div>';
+                return;
+            }
+
+            // Clear container
+            container.innerHTML = '';
+
+            // Set dimensions (50% of original size)
+            const width = 300;
+            const height = 300;
+            const radius = Math.min(width, height) / 2;
+
+            // Color scale (now for tiers on inner ring)
+            const color = d3.scaleOrdinal()
+                .domain(Array.from(tierMap.keys()))
+                .range([
+                    '#667eea', '#764ba2', '#f093fb', '#4facfe',
+                    '#43e97b', '#fa709a', '#fee140', '#30cfd0',
+                    '#a8edea', '#fed6e3', '#c471f5', '#fbc2eb'
+                ]);
+
+            // Create SVG
+            const svg = d3.select(container)
+                .append('svg')
+                .attr('viewBox', \`0 0 \${width} \${height}\`)
+                .attr('width', width)
+                .attr('height', height)
+                .style('font', '12px sans-serif');
+
+            const g = svg.append('g')
+                .attr('transform', \`translate(\${width / 2},\${height / 2})\`);
+
+            // Create hierarchy
+            const root = d3.hierarchy(hierarchyData)
+                .sum(d => d.value || 0)
+                .sort((a, b) => b.value - a.value);
+
+            // Create partition layout
+            const partition = d3.partition()
+                .size([2 * Math.PI, radius]);
+
+            partition(root);
+
+            // Create arc generator
+            const arc = d3.arc()
+                .startAngle(d => d.x0)
+                .endAngle(d => d.x1)
+                .padAngle(d => Math.min((d.x1 - d.x0) / 2, 0.005))
+                .padRadius(radius / 2)
+                .innerRadius(d => d.y0)
+                .outerRadius(d => d.y1 - 1);
+
+            // Create tooltip
+            const tooltip = d3.select('body').append('div')
+                .attr('class', 'sunburst-tooltip')
+                .style('opacity', 0);
+
+            // Add paths
+            const path = g.selectAll('path')
+                .data(root.descendants().filter(d => d.depth > 0))
+                .join('path')
+                .attr('fill', d => {
+                    if (d.depth === 1) {
+                        // Tier level (inner ring)
+                        return color(d.data.name);
+                    } else {
+                        // Business domain level (outer ring) - lighter shade of parent tier
+                        const parentColor = color(d.parent.data.name);
+                        return d3.color(parentColor).brighter(0.5);
+                    }
+                })
+                .attr('d', arc)
+                .style('cursor', 'pointer')
+                .style('stroke', 'white')
+                .style('stroke-width', '2px')
+                .on('mouseover', function(event, d) {
+                    d3.select(this)
+                        .transition()
+                        .duration(200)
+                        .style('opacity', 0.8);
+                    
+                    const percentage = ((d.value / root.value) * 100).toFixed(1);
+                    let tooltipText = \`\${d.data.name}: \${d.value} metrics (\${percentage}%)\`;
+                    
+                    if (d.depth === 1) {
+                        tooltipText = \`Tier: \${tooltipText}\`;
+                    } else if (d.depth === 2) {
+                        tooltipText = \`\${d.parent.data.name} → \${tooltipText}\`;
+                    }
+                    
+                    tooltip.transition()
+                        .duration(200)
+                        .style('opacity', 0.9);
+                    tooltip.html(tooltipText)
+                        .style('left', (event.pageX + 10) + 'px')
+                        .style('top', (event.pageY - 28) + 'px');
+                    
+                    // Update center text
+                    document.getElementById('sunburstCenterText').innerHTML = 
+                        \`<strong>\${d.data.name}</strong><br>\${d.value} metrics (\${percentage}%)\`;
+                })
+                .on('mouseout', function(event, d) {
+                    d3.select(this)
+                        .transition()
+                        .duration(200)
+                        .style('opacity', 1);
+                    
+                    tooltip.transition()
+                        .duration(500)
+                        .style('opacity', 0);
+                    
+                    // Reset center text
+                    document.getElementById('sunburstCenterText').textContent = 
+                        'Hover over segments to explore';
+                });
+
+            // Add labels for larger segments
+            g.selectAll('text')
+                .data(root.descendants().filter(d => {
+                    return d.depth > 0 && (d.x1 - d.x0) > 0.1;
+                }))
+                .join('text')
+                .attr('transform', d => {
+                    const x = (d.x0 + d.x1) / 2 * 180 / Math.PI;
+                    const y = (d.y0 + d.y1) / 2;
+                    return \`rotate(\${x - 90}) translate(\${y},0) rotate(\${x < 180 ? 0 : 180})\`;
+                })
+                .attr('dy', '0.35em')
+                .style('text-anchor', 'middle')
+                .style('fill', 'white')
+                .style('font-size', '10px')
+                .style('font-weight', 'bold')
+                .style('pointer-events', 'none')
+                .text(d => {
+                    const angle = d.x1 - d.x0;
+                    const name = d.data.name;
+                    if (angle > 0.15) {
+                        return name.length > 15 ? name.substring(0, 13) + '...' : name;
+                    }
+                    return '';
+                });
         }
 
         function renderBarChart(containerId, data) {
@@ -2875,8 +3137,10 @@ export function getDashboardHTML(): string {
                             <input type="number" step="any" name="kr_current_\${krId}" value="\${existingKR?.current_value ?? ''}" placeholder="50">
                         </div>
                         <div class="form-group">
-                            <label>Linked Metric IDs (comma-separated)</label>
-                            <input type="text" name="kr_metrics_\${krId}" value="\${existingKR?.metric_ids?.join(', ') || ''}" placeholder="METRIC-ID-1, METRIC-ID-2">
+                            <label>Linked Metric ID</label>
+                            <select name="kr_metrics_\${krId}" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px;" data-kr-id="\${krId}">
+                                <option value="">Select a metric (optional)</option>
+                            </select>
                         </div>
                     </div>
                     <div class="form-group" style="margin-top: 0.75rem;">
@@ -2887,6 +3151,41 @@ export function getDashboardHTML(): string {
             \`;
             
             container.insertAdjacentHTML('beforeend', krHtml);
+            
+            // Populate the metrics dropdown for this key result
+            const selectedMetric = existingKR?.metric_ids?.[0] || null;
+            populateKeyResultMetrics(krId, selectedMetric);
+        }
+
+        function populateKeyResultMetrics(krId, selectedMetricId = null) {
+            const select = document.querySelector(\`select[name="kr_metrics_\${krId}"]\`);
+            if (!select) return;
+            
+            select.innerHTML = '<option value="">Select a metric (optional)</option>';
+            
+            if (allMetrics.length === 0) {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'No metrics available';
+                option.disabled = true;
+                select.appendChild(option);
+                return;
+            }
+            
+            // Sort metrics by ID for easier finding
+            const sortedMetrics = [...allMetrics].sort((a, b) => 
+                a.metric_id.localeCompare(b.metric_id)
+            );
+            
+            sortedMetrics.forEach(metric => {
+                const option = document.createElement('option');
+                option.value = metric.metric_id;
+                option.textContent = \`\${metric.metric_id} - \${metric.name}\`;
+                if (metric.metric_id === selectedMetricId) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
         }
 
         function removeKeyResult(krId) {
@@ -2922,6 +3221,10 @@ export function getDashboardHTML(): string {
                             krIdValue = \`\${objId}:KR-\${index + 1}\`;
                         }
                         
+                        // Get selected metric ID from single-select dropdown
+                        const metricsSelect = document.querySelector(\`select[name="kr_metrics_\${krId}"]\`);
+                        const selectedMetric = metricsSelect ? metricsSelect.value : '';
+                        
                         const kr = {
                             kr_id: krIdValue,
                             name: formData.get(\`kr_name_\${krId}\`),
@@ -2931,9 +3234,7 @@ export function getDashboardHTML(): string {
                             unit: formData.get(\`kr_unit_\${krId}\`),
                             direction: formData.get(\`kr_direction_\${krId}\`),
                             current_value: formData.get(\`kr_current_\${krId}\`) ? parseFloat(formData.get(\`kr_current_\${krId}\`)) : null,
-                            metric_ids: formData.get(\`kr_metrics_\${krId}\`) 
-                                ? formData.get(\`kr_metrics_\${krId}\`).split(',').map(m => m.trim()).filter(Boolean)
-                                : []
+                            metric_ids: selectedMetric ? [selectedMetric] : []
                         };
                         keyResults.push(kr);
                     });
@@ -3335,6 +3636,38 @@ export function getDashboardHTML(): string {
         let isEditMode = false;
         let editingMetricId = null;
 
+        function populateBusinessDomainDropdown(selectedValue = '') {
+            const dropdown = document.getElementById('form_business_domain');
+            dropdown.innerHTML = '<option value="">Select business domain...</option>';
+            
+            // Get unique domain names from allDomains
+            const domainNames = allDomains.map(d => d.name).sort();
+            
+            // If no domains defined, add a default option
+            if (domainNames.length === 0) {
+                dropdown.innerHTML += '<option value="" disabled>No domains defined - Add domains first</option>';
+                return;
+            }
+            
+            domainNames.forEach(name => {
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = name;
+                if (name === selectedValue) {
+                    option.selected = true;
+                }
+                dropdown.appendChild(option);
+            });
+            
+            // Add option to allow custom domain if needed
+            const customOption = document.createElement('option');
+            customOption.value = '__custom__';
+            customOption.textContent = '+ Add new domain...';
+            customOption.style.fontStyle = 'italic';
+            customOption.style.color = '#667eea';
+            dropdown.appendChild(customOption);
+        }
+
         function openAddMetricForm() {
             isEditMode = false;
             editingMetricId = null;
@@ -3342,6 +3675,7 @@ export function getDashboardHTML(): string {
             document.getElementById('metricForm').reset();
             document.getElementById('form_metric_id').disabled = false;
             document.getElementById('form_status').value = 'active';
+            populateBusinessDomainDropdown();
             document.getElementById('formModal').classList.add('active');
             document.body.style.overflow = 'hidden';
         }
@@ -3361,7 +3695,7 @@ export function getDashboardHTML(): string {
             document.getElementById('form_short_name').value = metric.short_name || '';
             document.getElementById('form_category').value = metric.category || '';
             document.getElementById('form_tier').value = metric.tier;
-            document.getElementById('form_business_domain').value = metric.business_domain;
+            populateBusinessDomainDropdown(metric.business_domain);
             document.getElementById('form_metric_type').value = metric.metric_type;
             document.getElementById('form_tags').value = (metric.tags || []).join(', ');
             document.getElementById('form_description').value = metric.description;
@@ -3407,6 +3741,26 @@ export function getDashboardHTML(): string {
             }, 3000);
         }
 
+        // Handle business domain dropdown change
+        document.addEventListener('change', function(e) {
+            if (e.target.id === 'form_business_domain') {
+                if (e.target.value === '__custom__') {
+                    const customDomain = prompt('Enter new business domain name:');
+                    if (customDomain && customDomain.trim()) {
+                        // Add to dropdown temporarily
+                        const option = document.createElement('option');
+                        option.value = customDomain.trim();
+                        option.textContent = customDomain.trim();
+                        option.selected = true;
+                        // Insert before the "Add new" option
+                        e.target.insertBefore(option, e.target.lastElementChild);
+                    } else {
+                        e.target.value = '';
+                    }
+                }
+            }
+        });
+
         // Form submission
         document.getElementById('metricForm').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -3416,6 +3770,13 @@ export function getDashboardHTML(): string {
             // Use editingMetricId when in edit mode (form_metric_id field is disabled, so not in FormData)
             let metricId = isEditMode ? editingMetricId : formData.get('metric_id');
             
+            // Validate business domain
+            let businessDomain = formData.get('business_domain');
+            if (businessDomain === '__custom__' || !businessDomain) {
+                showToast('Please select a valid business domain', 'error');
+                return;
+            }
+            
             const metricData = {
                 metric_id: metricId,
                 name: formData.get('name'),
@@ -3423,7 +3784,7 @@ export function getDashboardHTML(): string {
                 description: formData.get('description'),
                 category: formData.get('category'),
                 tier: formData.get('tier'),
-                business_domain: formData.get('business_domain'),
+                business_domain: businessDomain,
                 metric_type: formData.get('metric_type'),
                 tags: formData.get('tags') ? formData.get('tags').split(',').map(t => t.trim()).filter(Boolean) : [],
                 definition: {
@@ -3451,15 +3812,21 @@ export function getDashboardHTML(): string {
 
             try {
                 let response;
-                const settings = getSettings();
+                const settings = loadSettings();
                 
                 // Route to PostgreSQL if enabled
-                if (settings.storageType === 'postgres' && settings.postgresConfig) {
+                if (settings.storage === 'postgresql' && settings.postgres) {
                     response = await fetch('/api/postgres/metrics/save', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            dbConfig: settings.postgresConfig,
+                            dbConfig: {
+                                host: settings.postgres.host,
+                                port: parseInt(settings.postgres.port),
+                                name: settings.postgres.database,
+                                user: settings.postgres.user,
+                                password: settings.postgres.password || ''
+                            },
                             metric: metricData,
                             isUpdate: isEditMode
                         })
@@ -3502,16 +3869,22 @@ export function getDashboardHTML(): string {
             }
 
             try {
-                const settings = getSettings();
+                const settings = loadSettings();
                 let response;
                 
                 // Route to PostgreSQL if enabled
-                if (settings.storageType === 'postgres' && settings.postgresConfig) {
+                if (settings.storage === 'postgresql' && settings.postgres) {
                     response = await fetch('/api/postgres/metrics/delete', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            dbConfig: settings.postgresConfig,
+                            dbConfig: {
+                                host: settings.postgres.host,
+                                port: parseInt(settings.postgres.port),
+                                name: settings.postgres.database,
+                                user: settings.postgres.user,
+                                password: settings.postgres.password || ''
+                            },
                             metricId: metricId
                         })
                     });

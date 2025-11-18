@@ -227,6 +227,22 @@ mdl stats
 
 - `GET /health` - Health check endpoint
 
+### 🧪 API Testing with Insomnia
+
+An Insomnia collection with 20+ pre-configured requests is available for easy API testing:
+
+```bash
+# Import insomnia-collection.json into Insomnia
+```
+
+The collection includes:
+- ✅ All API endpoints with sample requests
+- ✅ Environment variables for easy configuration
+- ✅ PostgreSQL operations (metrics, domains, objectives)
+- ✅ Request examples with realistic data
+
+**See [INSOMNIA_COLLECTION.md](./INSOMNIA_COLLECTION.md) for detailed usage instructions.**
+
 ## Configuration Files
 
 ### JSON Format
@@ -375,6 +391,31 @@ src/
 ## Storage
 
 By default, metrics are persisted to `.mdl/metrics.json` in the current working directory. This can be configured via environment variables or programmatically.
+
+### Storage Management
+
+**Local File Storage:**
+```bash
+# Clean all local data (creates backups)
+npm run storage:clean
+
+# Load sample data
+npm run load:samples
+```
+
+**PostgreSQL Database:**
+```bash
+# Setup database schema
+npm run db:setup
+
+# Load sample data
+DB_PASSWORD=yourpass npm run db:load
+
+# Clean database
+DB_PASSWORD=yourpass npm run db:clean
+```
+
+See [CLEAN_LOCAL_STORAGE.md](./CLEAN_LOCAL_STORAGE.md) for detailed local storage management guide.
 
 ## License
 
