@@ -1030,7 +1030,9 @@ export function getDashboardHTML(): string {
                         </div>
                         <div class="form-group">
                             <label class="required">Business Domain</label>
-                            <input type="text" id="form_business_domain" name="business_domain" required placeholder="e.g., Digital Experience">
+                            <select id="form_business_domain" name="business_domain" required>
+                                <option value="">Select business domain...</option>
+                            </select>
                         </div>
                         <div class="form-group">
                             <label class="required">Metric Type</label>
@@ -1057,7 +1059,8 @@ export function getDashboardHTML(): string {
                         <div class="form-grid">
                             <div class="form-group">
                                 <label>Formula</label>
-                                <input type="text" id="form_formula" name="formula" placeholder="numerator / denominator">
+                                <input type="text" id="form_formula" name="formula" placeholder="numerator / denominator" pattern=".*" title="Use metric IDs, operators (+, -, *, /), and parentheses">
+                                <div style="font-size: 0.85rem; color: #666; margin-top: 0.25rem;">💡 Example: (METRIC-001 + METRIC-002) / METRIC-003</div>
                             </div>
                             <div class="form-group">
                                 <label>Unit</label>
@@ -3134,8 +3137,10 @@ export function getDashboardHTML(): string {
                             <input type="number" step="any" name="kr_current_\${krId}" value="\${existingKR?.current_value ?? ''}" placeholder="50">
                         </div>
                         <div class="form-group">
-                            <label>Linked Metric IDs (comma-separated)</label>
-                            <input type="text" name="kr_metrics_\${krId}" value="\${existingKR?.metric_ids?.join(', ') || ''}" placeholder="METRIC-ID-1, METRIC-ID-2">
+                            <label>Linked Metric ID</label>
+                            <select name="kr_metrics_\${krId}" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px;" data-kr-id="\${krId}">
+                                <option value="">Select a metric (optional)</option>
+                            </select>
                         </div>
                     </div>
                     <div class="form-group" style="margin-top: 0.75rem;">
@@ -3146,6 +3151,41 @@ export function getDashboardHTML(): string {
             \`;
             
             container.insertAdjacentHTML('beforeend', krHtml);
+            
+            // Populate the metrics dropdown for this key result
+            const selectedMetric = existingKR?.metric_ids?.[0] || null;
+            populateKeyResultMetrics(krId, selectedMetric);
+        }
+
+        function populateKeyResultMetrics(krId, selectedMetricId = null) {
+            const select = document.querySelector(\`select[name="kr_metrics_\${krId}"]\`);
+            if (!select) return;
+            
+            select.innerHTML = '<option value="">Select a metric (optional)</option>';
+            
+            if (allMetrics.length === 0) {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'No metrics available';
+                option.disabled = true;
+                select.appendChild(option);
+                return;
+            }
+            
+            // Sort metrics by ID for easier finding
+            const sortedMetrics = [...allMetrics].sort((a, b) => 
+                a.metric_id.localeCompare(b.metric_id)
+            );
+            
+            sortedMetrics.forEach(metric => {
+                const option = document.createElement('option');
+                option.value = metric.metric_id;
+                option.textContent = \`\${metric.metric_id} - \${metric.name}\`;
+                if (metric.metric_id === selectedMetricId) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
         }
 
         function removeKeyResult(krId) {
@@ -3181,6 +3221,10 @@ export function getDashboardHTML(): string {
                             krIdValue = \`\${objId}:KR-\${index + 1}\`;
                         }
                         
+                        // Get selected metric ID from single-select dropdown
+                        const metricsSelect = document.querySelector(\`select[name="kr_metrics_\${krId}"]\`);
+                        const selectedMetric = metricsSelect ? metricsSelect.value : '';
+                        
                         const kr = {
                             kr_id: krIdValue,
                             name: formData.get(\`kr_name_\${krId}\`),
@@ -3190,9 +3234,7 @@ export function getDashboardHTML(): string {
                             unit: formData.get(\`kr_unit_\${krId}\`),
                             direction: formData.get(\`kr_direction_\${krId}\`),
                             current_value: formData.get(\`kr_current_\${krId}\`) ? parseFloat(formData.get(\`kr_current_\${krId}\`)) : null,
-                            metric_ids: formData.get(\`kr_metrics_\${krId}\`) 
-                                ? formData.get(\`kr_metrics_\${krId}\`).split(',').map(m => m.trim()).filter(Boolean)
-                                : []
+                            metric_ids: selectedMetric ? [selectedMetric] : []
                         };
                         keyResults.push(kr);
                     });
@@ -3594,6 +3636,38 @@ export function getDashboardHTML(): string {
         let isEditMode = false;
         let editingMetricId = null;
 
+        function populateBusinessDomainDropdown(selectedValue = '') {
+            const dropdown = document.getElementById('form_business_domain');
+            dropdown.innerHTML = '<option value="">Select business domain...</option>';
+            
+            // Get unique domain names from allDomains
+            const domainNames = allDomains.map(d => d.name).sort();
+            
+            // If no domains defined, add a default option
+            if (domainNames.length === 0) {
+                dropdown.innerHTML += '<option value="" disabled>No domains defined - Add domains first</option>';
+                return;
+            }
+            
+            domainNames.forEach(name => {
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = name;
+                if (name === selectedValue) {
+                    option.selected = true;
+                }
+                dropdown.appendChild(option);
+            });
+            
+            // Add option to allow custom domain if needed
+            const customOption = document.createElement('option');
+            customOption.value = '__custom__';
+            customOption.textContent = '+ Add new domain...';
+            customOption.style.fontStyle = 'italic';
+            customOption.style.color = '#667eea';
+            dropdown.appendChild(customOption);
+        }
+
         function openAddMetricForm() {
             isEditMode = false;
             editingMetricId = null;
@@ -3601,6 +3675,7 @@ export function getDashboardHTML(): string {
             document.getElementById('metricForm').reset();
             document.getElementById('form_metric_id').disabled = false;
             document.getElementById('form_status').value = 'active';
+            populateBusinessDomainDropdown();
             document.getElementById('formModal').classList.add('active');
             document.body.style.overflow = 'hidden';
         }
@@ -3620,7 +3695,7 @@ export function getDashboardHTML(): string {
             document.getElementById('form_short_name').value = metric.short_name || '';
             document.getElementById('form_category').value = metric.category || '';
             document.getElementById('form_tier').value = metric.tier;
-            document.getElementById('form_business_domain').value = metric.business_domain;
+            populateBusinessDomainDropdown(metric.business_domain);
             document.getElementById('form_metric_type').value = metric.metric_type;
             document.getElementById('form_tags').value = (metric.tags || []).join(', ');
             document.getElementById('form_description').value = metric.description;
@@ -3666,6 +3741,26 @@ export function getDashboardHTML(): string {
             }, 3000);
         }
 
+        // Handle business domain dropdown change
+        document.addEventListener('change', function(e) {
+            if (e.target.id === 'form_business_domain') {
+                if (e.target.value === '__custom__') {
+                    const customDomain = prompt('Enter new business domain name:');
+                    if (customDomain && customDomain.trim()) {
+                        // Add to dropdown temporarily
+                        const option = document.createElement('option');
+                        option.value = customDomain.trim();
+                        option.textContent = customDomain.trim();
+                        option.selected = true;
+                        // Insert before the "Add new" option
+                        e.target.insertBefore(option, e.target.lastElementChild);
+                    } else {
+                        e.target.value = '';
+                    }
+                }
+            }
+        });
+
         // Form submission
         document.getElementById('metricForm').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -3675,6 +3770,13 @@ export function getDashboardHTML(): string {
             // Use editingMetricId when in edit mode (form_metric_id field is disabled, so not in FormData)
             let metricId = isEditMode ? editingMetricId : formData.get('metric_id');
             
+            // Validate business domain
+            let businessDomain = formData.get('business_domain');
+            if (businessDomain === '__custom__' || !businessDomain) {
+                showToast('Please select a valid business domain', 'error');
+                return;
+            }
+            
             const metricData = {
                 metric_id: metricId,
                 name: formData.get('name'),
@@ -3682,7 +3784,7 @@ export function getDashboardHTML(): string {
                 description: formData.get('description'),
                 category: formData.get('category'),
                 tier: formData.get('tier'),
-                business_domain: formData.get('business_domain'),
+                business_domain: businessDomain,
                 metric_type: formData.get('metric_type'),
                 tags: formData.get('tags') ? formData.get('tags').split(',').map(t => t.trim()).filter(Boolean) : [],
                 definition: {
@@ -3710,15 +3812,21 @@ export function getDashboardHTML(): string {
 
             try {
                 let response;
-                const settings = getSettings();
+                const settings = loadSettings();
                 
                 // Route to PostgreSQL if enabled
-                if (settings.storageType === 'postgres' && settings.postgresConfig) {
+                if (settings.storage === 'postgresql' && settings.postgres) {
                     response = await fetch('/api/postgres/metrics/save', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            dbConfig: settings.postgresConfig,
+                            dbConfig: {
+                                host: settings.postgres.host,
+                                port: parseInt(settings.postgres.port),
+                                name: settings.postgres.database,
+                                user: settings.postgres.user,
+                                password: settings.postgres.password || ''
+                            },
                             metric: metricData,
                             isUpdate: isEditMode
                         })
@@ -3761,16 +3869,22 @@ export function getDashboardHTML(): string {
             }
 
             try {
-                const settings = getSettings();
+                const settings = loadSettings();
                 let response;
                 
                 // Route to PostgreSQL if enabled
-                if (settings.storageType === 'postgres' && settings.postgresConfig) {
+                if (settings.storage === 'postgresql' && settings.postgres) {
                     response = await fetch('/api/postgres/metrics/delete', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            dbConfig: settings.postgresConfig,
+                            dbConfig: {
+                                host: settings.postgres.host,
+                                port: parseInt(settings.postgres.port),
+                                name: settings.postgres.database,
+                                user: settings.postgres.user,
+                                password: settings.postgres.password || ''
+                            },
                             metricId: metricId
                         })
                     });

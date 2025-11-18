@@ -122,6 +122,58 @@ DB_PASSWORD=yourpassword node scripts/clean-sample-data-postgres.js --confirm
 
 **⚠️ WARNING:** This action is irreversible! All data will be permanently deleted from the database.
 
+### clean-local-storage.js
+
+Removes all data from the local JSON file storage. This clears metrics, domains, and objectives from the file-based storage system.
+
+**Usage:**
+```bash
+# With confirmation prompt
+npm run storage:clean
+# or
+node scripts/clean-local-storage.js
+
+# Skip confirmation (use with caution!)
+node scripts/clean-local-storage.js --confirm
+
+# Specify custom metrics path
+node scripts/clean-local-storage.js --path /custom/path/metrics.json
+```
+
+**Options:**
+- `--confirm` - Skip the confirmation prompt (use with extreme caution!)
+- `--path <path>` - Specify custom path to metrics.json (default: .mdl/metrics.json)
+
+**What it does:**
+- Shows current record counts
+- Creates backups of existing files (with timestamp suffix)
+- Prompts for confirmation (unless `--confirm` flag is used)
+- Clears metrics from `.mdl/metrics.json`
+- Clears domains from `examples/sample-domains.json`
+- Clears objectives from `examples/sample-objectives.json`
+- Verifies all data is removed
+- Displays cleanup summary
+
+**Files affected:**
+- `.mdl/metrics.json` - Set to empty array `[]`
+- `examples/sample-domains.json` - Set to `{"domains": []}`
+- `examples/sample-objectives.json` - Set to `{"objectives": []}`
+
+**Safety Features:**
+- Requires typing "DELETE ALL DATA" to confirm (unless `--confirm` flag is used)
+- Creates timestamped backups before deletion (e.g., `.mdl/metrics.json.backup-2025-11-18T12-30-00-000Z`)
+- Shows record counts before and after deletion
+- Verifies cleanup was successful
+
+**Backup Recovery:**
+If you need to restore data, backups are saved with the original filename plus a timestamp:
+```bash
+# Restore metrics from backup
+cp .mdl/metrics.json.backup-2025-11-18T12-30-00-000Z .mdl/metrics.json
+```
+
+**⚠️ WARNING:** While backups are created, this operation clears all local storage data. Make sure you have the backups or can recreate the data.
+
 ### load-sample-metrics.js
 
 Loads the comprehensive sample metrics from `examples/sample-metrics.json` into the file-based metrics store (`.mdl/metrics.json`).

@@ -5,6 +5,30 @@ All notable changes to the Metric Definition Language (MDL) project will be docu
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2025-11-18
+
+### Added
+
+#### Local Storage Management
+- **Clean Local Storage Script**: New utility script to clear all data from JSON file storage
+  - File: `scripts/clean-local-storage.js` - Clears metrics, domains, and objectives
+  - NPM command: `npm run storage:clean` - Easy-to-use command
+  - Features:
+    - Interactive confirmation prompt (requires typing "DELETE ALL DATA")
+    - `--confirm` flag to skip confirmation for automation
+    - `--path` option to specify custom metrics.json location
+    - Automatic backup creation with timestamps before deletion
+    - Clears `.mdl/metrics.json`, `examples/sample-domains.json`, and `examples/sample-objectives.json`
+    - Shows before/after record counts for verification
+    - Provides recovery instructions for backups
+  - Safety features:
+    - Creates timestamped backups (e.g., `.mdl/metrics.json.backup-2025-11-18T12-30-00-000Z`)
+    - Verification of deletion success
+    - Clear warning messages about data loss
+    - Instructions for backup restoration
+  - Similar to `clean-sample-data-postgres.js` but for file storage
+  - Updated `scripts/README.md` with comprehensive documentation
+
 ## [Unreleased] - 2025-11-15
 
 ### Added

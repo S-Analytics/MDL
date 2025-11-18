@@ -392,6 +392,31 @@ src/
 
 By default, metrics are persisted to `.mdl/metrics.json` in the current working directory. This can be configured via environment variables or programmatically.
 
+### Storage Management
+
+**Local File Storage:**
+```bash
+# Clean all local data (creates backups)
+npm run storage:clean
+
+# Load sample data
+npm run load:samples
+```
+
+**PostgreSQL Database:**
+```bash
+# Setup database schema
+npm run db:setup
+
+# Load sample data
+DB_PASSWORD=yourpass npm run db:load
+
+# Clean database
+DB_PASSWORD=yourpass npm run db:clean
+```
+
+See [CLEAN_LOCAL_STORAGE.md](./CLEAN_LOCAL_STORAGE.md) for detailed local storage management guide.
+
 ## License
 
 MIT
