@@ -1976,9 +1976,42 @@ export function getDashboardHTML(): string {
         }
 
         // Metric Detail View Functions
+        function calculateMetricAlignment(metricId) {
+            // Find all objectives and key results that reference this metric
+            const alignments = [];
+            
+            allObjectives.forEach(objective => {
+                if (objective.key_results && objective.key_results.length > 0) {
+                    objective.key_results.forEach(kr => {
+                        if (kr.metric_ids && kr.metric_ids.includes(metricId)) {
+                            alignments.push({
+                                objective_id: objective.objective_id,
+                                objective_name: objective.name,
+                                key_result_id: kr.kr_id,
+                                key_result_name: kr.name,
+                                business_priority: objective.priority || 'medium',
+                                strategic_theme: objective.strategic_pillar || 'N/A'
+                            });
+                        }
+                    });
+                }
+            });
+            
+            return alignments;
+        }
+
         function showMetricDetail(metricId) {
             const metric = allMetrics.find(m => m.metric_id === metricId);
             if (!metric) return;
+            
+            // Calculate strategic alignment dynamically
+            const alignments = calculateMetricAlignment(metricId);
+            if (alignments.length > 0) {
+                // Add alignment info to metric for display
+                metric.alignments = alignments;
+            } else {
+                delete metric.alignments;
+            }
 
             document.getElementById('modalMetricName').textContent = metric.name;
             document.getElementById('modalMetricId').innerHTML = \`
@@ -2050,8 +2083,41 @@ export function getDashboardHTML(): string {
                 </div>
             \`;
 
-            // Strategic Alignment
-            if (metric.alignment) {
+            // Strategic Alignment - dynamically calculated from objectives
+            if (metric.alignments && metric.alignments.length > 0) {
+                html += \`
+                    <div class="detail-section">
+                        <h3>🎯 Strategic Alignment</h3>
+                        <p style="font-size: 0.9rem; color: #666; margin-bottom: 1rem;">This metric is linked to \${metric.alignments.length} objective(s)</p>
+                        \${metric.alignments.map((alignment, index) => \`
+                            <div style="background: #f9fafb; padding: 1rem; border-radius: 6px; margin-bottom: 1rem; border-left: 4px solid #667eea;">
+                                <h4 style="margin-bottom: 0.75rem; color: #667eea;">Alignment #\${index + 1}</h4>
+                                <div class="detail-grid">
+                                    <div class="detail-item">
+                                        <label>Objective</label>
+                                        <div class="value">\${alignment.objective_id}</div>
+                                        <div style="font-size: 0.85rem; color: #666; margin-top: 0.25rem;">\${alignment.objective_name}</div>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Key Result</label>
+                                        <div class="value">\${alignment.key_result_id}</div>
+                                        <div style="font-size: 0.85rem; color: #666; margin-top: 0.25rem;">\${alignment.key_result_name}</div>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Business Priority</label>
+                                        <div class="value">\${alignment.business_priority}</div>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Strategic Theme</label>
+                                        <div class="value">\${alignment.strategic_theme}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        \`).join('')}
+                    </div>
+                \`;
+            } else if (metric.alignment) {
+                // Fallback for old stored alignment data
                 html += \`
                     <div class="detail-section">
                         <h3>🎯 Strategic Alignment</h3>
@@ -3695,7 +3761,6 @@ export function getDashboardHTML(): string {
             document.getElementById('form_short_name').value = metric.short_name || '';
             document.getElementById('form_category').value = metric.category || '';
             document.getElementById('form_tier').value = metric.tier;
-            populateBusinessDomainDropdown(metric.business_domain);
             document.getElementById('form_metric_type').value = metric.metric_type;
             document.getElementById('form_tags').value = (metric.tags || []).join(', ');
             document.getElementById('form_description').value = metric.description;
@@ -3718,6 +3783,11 @@ export function getDashboardHTML(): string {
 
             document.getElementById('formModal').classList.add('active');
             document.body.style.overflow = 'hidden';
+            
+            // Populate business domain after form is visible to ensure proper selection
+            setTimeout(() => {
+                populateBusinessDomainDropdown(metric.business_domain);
+            }, 0);
         }
 
         function closeFormModal() {
