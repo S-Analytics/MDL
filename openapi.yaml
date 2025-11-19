@@ -7,10 +7,16 @@ info:
     
     This API supports creating, reading, updating, and deleting metric definitions with rich metadata
     including alignment, data sources, governance, targets, alerts, and operational usage information.
-  version: 1.0.0
+  version: 1.1.0
   contact:
     name: MDL API Support
     email: support@example.com
+  x-api-features:
+    - Semantic versioning for metrics (MAJOR.MINOR.PATCH)
+    - Automatic change history tracking
+    - PostgreSQL JSONB metadata storage
+    - OPA policy generation
+    - Enhanced reporting with version history
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
@@ -123,7 +129,13 @@ paths:
       tags:
         - Metrics
       summary: Create a new metric
-      description: Create a new metric definition
+      description: |
+        Create a new metric definition. The metric will be initialized with:
+        - Version 1.0.0
+        - Created timestamp and user
+        - Initial change history entry
+        
+        The system automatically tracks all changes with semantic versioning.
       operationId: createMetric
       requestBody:
         required: true
@@ -193,7 +205,16 @@ paths:
       tags:
         - Metrics
       summary: Update a metric
-      description: Update an existing metric definition
+      description: |
+        Update an existing metric definition. The system automatically:
+        - Calculates appropriate version bump (MAJOR/MINOR/PATCH)
+        - Adds change history entry with modified fields
+        - Updates last_updated timestamp and user
+        
+        Version bumping logic:
+        - **MAJOR** (X.0.0): Changes to formula, unit, category, definition
+        - **MINOR** (x.X.0): Changes to name, description, tier, business_domain
+        - **PATCH** (x.x.X): Changes to tags, metadata, visualization
       operationId: updateMetric
       parameters:
         - name: id
@@ -423,7 +444,14 @@ paths:
       tags:
         - PostgreSQL
       summary: Save metric to PostgreSQL
-      description: Create or update a metric in PostgreSQL database
+      description: |
+        Create or update a metric in PostgreSQL database.
+        
+        The metric's metadata (including version history) is stored in a JSONB column,
+        allowing efficient querying and indexing of version information.
+        
+        When updating an existing metric, the system automatically calculates the
+        appropriate version bump and adds a change history entry.
       operationId: savePostgresMetric
       requestBody:
         required: true
@@ -1068,21 +1096,32 @@ components:
       properties:
         rule_id:
           type: string
+          description: Unique identifier for the alert rule
           example: ALERT-001
         condition:
           type: string
+          description: Condition that triggers the alert
           example: metric_value < warning_threshold
         severity:
           type: string
           enum: [critical, warning, info]
+          description: Severity level of the alert
           example: warning
         notify_channels:
           type: array
+          description: Channels to notify when alert fires (legacy field)
           items:
             type: string
           example: [slack, email, pagerduty]
+        notification_channels:
+          type: array
+          description: Channels to notify when alert fires (preferred field)
+          items:
+            type: string
+          example: ["slack:#alerts", "email:oncall@example.com", "pagerduty"]
         evaluation_window:
           type: string
+          description: Time window for evaluating the alert condition
           example: 5 minutes
 
     Visualization:
@@ -1161,14 +1200,51 @@ components:
 
     MetricMetadata:
       type: object
+      required:
+        - version
+        - created_at
+        - created_by
+        - last_updated
+        - last_updated_by
+        - change_history
       properties:
         notes:
           type: string
+          description: Additional notes about the metric
           example: Monitor closely during authentication system changes
         example_queries:
           type: array
+          description: Example queries for calculating the metric
           items:
             $ref: '#/components/schemas/ExampleQuery'
+        version:
+          type: string
+          description: Semantic version following MAJOR.MINOR.PATCH format
+          pattern: '^\d+\.\d+\.\d+$'
+          example: "1.2.3"
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when the metric was first created
+          example: "2025-11-18T10:00:00.000Z"
+        created_by:
+          type: string
+          description: User who created the metric
+          example: "dashboard_user"
+        last_updated:
+          type: string
+          format: date-time
+          description: Timestamp of the last update
+          example: "2025-11-18T15:30:00.000Z"
+        last_updated_by:
+          type: string
+          description: User who last updated the metric
+          example: "api_user"
+        change_history:
+          type: array
+          description: Complete audit trail of all changes to the metric
+          items:
+            $ref: '#/components/schemas/ChangeHistoryEntry'
 
     ExampleQuery:
       type: object
@@ -1179,6 +1255,50 @@ components:
         query:
           type: string
           example: SELECT COUNT(*) FROM auth_events WHERE status = 'success'
+
+    ChangeHistoryEntry:
+      type: object
+      required:
+        - version
+        - timestamp
+        - changed_by
+        - change_type
+        - changes_summary
+        - fields_changed
+      properties:
+        version:
+          type: string
+          description: Version at the time of this change
+          pattern: '^\d+\.\d+\.\d+$'
+          example: "1.2.0"
+        timestamp:
+          type: string
+          format: date-time
+          description: When the change occurred
+          example: "2025-11-18T15:30:00.000Z"
+        changed_by:
+          type: string
+          description: User who made the change
+          example: "dashboard_user"
+        change_type:
+          type: string
+          enum: [major, minor, patch]
+          description: |
+            Type of change based on semantic versioning:
+            - **major**: Breaking changes (formula, definition, data sources)
+            - **minor**: New features or significant updates (name, targets, dimensions)
+            - **patch**: Bug fixes or minor updates (tags, metadata, visualization)
+          example: "minor"
+        changes_summary:
+          type: string
+          description: Human-readable summary of what changed
+          example: "Updated targets and alert thresholds"
+        fields_changed:
+          type: array
+          description: Array of field names that were modified
+          items:
+            type: string
+          example: ["targets_and_alerts", "dimensions"]
 
     ValidationRule:
       type: object
