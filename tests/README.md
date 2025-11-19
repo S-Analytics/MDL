@@ -9,7 +9,8 @@ The test directory structure mirrors the source code structure for clear alignme
 ```
 tests/
 ├── config/          # Tests for configuration loading and parsing
-│   └── ConfigLoader.test.ts
+│   ├── ConfigLoader.test.ts             # Basic config loading and parsing
+│   └── UniversalImport.test.ts          # Universal import system (NEW)
 ├── opa/             # Tests for OPA policy generation
 │   └── PolicyGenerator.test.ts
 └── storage/         # Tests for metric storage and persistence
@@ -92,6 +93,31 @@ Each test file follows the pattern:
 - **beforeEach/afterEach** handle test setup and cleanup
 - **Test names** clearly describe what is being tested
 
+## Universal Import Tests
+
+The `UniversalImport.test.ts` file tests the universal import system:
+
+### Coverage Areas
+- **File Import**: Tests importing from JSON and YAML template files
+- **Data Detection**: Tests auto-detection of metrics, domains, and objectives
+- **Format Support**: Tests single objects, arrays, wrapped formats, mixed batches
+- **Field Mapping**: Tests template field conversion to storage format
+- **Error Handling**: Tests validation and error scenarios
+
+### Running Universal Import Tests
+```bash
+# Run universal import tests only
+npm test -- UniversalImport
+
+# Run with database integration tests (requires DB setup)
+DB_HOST=localhost DB_NAME=mdl_test npm test -- UniversalImport
+```
+
+### Test Data
+- Uses template files from `examples/` directory
+- Tests all template formats (JSON and YAML)
+- Validates field mapping (e.g., `id`→`domain_id`, `title`→`name`)
+
 ## Writing Tests
 
 When adding new tests:
@@ -101,6 +127,7 @@ When adding new tests:
 3. Import from source using relative paths: `../../src/module/file`
 4. Clean up any resources (files, connections) in `afterEach` hooks
 5. Use sample/mock data consistently across tests
+6. For universal import, use template files from `examples/` directory
 
 ## Test Categories
 
@@ -108,7 +135,7 @@ When adding new tests:
 - Test individual functions and methods in isolation
 - Mock external dependencies
 - Focus on business logic
-- Examples: ConfigLoader, PolicyGenerator
+- Examples: ConfigLoader, PolicyGenerator, UniversalImport
 
 ### Integration Tests
 - Test interaction between components

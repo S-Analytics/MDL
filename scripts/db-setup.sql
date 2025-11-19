@@ -64,6 +64,9 @@ CREATE TABLE metrics (
     -- Usage & Documentation
     usage JSONB,  -- { primary_dashboard, report_frequency, audience, access_level }
     
+    -- Metadata with Versioning
+    metadata JSONB,  -- { version, created_at, created_by, last_updated, last_updated_by, change_history, notes }
+    
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     

@@ -1,10 +1,18 @@
 import * as fs from 'fs';
 import * as yaml from 'js-yaml';
 import * as path from 'path';
-import { MetricDefinition, MetricDefinitionInput, MetricsCatalog } from '../models';
+import { MetricDefinition, MetricDefinitionInput, MetricsCatalog, Objective } from '../models';
+import type { BusinessDomain } from '../storage';
+
+export interface ImportResult {
+  metrics: MetricDefinition[];
+  domains: BusinessDomain[];
+  objectives: Objective[];
+  type: 'metrics' | 'domains' | 'objectives' | 'mixed';
+}
 
 /**
- * Configuration file loader for YAML and JSON metric definitions
+ * Configuration file loader for YAML and JSON data (metrics, domains, objectives)
  */
 export class ConfigLoader {
   /**
@@ -38,6 +46,198 @@ export class ConfigLoader {
   static loadFromFile(filePath: string): MetricDefinition[] {
     const catalog = this.loadCatalogFromFile(filePath);
     return catalog.metrics;
+  }
+
+  /**
+   * Universal import - detects and loads metrics, domains, or objectives
+   * Supports all template formats
+   */
+  static importFromFile(filePath: string): ImportResult {
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`File not found: ${filePath}`);
+    }
+
+    const ext = path.extname(filePath).toLowerCase();
+    const content = fs.readFileSync(filePath, 'utf8');
+
+    let data: any;
+    if (ext === '.json') {
+      data = JSON.parse(content);
+    } else if (ext === '.yaml' || ext === '.yml') {
+      data = yaml.load(content);
+    } else {
+      throw new Error(`Unsupported file format: ${ext}. Use .json, .yaml, or .yml`);
+    }
+
+    return this.parseImportData(data);
+  }
+
+  /**
+   * Parse import data and determine type
+   */
+  public static parseImportData(data: any): ImportResult {
+    const result: ImportResult = {
+      metrics: [],
+      domains: [],
+      objectives: [],
+      type: 'mixed'
+    };
+
+    // Single object detection
+    if (!Array.isArray(data) && typeof data === 'object') {
+      // Check if it's a single metric
+      if (data.metric_id || (data.name && data.description && data.category)) {
+        result.metrics = [this.validateAndConvertMetric(data)];
+        result.type = 'metrics';
+        return result;
+      }
+      
+      // Check if it's a single domain
+      if (data.id && data.name && data.stakeholders !== undefined) {
+        result.domains = [this.validateDomain(data)];
+        result.type = 'domains';
+        return result;
+      }
+      
+      // Check if it's a single objective
+      if (data.objective_id || (data.title && data.key_results)) {
+        result.objectives = [this.validateObjective(data)];
+        result.type = 'objectives';
+        return result;
+      }
+
+      // Check for wrapped arrays
+      if (data.metrics && Array.isArray(data.metrics)) {
+        result.metrics = data.metrics.map((m: any) => this.validateAndConvertMetric(m));
+        result.type = 'metrics';
+      }
+      if (data.domains && Array.isArray(data.domains)) {
+        result.domains = data.domains.map((d: any) => this.validateDomain(d));
+        result.type = result.type === 'metrics' ? 'mixed' : 'domains';
+      }
+      if (data.objectives && Array.isArray(data.objectives)) {
+        result.objectives = data.objectives.map((o: any) => this.validateObjective(o));
+        result.type = result.metrics.length > 0 || result.domains.length > 0 ? 'mixed' : 'objectives';
+      }
+
+      // Legacy catalog format
+      if (data.catalog_version || data.catalog_name) {
+        const catalog = this.parseCatalog(data);
+        result.metrics = catalog.metrics;
+        result.type = 'metrics';
+      }
+    }
+    
+    // Array of items
+    if (Array.isArray(data)) {
+      data.forEach((item: any) => {
+        if (item.metric_id || (item.name && item.description && item.category)) {
+          result.metrics.push(this.validateAndConvertMetric(item));
+        } else if (item.id && item.stakeholders !== undefined) {
+          result.domains.push(this.validateDomain(item));
+        } else if (item.objective_id || (item.title && item.key_results)) {
+          result.objectives.push(this.validateObjective(item));
+        }
+      });
+
+      // Determine primary type
+      if (result.metrics.length > 0 && result.domains.length === 0 && result.objectives.length === 0) {
+        result.type = 'metrics';
+      } else if (result.domains.length > 0 && result.metrics.length === 0 && result.objectives.length === 0) {
+        result.type = 'domains';
+      } else if (result.objectives.length > 0 && result.metrics.length === 0 && result.domains.length === 0) {
+        result.type = 'objectives';
+      }
+    }
+
+    if (result.metrics.length === 0 && result.domains.length === 0 && result.objectives.length === 0) {
+      throw new Error('No valid metrics, domains, or objectives found in file');
+    }
+
+    return result;
+  }
+
+  /**
+   * Validate and convert metric data
+   */
+  private static validateAndConvertMetric(data: any): MetricDefinition {
+    // If it's already in new format, validate and return
+    if (data.metric_id && data.definition && data.governance) {
+      this.validateNewMetricFormat(data, 0);
+      return data as MetricDefinition;
+    }
+    
+    // Convert legacy format
+    return this.convertLegacyToNewFormat(data);
+  }
+
+  /**
+   * Validate domain data and convert to storage format
+   */
+  private static validateDomain(data: any): BusinessDomain {
+    const required = ['id', 'name'];
+    const missing = required.filter(field => !data[field]);
+    
+    if (missing.length > 0) {
+      throw new Error(`Domain is missing required fields: ${missing.join(', ')}`);
+    }
+
+    return {
+      domain_id: data.id,
+      name: data.name,
+      description: data.description || '',
+      owner_team: data.owner || '',
+      contact_email: data.owner || '',
+      tier_focus: data.metadata || {},
+      key_areas: Array.isArray(data.objectives) ? data.objectives : [],
+      color: data.metadata?.color || undefined
+    };
+  }
+
+  /**
+   * Validate objective data and convert to model format
+   */
+  private static validateObjective(data: any): Objective {
+    const required = ['objective_id'];
+    const missing = required.filter(field => !data[field]);
+    
+    if (missing.length > 0) {
+      throw new Error(`Objective is missing required fields: ${missing.join(', ')}`);
+    }
+
+    // Validate and convert key results
+    const keyResults = Array.isArray(data.key_results) ? data.key_results : [];
+    const convertedKRs = keyResults.map((kr: any, index: number) => {
+      const krRequired = ['kr_id', 'description', 'metric_id'];
+      const krMissing = krRequired.filter(field => !kr[field]);
+      if (krMissing.length > 0) {
+        throw new Error(`Key result at index ${index} is missing required fields: ${krMissing.join(', ')}`);
+      }
+      return {
+        kr_id: kr.kr_id,
+        name: kr.description,
+        description: kr.description,
+        target_value: kr.target_value || 0,
+        baseline_value: kr.baseline_value || kr.current_value || 0,
+        unit: kr.unit || '',
+        direction: kr.expected_direction === 'decrease' ? 'decrease' as const : 'increase' as const,
+        current_value: kr.current_value || null,
+        metric_ids: kr.metric_id ? [kr.metric_id] : []
+      };
+    });
+
+    return {
+      objective_id: data.objective_id,
+      name: data.title || data.name || '',
+      description: data.description || '',
+      timeframe: {
+        start: data.start_date || '',
+        end: data.end_date || ''
+      },
+      owner_team: data.owner || '',
+      status: data.status || 'planning',
+      key_results: convertedKRs
+    };
   }
 
   /**
@@ -225,6 +425,12 @@ export class ConfigLoader {
       metadata: {
         notes: '',
         example_queries: [],
+        version: '1.0.0',
+        created_at: new Date().toISOString(),
+        created_by: 'system',
+        last_updated: new Date().toISOString(),
+        last_updated_by: 'system',
+        change_history: [],
       },
     };
   }

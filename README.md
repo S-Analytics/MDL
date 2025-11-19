@@ -147,12 +147,14 @@ Track ownership and compliance:
 ### Import/Export
 
 ```bash
-# Import metrics from YAML or JSON file
+# Universal import - auto-detects metrics, domains, or objectives
 mdl import <file>
 
 # Export metrics to YAML or JSON file
 mdl export <file>
 ```
+
+**Universal Import:** The import command automatically detects the data type (metrics, domains, or objectives) from your template file and routes it to the appropriate storage.
 
 ### List and View
 
@@ -237,11 +239,12 @@ An Insomnia collection with 20+ pre-configured requests is available for easy AP
 
 The collection includes:
 - ✅ All API endpoints with sample requests
+- ✅ Semantic versioning support (v1.1.0+)
 - ✅ Environment variables for easy configuration
 - ✅ PostgreSQL operations (metrics, domains, objectives)
 - ✅ Request examples with realistic data
 
-**See [INSOMNIA_COLLECTION.md](./INSOMNIA_COLLECTION.md) for detailed usage instructions.**
+**See [INSOMNIA.md](./INSOMNIA.md) for complete documentation.**
 
 ## Configuration Files
 
@@ -373,6 +376,16 @@ See the `examples/` directory for sample metric definitions:
 
 - `examples/sample-metrics.json` - JSON format examples
 - `examples/sample-metrics.yaml` - YAML format examples
+
+### Import Templates
+
+Blank templates are available for all dataset types:
+
+- **Metrics:** `examples/template-metric.json` / `template-metric.yaml`
+- **Domains:** `examples/template-domain.json` / `template-domain.yaml`
+- **Objectives:** `examples/template-objective.json` / `template-objective.yaml`
+
+See [examples/TEMPLATES.md](./examples/TEMPLATES.md) for detailed usage instructions and field guidelines
 
 ## Architecture
 

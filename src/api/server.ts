@@ -767,6 +767,102 @@ export function createServer(store: IMetricStore, _config: ServerConfig = {}) {
     }
   });
 
+  // Universal import endpoint - supports all template types
+  app.post('/api/import', async (req: Request, res: Response) => {
+    try {
+      const { data, dbConfig } = req.body;
+
+      if (!data) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing data field in request body'
+        });
+      }
+
+      // Import using ConfigLoader
+      const { ConfigLoader } = await import('../config');
+      const result = ConfigLoader['parseImportData'](data);
+
+      const imported = {
+        metrics: 0,
+        domains: 0,
+        objectives: 0,
+        errors: [] as string[]
+      };
+
+      // Import metrics
+      for (const metric of result.metrics) {
+        try {
+          await store.create(metric as unknown as MetricDefinitionInput);
+          imported.metrics++;
+        } catch (error: any) {
+          imported.errors.push(`Metric ${metric.metric_id}: ${error.message}`);
+        }
+      }
+
+      // Import domains (requires PostgreSQL)
+      if (result.domains.length > 0) {
+        if (!dbConfig) {
+          imported.errors.push(`${result.domains.length} domain(s) require database configuration`);
+        } else {
+          const { PostgresDomainStore } = await import('../storage/PostgresDomainStore');
+          const domainStore = new PostgresDomainStore(dbConfig);
+          for (const domain of result.domains) {
+            try {
+              // Check if domain exists, then create or update
+              const existingDomains = await domainStore.findAll();
+              const exists = existingDomains.some(d => d.domain_id === domain.domain_id);
+              if (exists) {
+                await domainStore.update(domain);
+              } else {
+                await domainStore.create(domain);
+              }
+              imported.domains++;
+            } catch (error: any) {
+              imported.errors.push(`Domain ${domain.domain_id}: ${error.message}`);
+            }
+          }
+        }
+      }
+
+      // Import objectives (requires PostgreSQL)
+      if (result.objectives.length > 0) {
+        if (!dbConfig) {
+          imported.errors.push(`${result.objectives.length} objective(s) require database configuration`);
+        } else {
+          const { PostgresObjectiveStore } = await import('../storage/PostgresObjectiveStore');
+          const objectiveStore = new PostgresObjectiveStore(dbConfig);
+          for (const objective of result.objectives) {
+            try {
+              // Check if objective exists, then create or update
+              const existingObjectives = await objectiveStore.findAll();
+              const exists = existingObjectives.some(o => o.objective_id === objective.objective_id);
+              if (exists) {
+                await objectiveStore.update(objective);
+              } else {
+                await objectiveStore.create(objective);
+              }
+              imported.objectives++;
+            } catch (error: any) {
+              imported.errors.push(`Objective ${objective.objective_id}: ${error.message}`);
+            }
+          }
+        }
+      }
+
+      res.json({
+        success: true,
+        data: {
+          type: result.type,
+          imported,
+          total: imported.metrics + imported.domains + imported.objectives
+        }
+      });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
   // Test database connection
   app.post('/api/database/test', async (req: Request, res: Response) => {
     try {

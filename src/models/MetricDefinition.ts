@@ -175,11 +175,26 @@ export interface Playbook {
 export interface MetricMetadata {
   notes: string;
   example_queries: ExampleQuery[];
+  version: string;
+  created_at: string;
+  created_by: string;
+  last_updated: string;
+  last_updated_by: string;
+  change_history: ChangeHistoryEntry[];
 }
 
 export interface ExampleQuery {
   language: string;
   query: string;
+}
+
+export interface ChangeHistoryEntry {
+  version: string;
+  timestamp: string;
+  changed_by: string;
+  change_type: 'major' | 'minor' | 'patch';
+  changes_summary: string;
+  fields_changed: string[];
 }
 
 // Legacy interfaces for backward compatibility

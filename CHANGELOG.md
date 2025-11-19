@@ -7,7 +7,127 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] - 2025-11-18
 
+### Documentation
+- **Documentation Consolidation**: Streamlined documentation to minimal essential files
+  - Consolidated 4 Insomnia files into single `INSOMNIA.md`
+  - Removed 18 redundant documentation files
+  - All versioning, bug fixes, and implementation details preserved in CHANGELOG
+  - Final documentation structure: `README.md`, `CHANGELOG.md`, `INSOMNIA.md`
+  - Subdirectory docs retained: `scripts/README.md`, `tests/README.md`, `assets/README.md`
+- **Import Template Documentation**: Created `examples/TEMPLATES.md` with comprehensive usage guide
+  - Template format specifications for metrics, domains, and objectives
+  - Universal import usage examples (CLI, API, Dashboard)
+  - Data type auto-detection and routing details
+  - Database requirements for domains and objectives
+- **OpenAPI Specification Updates**: Enhanced API documentation for v1.1.0
+  - Added `/api/import` endpoint documentation with complete schemas
+  - Documented auto-detection logic for all data types
+  - Included supported formats (single, array, wrapped, mixed)
+  - Request/response examples with detailed field descriptions
+- **Insomnia Collection Updates**: Extended REST client testing collection
+  - Added Universal Import request group with 5 test requests
+  - Single metric import, batch metrics import examples
+  - Domain and objective import with database config examples
+  - Mixed data type import (metrics + domains + objectives)
+  - Updated `INSOMNIA.md` with universal import workflow and examples
+
 ### Added
+
+#### Universal Import System
+- **Auto-Detection Import Engine**: Intelligent import system for all data types
+  - Single endpoint `/api/import` handles metrics, domains, and objectives
+  - Automatic data type detection and validation
+  - Support for multiple formats: single object, array, wrapped objects, mixed batches
+  - Template field mapping to storage format (e.g., `id`→`domain_id`, `title`→`name`)
+  - Detailed import statistics with per-type counts and error reporting
+- **Enhanced ConfigLoader**: Extended with universal import capabilities
+  - `importFromFile(filePath)`: Entry point for file-based imports
+  - `parseImportData(data)`: Detects and validates metrics/domains/objectives
+  - `validateAndConvertMetric(data)`: Handles new and legacy metric formats
+  - `validateDomain(data)`: Converts template domain to BusinessDomain storage format
+  - `validateObjective(data)`: Converts template objective to Objective model format
+  - Returns structured `ImportResult` with segregated data types
+- **CLI Import Enhancement**: Updated import command for universal capability
+  - `npm run cli import <file>` now accepts any template format
+  - Auto-detects data type from file contents
+  - Shows import statistics for each data type
+  - Warnings for domains/objectives requiring database configuration
+- **API Import Endpoint**: New POST `/api/import` with intelligent routing
+  - Accepts `data` (any format) and optional `dbConfig`
+  - Routes metrics to file storage (InMemoryMetricStore)
+  - Routes domains to PostgreSQL (PostgresDomainStore) with create/update logic
+  - Routes objectives to PostgreSQL (PostgresObjectiveStore) with create/update logic
+  - Returns detailed statistics: type, imported counts, errors, total
+  - Individual item error handling with error isolation
+- **Dashboard Import Integration**: Updated import modal for universal import
+  - Modal title changed from "Import Metrics" to "Import Data"
+  - Added universal import notice (supports all data types)
+  - Updated button text to "Import Data"
+  - Enhanced `performImport()` to use `/api/import` endpoint
+  - Displays results for all three data types with statistics
+- **Import Templates**: Created 6 template files for easy data import
+  - `template-metric.json` and `template-metric.yaml`: Complete metric structure
+  - `template-domain.json` and `template-domain.yaml`: Business domain template
+  - `template-objective.json` and `template-objective.yaml`: Objective with key results
+  - All templates include helpful comments and example values
+  - Fields marked as required or optional for clarity
+
+#### Metric Versioning System
+
+#### Metric Versioning System
+- **Semantic Versioning**: Automatic version tracking following semver standards (MAJOR.MINOR.PATCH)
+  - **Major version bump** (X.0.0): Breaking changes (formula, unit, category modifications)
+  - **Minor version bump** (x.X.0): Feature changes (name, description, business domain updates)
+  - **Patch version bump** (x.x.X): Minor updates (tags, governance, status changes)
+  - New `version` field in `MetricMetadata` interface
+  - Automatic version calculation based on field changes
+  - Works in both local file and PostgreSQL storage
+- **Change History Tracking**: Complete audit trail for all metric modifications
+  - `change_history` array storing all version changes
+  - Each entry includes: version, timestamp, changed_by, change_type, changes_summary, fields_changed
+  - Tracks which specific fields were modified in each update
+  - Maintains full chronological history from creation to current state
+- **Enhanced Metadata Interface**: Extended `MetricMetadata` with versioning fields
+  - `version`: Current semver version (e.g., "2.1.3")
+  - `created_at`: ISO timestamp of metric creation
+  - `created_by`: User who created the metric
+  - `last_updated`: ISO timestamp of last modification
+  - `last_updated_by`: User who made the last update
+  - `change_history`: Array of `ChangeHistoryEntry` objects
+- **Dashboard UI Enhancements**: Visual change history timeline in metric details
+  - Color-coded version badges (red=major, orange=minor, green=patch)
+  - Reverse chronological display with newest changes first
+  - Shows version number, timestamp, change type, summary, and fields changed
+  - Latest change highlighted with different background
+  - Scrollable timeline for long histories (max 300px height)
+  - Prominent version display in metadata section
+- **Storage Layer Updates**:
+  - `InMemoryMetricStore`: Versioning logic in create/update methods
+  - `PostgresMetricStore`: Same versioning logic with metadata JSONB column
+  - `bumpVersion()`: Helper function to increment version numbers
+  - `determineChangeType()`: Analyzes changes to select appropriate version bump
+- **Database Schema**: Added `metadata` JSONB column to metrics table
+  - Stores complete versioning information
+  - Migration script provided for existing databases
+  - Supports indexing and querying on version fields
+- **Documentation**: Comprehensive versioning guide (`VERSIONING_IMPLEMENTATION.md`)
+  - Detailed versioning rules and examples
+  - Testing instructions for all change types
+  - Database migration guide
+  - API integration examples
+  - Future enhancement suggestions
+
+#### Bug Fixes
+- **Strategic Alignment Dynamic Calculation**: Fixed metric details not showing current objective linkages
+  - Added `calculateMetricAlignment()` function to scan objectives for metric references
+  - Updates strategic alignment in real-time based on current objective/key result data
+  - Shows all objectives where metric is linked (supports multiple alignments)
+  - Displays objective name, key result details, business priority, and strategic theme
+  - Backwards compatible with old static alignment data
+- **Business Domain Dropdown Persistence**: Fixed dropdown not showing saved value on edit
+  - Added `setTimeout()` to defer dropdown population until DOM is fully ready
+  - Ensures selected value is properly set when reopening metric for edit
+  - Resolves timing issue with form rendering and selection
 
 #### Local Storage Management
 - **Clean Local Storage Script**: New utility script to clear all data from JSON file storage
