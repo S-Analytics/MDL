@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] - 2025-11-18
 
+### Documentation
+- **Documentation Consolidation**: Streamlined documentation to minimal essential files
+  - Consolidated 4 Insomnia files into single `INSOMNIA.md`
+  - Removed 18 redundant documentation files
+  - All versioning, bug fixes, and implementation details preserved in CHANGELOG
+  - Final documentation structure: `README.md`, `CHANGELOG.md`, `INSOMNIA.md`
+  - Subdirectory docs retained: `scripts/README.md`, `tests/README.md`, `assets/README.md`
+
 ### Added
 
 #### Metric Versioning System

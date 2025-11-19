@@ -237,11 +237,12 @@ An Insomnia collection with 20+ pre-configured requests is available for easy AP
 
 The collection includes:
 - ✅ All API endpoints with sample requests
+- ✅ Semantic versioning support (v1.1.0+)
 - ✅ Environment variables for easy configuration
 - ✅ PostgreSQL operations (metrics, domains, objectives)
 - ✅ Request examples with realistic data
 
-**See [INSOMNIA_COLLECTION.md](./INSOMNIA_COLLECTION.md) for detailed usage instructions.**
+**See [INSOMNIA.md](./INSOMNIA.md) for complete documentation.**
 
 ## Configuration Files
 
