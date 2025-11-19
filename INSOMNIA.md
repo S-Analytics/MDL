@@ -5,8 +5,8 @@ Complete guide for testing the MDL API using Insomnia REST client.
 ## 📦 Collection Overview
 
 **File:** `insomnia-collection.json`  
-**Total Requests:** 20+  
-**API Version:** 1.1.0 (with versioning support)  
+**Total Requests:** 24+  
+**API Version:** 1.1.0 (with versioning and universal import support)  
 **Organized Groups:** 8
 
 ---
@@ -54,7 +54,14 @@ Server will be available at `http://localhost:3000`
 ### 1. Health (1 request)
 - **GET** `/health` - Server health check
 
-### 2. Metrics - File Storage (6 requests)
+### 2. Universal Import (5 requests)
+- **POST** `/api/import` - Import single metric
+- **POST** `/api/import` - Import batch metrics
+- **POST** `/api/import` - Import single domain (requires PostgreSQL)
+- **POST** `/api/import` - Import single objective (requires PostgreSQL)
+- **POST** `/api/import` - Import mixed data types
+
+### 3. Metrics - File Storage (6 requests)
 - **GET** `/api/metrics` - Get all metrics
 - **GET** `/api/metrics?business_domain=X&tier=Y` - Get filtered metrics
 - **GET** `/api/metrics/:id` - Get specific metric
@@ -283,6 +290,67 @@ Each update adds an entry to `change_history` array.
 }
 ```
 
+### Universal Import Request
+
+Import any data type (metrics, domains, objectives) with automatic detection:
+
+```json
+{
+  "data": {
+    "metric_id": "METRIC-IMPORT-001",
+    "name": "Import Test Metric",
+    "description": "Testing universal import",
+    "category": "Testing",
+    "tier": "Tier-3",
+    "business_domain": "QA",
+    "metric_type": "operational"
+  }
+}
+```
+
+**For domains/objectives, add database config:**
+
+```json
+{
+  "data": {
+    "id": "test-domain",
+    "name": "Test Domain",
+    "description": "Testing domain import",
+    "owner": "test@example.com"
+  },
+  "dbConfig": {
+    "host": "localhost",
+    "port": 5432,
+    "database": "mdl",
+    "user": "postgres",
+    "password": "your_password"
+  }
+}
+```
+
+**Supported formats:**
+- Single object: `{"data": {...}}`
+- Array: `{"data": [{...}, {...}]}`
+- Wrapped: `{"data": {"metrics": [...], "domains": [...]}}`
+- Mixed: `{"data": {"metrics": [...], "domains": [...], "objectives": [...]}}`
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "type": "metrics",  // or "domains", "objectives", "mixed"
+    "imported": {
+      "metrics": 1,
+      "domains": 0,
+      "objectives": 0,
+      "errors": []
+    },
+    "total": 1
+  }
+}
+```
+
 ### PostgreSQL Config
 
 All PostgreSQL requests require `dbConfig`:
@@ -304,6 +372,14 @@ All PostgreSQL requests require `dbConfig`:
 ---
 
 ## 🎯 Testing Workflows
+
+### Universal Import Workflow
+1. **Health Check** → Verify server
+2. **Import Single Metric** → POST to `/api/import` (metrics stored in file)
+3. **Import Batch Metrics** → POST array to `/api/import`
+4. **Import Domain** → POST with `dbConfig` (stored in PostgreSQL)
+5. **Import Mixed Data** → POST metrics + domains together
+6. **Get Statistics** → View imported data
 
 ### Basic File Storage Workflow
 1. **Health Check** → Verify server

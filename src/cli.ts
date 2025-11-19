@@ -101,24 +101,44 @@ program
     }
   });
 
-// Import metrics from config file
+// Import data from config file (metrics, domains, or objectives)
 program
   .command('import <file>')
-  .description('Import metrics from a YAML or JSON configuration file')
+  .description('Import metrics, domains, or objectives from a YAML or JSON file')
   .action(async (file) => {
     try {
-      console.log(`Loading metrics from ${file}...`);
-      const metrics = ConfigLoader.loadFromFile(file);
+      console.log(`Loading data from ${file}...`);
+      const result = ConfigLoader.importFromFile(file);
       
-      console.log(`Found ${metrics.length} metric(s) to import.`);
+      let totalImported = 0;
       
-      for (const metric of metrics) {
-        // Store.create accepts MetricDefinitionInput and will handle conversion
-        const created = await store.create(metric as unknown as MetricDefinitionInput);
-        console.log(`✓ Imported: ${created.name} (${created.metric_id})`);
+      // Import metrics
+      if (result.metrics.length > 0) {
+        console.log(`\nFound ${result.metrics.length} metric(s) to import.`);
+        for (const metric of result.metrics) {
+          const created = await store.create(metric as unknown as MetricDefinitionInput);
+          console.log(`✓ Imported metric: ${created.name} (${created.metric_id})`);
+          totalImported++;
+        }
       }
       
-      console.log(`\nSuccessfully imported ${metrics.length} metric(s).`);
+      // Import domains (note: requires domain store implementation)
+      if (result.domains.length > 0) {
+        console.log(`\n⚠️  Found ${result.domains.length} domain(s).`);
+        console.log('Domain import via CLI requires database storage.');
+        console.log('Use the dashboard interface or API to import domains.');
+      }
+      
+      // Import objectives (note: requires objective store implementation)
+      if (result.objectives.length > 0) {
+        console.log(`\n⚠️  Found ${result.objectives.length} objective(s).`);
+        console.log('Objective import via CLI requires database storage.');
+        console.log('Use the dashboard interface or API to import objectives.');
+      }
+      
+      console.log(`\n✓ Successfully imported ${totalImported} item(s) from ${file}`);
+      console.log(`   Type: ${result.type}`);
+      console.log(`   Metrics: ${result.metrics.length}, Domains: ${result.domains.length}, Objectives: ${result.objectives.length}`);
     } catch (error: any) {
       console.error('Error:', error.message);
       process.exit(1);

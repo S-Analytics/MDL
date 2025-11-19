@@ -744,7 +744,7 @@ export function getDashboardHTML(): string {
         <div class="modal-content">
             <div class="modal-header">
                 <button class="close-btn" onclick="closeImportModal()">&times;</button>
-                <h2>Import Metrics</h2>
+                <h2>Import Data</h2>
             </div>
             <div class="modal-body">
                 <div class="form-group">
@@ -760,13 +760,15 @@ export function getDashboardHTML(): string {
                         <label>Choose File</label>
                         <input type="file" id="importFile" accept=".json,.yaml,.yml" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px;">
                     </div>
-                    <div style="margin-top: 1rem; padding: 1rem; background: #f9fafb; border-radius: 6px; font-size: 0.9rem; color: #666;">
-                        <strong>Supported formats:</strong>
+                    <div style="margin-top: 1rem; padding: 1rem; background: #e0f2fe; border-left: 4px solid #0ea5e9; border-radius: 6px; font-size: 0.9rem; color: #0c4a6e;">
+                        <strong>📥 Universal Import - Supports All Templates:</strong>
                         <ul style="margin-top: 0.5rem; padding-left: 1.5rem;">
-                            <li>JSON file with array of metrics</li>
-                            <li>JSON file with catalog structure (metrics array inside)</li>
-                            <li>YAML file with metrics</li>
+                            <li><strong>Metrics:</strong> template-metric.json/yaml or sample-metrics files</li>
+                            <li><strong>Domains:</strong> template-domain.json/yaml (requires database)</li>
+                            <li><strong>Objectives:</strong> template-objective.json/yaml (requires database)</li>
+                            <li><strong>Mixed:</strong> Files with multiple data types</li>
                         </ul>
+                        <p style="margin: 0.5rem 0 0 0; font-size: 0.85rem;">💡 System automatically detects data type and imports to correct storage.</p>
                     </div>
                 </div>
 
@@ -786,7 +788,7 @@ export function getDashboardHTML(): string {
 
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="closeImportModal()">Cancel</button>
-                    <button type="button" class="btn btn-success" onclick="performImport()">Import Metrics</button>
+                    <button type="button" class="btn btn-success" onclick="performImport()">Import Data</button>
                 </div>
             </div>
         </div>
@@ -3597,77 +3599,38 @@ export function getDashboardHTML(): string {
                     return;
                 }
 
-                // Extract metrics array
-                let metrics = [];
-                if (Array.isArray(data)) {
-                    metrics = data;
-                } else if (data.metrics && Array.isArray(data.metrics)) {
-                    metrics = data.metrics;
-                } else if (data.data && Array.isArray(data.data.metrics)) {
-                    metrics = data.data.metrics;
-                } else {
-                    showToast('Invalid format. Expected array of metrics or catalog structure.', 'error');
+                // Use universal import API
+                const dbConfig = getStorageType() === 'database' ? getDatabaseConfig() : null;
+                
+                const response = await fetch('/api/import', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ data, dbConfig })
+                });
+
+                const result = await response.json();
+
+                if (!result.success) {
+                    showToast(\`Import failed: \${result.error}\`, 'error');
                     return;
                 }
 
-                if (metrics.length === 0) {
-                    showToast('No metrics found in the imported data', 'error');
-                    return;
-                }
-
-                // Import metrics
-                let successCount = 0;
-                let errorCount = 0;
-                const errors = [];
-
-                for (const metric of metrics) {
-                    try {
-                        // Check if metric exists
-                        const exists = allMetrics.some(m => m.metric_id === metric.metric_id);
-                        
-                        if (exists && merge) {
-                            // Update existing metric
-                            const response = await fetch(\`/api/metrics/\${metric.metric_id}\`, {
-                                method: 'PUT',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify(metric)
-                            });
-                            
-                            const result = await response.json();
-                            if (result.success) {
-                                successCount++;
-                            } else {
-                                errorCount++;
-                                errors.push(\`\${metric.metric_id}: \${result.error}\`);
-                            }
-                        } else if (!exists) {
-                            // Create new metric
-                            const response = await fetch('/api/metrics', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify(metric)
-                            });
-                            
-                            const result = await response.json();
-                            if (result.success) {
-                                successCount++;
-                            } else {
-                                errorCount++;
-                                errors.push(\`\${metric.metric_id}: \${result.error}\`);
-                            }
-                        }
-                    } catch (error) {
-                        errorCount++;
-                        errors.push(\`\${metric.metric_id}: \${error.message}\`);
-                    }
-                }
-
-                // Show results
-                if (errorCount === 0) {
-                    showToast(\`Successfully imported \${successCount} metrics!\`, 'success');
+                const { imported, type, total } = result.data;
+                
+                // Build success message
+                const parts = [];
+                if (imported.metrics > 0) parts.push(\`\${imported.metrics} metric(s)\`);
+                if (imported.domains > 0) parts.push(\`\${imported.domains} domain(s)\`);
+                if (imported.objectives > 0) parts.push(\`\${imported.objectives} objective(s)\`);
+                
+                const message = \`Successfully imported \${parts.join(', ')}! (Total: \${total})\`;
+                
+                if (imported.errors && imported.errors.length > 0) {
+                    showToast(\`\${message} with \${imported.errors.length} error(s). Check console.\`, 'warning');
+                    console.error('Import errors:', imported.errors);
                 } else {
-                    showToast(\`Imported \${successCount} metrics with \${errorCount} errors. Check console for details.\`, 'error');
-                    console.error('Import errors:', errors);
+                    showToast(message, 'success');
+                }
                 }
 
                 closeImportModal();

@@ -1,0 +1,68 @@
+metric_id: ""
+name: ""
+short_name: ""
+description: ""
+category: ""
+tier: ""
+business_domain: ""
+metric_type: ""
+tags: []
+alignment:
+  strategic_pillar: ""
+  primary_objective_ids: []
+  related_okr_ids: []
+  why_it_matters: ""
+definition:
+  formula: ""
+  formula_detail: ""
+  numerator:
+    event_name: ""
+    filters: []
+  denominator:
+    event_name: ""
+    filters: []
+  unit: ""
+  expected_direction: ""
+data:
+  primary_sources:
+    - system: ""
+      table_or_stream: ""
+      connection_id: ""
+  data_freshness: ""
+  update_frequency: ""
+governance:
+  data_classification: ""
+  pii_involved: false
+  owner_team: ""
+  technical_owner: ""
+  business_owner: ""
+  version: "1.0.0"
+  status: "draft"
+dimensions: []
+targets_and_alerts:
+  target_value: null
+  warning_threshold: null
+  critical_threshold: null
+  alert_rules:
+    - name: ""
+      condition: ""
+      severity: ""
+      notification_channels: []
+visualization:
+  default_chart_type: ""
+  default_time_range: ""
+relationships:
+  upstream_metric_ids: []
+  downstream_metric_ids: []
+operational_usage:
+  decision_use_cases: []
+  review_cadence: ""
+metadata:
+  notes: ""
+  example_queries: []
+  version: "1.0.0"
+  created_at: ""
+  created_by: ""
+  last_updated: ""
+  last_updated_by: ""
+  change_history: []

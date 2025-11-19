@@ -43,6 +43,13 @@
       "description": "Metric CRUD operations using file storage"
     },
     {
+      "_id": "fld_import",
+      "_type": "request_group",
+      "parentId": "wrk_mdl",
+      "name": "Universal Import",
+      "description": "Universal import for all data types (metrics, domains, objectives)"
+    },
+    {
       "_id": "fld_policies",
       "_type": "request_group",
       "parentId": "wrk_mdl",
@@ -87,6 +94,82 @@
       "headers": [],
       "body": {},
       "description": "Check if the API server is running and healthy"
+    },
+    {
+      "_id": "req_import_metric",
+      "_type": "request",
+      "parentId": "fld_import",
+      "name": "Import Single Metric",
+      "url": "{{ _.base_url }}/api/import",
+      "method": "POST",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"data\": {\n    \"metric_id\": \"METRIC-IMPORT-TEST-{{ _.timestamp }}\",\n    \"name\": \"Import Test Metric\",\n    \"short_name\": \"import_test\",\n    \"description\": \"Testing universal import\",\n    \"category\": \"Testing\",\n    \"tier\": \"Tier-3\",\n    \"business_domain\": \"QA\",\n    \"metric_type\": \"operational\",\n    \"tags\": [\"import\", \"test\"],\n    \"alignment\": {\n      \"strategic_pillar\": \"Quality\",\n      \"primary_objective_ids\": [],\n      \"related_okr_ids\": [],\n      \"why_it_matters\": \"Testing import functionality\"\n    },\n    \"definition\": {\n      \"formula\": \"count(imports)\",\n      \"formula_detail\": \"Count successful imports\",\n      \"numerator\": {\"event_name\": \"import_success\", \"filters\": []},\n      \"denominator\": {\"event_name\": \"total_imports\", \"filters\": []},\n      \"unit\": \"count\",\n      \"expected_direction\": \"increase\"\n    },\n    \"data\": {\n      \"primary_sources\": [{\"system\": \"mdl\", \"table_or_stream\": \"imports\", \"connection_id\": \"local\"}],\n      \"data_freshness\": \"real_time\",\n      \"update_frequency\": \"on_demand\"\n    },\n    \"governance\": {\n      \"data_classification\": \"Internal\",\n      \"pii_involved\": false,\n      \"owner_team\": \"Platform\",\n      \"technical_owner\": \"platform@example.com\",\n      \"business_owner\": \"platform@example.com\",\n      \"status\": \"active\"\n    },\n    \"dimensions\": [],\n    \"targets_and_alerts\": {\n      \"target_value\": 100,\n      \"warning_threshold\": 80,\n      \"critical_threshold\": 50,\n      \"alert_rules\": []\n    },\n    \"visualization\": {\n      \"default_chart_type\": \"line\",\n      \"default_time_range\": \"last_7_days\"\n    },\n    \"relationships\": {\n      \"upstream_metric_ids\": [],\n      \"downstream_metric_ids\": []\n    },\n    \"operational_usage\": {\n      \"decision_use_cases\": [\"Monitor imports\"],\n      \"review_cadence\": \"daily\"\n    },\n    \"metadata\": {\n      \"notes\": \"Universal import test\",\n      \"example_queries\": [],\n      \"version\": \"1.0.0\",\n      \"created_at\": \"2025-11-18T00:00:00Z\",\n      \"created_by\": \"api_test\",\n      \"last_updated\": \"2025-11-18T00:00:00Z\",\n      \"last_updated_by\": \"api_test\",\n      \"change_history\": []\n    }\n  }\n}"
+      },
+      "description": "Import a single metric using universal import endpoint"
+    },
+    {
+      "_id": "req_import_batch_metrics",
+      "_type": "request",
+      "parentId": "fld_import",
+      "name": "Import Batch Metrics",
+      "url": "{{ _.base_url }}/api/import",
+      "method": "POST",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"data\": {\n    \"metrics\": [\n      {\n        \"metric_id\": \"METRIC-BATCH-001\",\n        \"name\": \"Batch Metric 1\",\n        \"description\": \"First batch metric\",\n        \"category\": \"Testing\",\n        \"tier\": \"Tier-3\",\n        \"business_domain\": \"QA\",\n        \"metric_type\": \"operational\"\n      },\n      {\n        \"metric_id\": \"METRIC-BATCH-002\",\n        \"name\": \"Batch Metric 2\",\n        \"description\": \"Second batch metric\",\n        \"category\": \"Testing\",\n        \"tier\": \"Tier-3\",\n        \"business_domain\": \"QA\",\n        \"metric_type\": \"operational\"\n      }\n    ]\n  }\n}"
+      },
+      "description": "Import multiple metrics in one request"
+    },
+    {
+      "_id": "req_import_domain",
+      "_type": "request",
+      "parentId": "fld_import",
+      "name": "Import Single Domain",
+      "url": "{{ _.base_url }}/api/import",
+      "method": "POST",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"data\": {\n    \"id\": \"test-import-domain\",\n    \"name\": \"Test Import Domain\",\n    \"description\": \"Testing domain import\",\n    \"owner\": \"test@example.com\",\n    \"stakeholders\": [\"user1@example.com\", \"user2@example.com\"],\n    \"objectives\": [\"Validate universal import\"],\n    \"key_metrics\": [\"METRIC-001\", \"METRIC-002\"],\n    \"metadata\": {\n      \"industry\": \"Technology\",\n      \"priority\": \"high\"\n    }\n  },\n  \"dbConfig\": {\n    \"host\": \"{{ _.db_host }}\",\n    \"port\": {{ _.db_port }},\n    \"database\": \"{{ _.db_name }}\",\n    \"user\": \"{{ _.db_user }}\",\n    \"password\": \"{{ _.db_password }}\"\n  }\n}"
+      },
+      "description": "Import a single domain (requires PostgreSQL)"
+    },
+    {
+      "_id": "req_import_mixed",
+      "_type": "request",
+      "parentId": "fld_import",
+      "name": "Import Mixed Data Types",
+      "url": "{{ _.base_url }}/api/import",
+      "method": "POST",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"data\": {\n    \"metrics\": [\n      {\n        \"metric_id\": \"METRIC-MIXED-001\",\n        \"name\": \"Mixed Import Metric\",\n        \"description\": \"Part of mixed import\",\n        \"category\": \"Testing\",\n        \"tier\": \"Tier-3\",\n        \"business_domain\": \"QA\",\n        \"metric_type\": \"operational\"\n      }\n    ],\n    \"domains\": [\n      {\n        \"id\": \"mixed-domain-001\",\n        \"name\": \"Mixed Domain\",\n        \"description\": \"Part of mixed import\",\n        \"owner\": \"test@example.com\",\n        \"stakeholders\": [],\n        \"objectives\": [],\n        \"key_metrics\": [],\n        \"metadata\": {}\n      }\n    ]\n  },\n  \"dbConfig\": {\n    \"host\": \"{{ _.db_host }}\",\n    \"port\": {{ _.db_port }},\n    \"database\": \"{{ _.db_name }}\",\n    \"user\": \"{{ _.db_user }}\",\n    \"password\": \"{{ _.db_password }}\"\n  }\n}"
+      },
+      "description": "Import both metrics and domains in one request"
     },
     {
       "_id": "req_get_all_metrics",

@@ -14,8 +14,65 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - All versioning, bug fixes, and implementation details preserved in CHANGELOG
   - Final documentation structure: `README.md`, `CHANGELOG.md`, `INSOMNIA.md`
   - Subdirectory docs retained: `scripts/README.md`, `tests/README.md`, `assets/README.md`
+- **Import Template Documentation**: Created `examples/TEMPLATES.md` with comprehensive usage guide
+  - Template format specifications for metrics, domains, and objectives
+  - Universal import usage examples (CLI, API, Dashboard)
+  - Data type auto-detection and routing details
+  - Database requirements for domains and objectives
+- **OpenAPI Specification Updates**: Enhanced API documentation for v1.1.0
+  - Added `/api/import` endpoint documentation with complete schemas
+  - Documented auto-detection logic for all data types
+  - Included supported formats (single, array, wrapped, mixed)
+  - Request/response examples with detailed field descriptions
+- **Insomnia Collection Updates**: Extended REST client testing collection
+  - Added Universal Import request group with 5 test requests
+  - Single metric import, batch metrics import examples
+  - Domain and objective import with database config examples
+  - Mixed data type import (metrics + domains + objectives)
+  - Updated `INSOMNIA.md` with universal import workflow and examples
 
 ### Added
+
+#### Universal Import System
+- **Auto-Detection Import Engine**: Intelligent import system for all data types
+  - Single endpoint `/api/import` handles metrics, domains, and objectives
+  - Automatic data type detection and validation
+  - Support for multiple formats: single object, array, wrapped objects, mixed batches
+  - Template field mapping to storage format (e.g., `id`→`domain_id`, `title`→`name`)
+  - Detailed import statistics with per-type counts and error reporting
+- **Enhanced ConfigLoader**: Extended with universal import capabilities
+  - `importFromFile(filePath)`: Entry point for file-based imports
+  - `parseImportData(data)`: Detects and validates metrics/domains/objectives
+  - `validateAndConvertMetric(data)`: Handles new and legacy metric formats
+  - `validateDomain(data)`: Converts template domain to BusinessDomain storage format
+  - `validateObjective(data)`: Converts template objective to Objective model format
+  - Returns structured `ImportResult` with segregated data types
+- **CLI Import Enhancement**: Updated import command for universal capability
+  - `npm run cli import <file>` now accepts any template format
+  - Auto-detects data type from file contents
+  - Shows import statistics for each data type
+  - Warnings for domains/objectives requiring database configuration
+- **API Import Endpoint**: New POST `/api/import` with intelligent routing
+  - Accepts `data` (any format) and optional `dbConfig`
+  - Routes metrics to file storage (InMemoryMetricStore)
+  - Routes domains to PostgreSQL (PostgresDomainStore) with create/update logic
+  - Routes objectives to PostgreSQL (PostgresObjectiveStore) with create/update logic
+  - Returns detailed statistics: type, imported counts, errors, total
+  - Individual item error handling with error isolation
+- **Dashboard Import Integration**: Updated import modal for universal import
+  - Modal title changed from "Import Metrics" to "Import Data"
+  - Added universal import notice (supports all data types)
+  - Updated button text to "Import Data"
+  - Enhanced `performImport()` to use `/api/import` endpoint
+  - Displays results for all three data types with statistics
+- **Import Templates**: Created 6 template files for easy data import
+  - `template-metric.json` and `template-metric.yaml`: Complete metric structure
+  - `template-domain.json` and `template-domain.yaml`: Business domain template
+  - `template-objective.json` and `template-objective.yaml`: Objective with key results
+  - All templates include helpful comments and example values
+  - Fields marked as required or optional for clarity
+
+#### Metric Versioning System
 
 #### Metric Versioning System
 - **Semantic Versioning**: Automatic version tracking following semver standards (MAJOR.MINOR.PATCH)

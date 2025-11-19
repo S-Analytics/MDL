@@ -1,0 +1,25 @@
+objective_id: ""
+title: ""
+description: ""
+owner: ""
+start_date: ""
+end_date: ""
+status: ""
+business_priority: ""
+strategic_theme: ""
+business_domain: ""
+metric_ids: []
+key_results:
+  - kr_id: ""
+    description: ""
+    target_value: null
+    current_value: null
+    unit: ""
+    metric_id: ""
+    status: ""
+    progress_percentage: null
+metadata:
+  created_at: ""
+  created_by: ""
+  last_updated: ""
+  notes: ""

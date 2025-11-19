@@ -349,6 +349,103 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /api/import:
+    post:
+      tags:
+        - Metrics
+        - Domains
+        - Objectives
+      summary: Universal import for all data types
+      description: |
+        Automatically detects and imports metrics, business domains, or objectives from template files.
+        
+        **Supported Formats:**
+        - Single metric, domain, or objective object
+        - Array of metrics, domains, or objectives  
+        - Wrapped format with metrics, domains, and/or objectives arrays
+        - Mixed files with multiple data types
+        
+        **Auto-Detection:**
+        - Metrics identified by metric_id, name, description, category
+        - Domains identified by id (becomes domain_id), name, stakeholders
+        - Objectives identified by objective_id, title, key_results
+        
+        **Storage Routing:**
+        - Metrics → File storage or PostgreSQL
+        - Domains → PostgreSQL (requires dbConfig)
+        - Objectives → PostgreSQL (requires dbConfig)
+      operationId: universalImport
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - data
+              properties:
+                data:
+                  description: Data to import - system auto-detects type
+                  oneOf:
+                    - type: object
+                      description: Single item or wrapped items
+                    - type: array
+                      description: Array of items
+                      items:
+                        type: object
+                dbConfig:
+                  description: PostgreSQL config (required for domains/objectives)
+                  type: object
+                  properties:
+                    host:
+                      type: string
+                    port:
+                      type: integer
+                    database:
+                      type: string
+                    user:
+                      type: string
+                    password:
+                      type: string
+      responses:
+        '200':
+          description: Import completed with results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                        enum: [metrics, domains, objectives, mixed]
+                        description: Detected data type
+                      imported:
+                        type: object
+                        properties:
+                          metrics:
+                            type: integer
+                          domains:
+                            type: integer
+                          objectives:
+                            type: integer
+                          errors:
+                            type: array
+                            items:
+                              type: string
+                      total:
+                        type: integer
+                        description: Total items imported successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /api/stats:
     get:
       tags:
