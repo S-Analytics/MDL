@@ -45,6 +45,19 @@ describe('InMemoryMetricStore', () => {
       expect(metric.business_domain).toBe(input.category);
     });
 
+    it('should initialize version to 1.0.0 on creation', async () => {
+      const input = createSampleMetric();
+      const metric = await store.create(input);
+
+      expect(metric.metadata.version).toBe('1.0.0');
+      expect(metric.metadata.created_at).toBeDefined();
+      expect(metric.metadata.created_by).toBeDefined();
+      expect(metric.metadata.change_history).toHaveLength(1);
+      expect(metric.metadata.change_history[0].version).toBe('1.0.0');
+      expect(metric.metadata.change_history[0].change_type).toBe('major');
+      expect(metric.metadata.change_history[0].changes_summary).toBe('Initial metric creation');
+    });
+
     it('should generate unique IDs for metrics with same name', async () => {
       const input = createSampleMetric();
       const metric1 = await store.create(input);
@@ -140,6 +153,77 @@ describe('InMemoryMetricStore', () => {
       expect(new Date(updated.governance.updated_at).getTime()).toBeGreaterThanOrEqual(
         new Date(created.governance.updated_at).getTime()
       );
+    });
+
+    it('should bump patch version for metadata changes', async () => {
+      const input = createSampleMetric();
+      const created = await store.create(input);
+      await new Promise(resolve => setTimeout(resolve, 10));
+      
+      const updated = await store.update(created.metric_id, {
+        tags: ['test', 'sample', 'updated'],
+      });
+
+      expect(updated.metadata.version).toBe('1.0.1');
+      expect(updated.metadata.change_history).toHaveLength(2);
+      expect(updated.metadata.change_history[1].change_type).toBe('patch');
+      expect(updated.metadata.change_history[1].fields_changed).toContain('tags');
+    });
+
+    it('should bump patch version for tags changes', async () => {
+      const input = createSampleMetric();
+      const created = await store.create(input);
+      await new Promise(resolve => setTimeout(resolve, 10));
+      
+      const updated = await store.update(created.metric_id, {
+        tags: ['test', 'sample', 'updated'],
+      });
+
+      expect(updated.metadata.version).toBe('1.0.1');
+      expect(updated.metadata.change_history).toHaveLength(2);
+      expect(updated.metadata.change_history[1].change_type).toBe('patch');
+    });
+
+    it('should track description changes as minor', async () => {
+      const input = createSampleMetric();
+      const created = await store.create(input);
+      await new Promise(resolve => setTimeout(resolve, 10));
+      
+      const updated = await store.update(created.metric_id, {
+        description: 'Updated description for testing version bump',
+      });
+
+      expect(updated.metadata.version).toBe('1.1.0');
+      expect(updated.metadata.change_history).toHaveLength(2);
+      expect(updated.metadata.change_history[1].change_type).toBe('minor');
+    });
+
+    it('should track multiple changes in change history', async () => {
+      const input = createSampleMetric();
+      const created = await store.create(input);
+      
+      // First update - patch (tags)
+      await new Promise(resolve => setTimeout(resolve, 10));
+      let updated = await store.update(created.metric_id, { tags: ['updated'] });
+      expect(updated.metadata.version).toBe('1.0.1');
+      
+      // Second update - minor (description)
+      await new Promise(resolve => setTimeout(resolve, 10));
+      updated = await store.update(created.metric_id, { description: 'Second update' });
+      expect(updated.metadata.version).toBe('1.1.0');
+      
+      // Third update - minor (name)
+      await new Promise(resolve => setTimeout(resolve, 10));
+      updated = await store.update(created.metric_id, { name: 'Updated Test Metric' });
+      expect(updated.metadata.version).toBe('1.2.0');
+      
+      expect(updated.metadata.change_history).toHaveLength(4); // Initial + 3 updates
+      expect(updated.metadata.change_history.map(ch => ch.version)).toEqual([
+        '1.0.0',
+        '1.0.1',
+        '1.1.0',
+        '1.2.0',
+      ]);
     });
 
     it('should throw error for non-existent metric', async () => {

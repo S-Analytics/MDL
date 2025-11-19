@@ -78,7 +78,7 @@
       "version": "1.0.0",
       "status": "active",
       "created_at": "2025-01-01T00:00:00Z",
-      "updated_at": "2025-01-01T00:00:00Z"
+      "updated_at": "2025-11-19T02:50:14.402Z"
     },
     "dimensions": [
       {
@@ -170,6 +170,35 @@
         {
           "language": "sql",
           "query": "SELECT DATE(event_time) as date, COUNT(CASE WHEN status = 'success' THEN 1 END) / COUNT(*) as success_rate FROM events_logins WHERE event_time >= CURRENT_DATE - INTERVAL 30 DAY GROUP BY DATE(event_time)"
+        }
+      ],
+      "version": "1.0.3",
+      "last_updated": "2025-11-19T02:50:14.402Z",
+      "last_updated_by": "dashboard_user",
+      "change_history": [
+        {
+          "version": "1.0.1",
+          "timestamp": "2025-11-19T02:49:54.511Z",
+          "changed_by": "dashboard_user",
+          "change_type": "patch",
+          "changes_summary": "Updated ",
+          "fields_changed": []
+        },
+        {
+          "version": "1.0.2",
+          "timestamp": "2025-11-19T02:50:05.217Z",
+          "changed_by": "dashboard_user",
+          "change_type": "patch",
+          "changes_summary": "Updated ",
+          "fields_changed": []
+        },
+        {
+          "version": "1.0.3",
+          "timestamp": "2025-11-19T02:50:14.402Z",
+          "changed_by": "dashboard_user",
+          "change_type": "patch",
+          "changes_summary": "Updated ",
+          "fields_changed": []
         }
       ]
     }

@@ -35,13 +35,14 @@ const config = {
 // Check for --confirm flag
 const skipConfirm = process.argv.includes('--confirm');
 
-// Validate required environment variables
-if (!config.password) {
-  console.error('❌ Error: DB_PASSWORD environment variable is required');
+// Validate required environment variables (allow empty string for local dev)
+if (process.env.DB_PASSWORD === undefined) {
+  console.error('❌ Error: DB_PASSWORD environment variable must be set');
   console.error('');
   console.error('Usage:');
   console.error('  DB_PASSWORD=yourpass node scripts/clean-sample-data-postgres.js');
-  console.error('  DB_PASSWORD=yourpass node scripts/clean-sample-data-postgres.js --confirm');
+  console.error('  DB_PASSWORD=\'\' node scripts/clean-sample-data-postgres.js --confirm');
+  console.error('  (Use DB_PASSWORD=\'\' for no password in local development)');
   console.error('');
   process.exit(1);
 }

@@ -1,6 +1,71 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { MetricDefinition, MetricDefinitionInput } from '../models';
+import { ChangeHistoryEntry, MetricDefinition, MetricDefinitionInput } from '../models';
+
+/**
+ * Bump semver version based on change type
+ */
+function bumpVersion(currentVersion: string, changeType: 'major' | 'minor' | 'patch'): string {
+  const parts = currentVersion.split('.').map(Number);
+  if (parts.length !== 3 || parts.some(isNaN)) {
+    return '1.0.0'; // Reset to 1.0.0 if invalid
+  }
+  
+  let [major, minor, patch] = parts;
+  
+  switch (changeType) {
+    case 'major':
+      major += 1;
+      minor = 0;
+      patch = 0;
+      break;
+    case 'minor':
+      minor += 1;
+      patch = 0;
+      break;
+    case 'patch':
+      patch += 1;
+      break;
+  }
+  
+  return `${major}.${minor}.${patch}`;
+}
+
+/**
+ * Determine change type by comparing fields
+ */
+function determineChangeType(existing: MetricDefinition, updates: Partial<MetricDefinition>): 'major' | 'minor' | 'patch' {
+  const majorFields = ['formula', 'unit', 'metric_id', 'category'];
+  const minorFields = ['name', 'description', 'tier', 'business_domain', 'expected_direction', 'calculation_frequency'];
+  
+  // Check if formula changed (in definition object)
+  if (updates.definition && existing.definition) {
+    if (updates.definition.formula !== undefined && updates.definition.formula !== existing.definition.formula) {
+      return 'major';
+    }
+    if (updates.definition.unit !== undefined && updates.definition.unit !== existing.definition.unit) {
+      return 'major';
+    }
+  }
+  
+  // Check major fields
+  for (const field of majorFields) {
+    if (updates[field as keyof MetricDefinition] !== undefined && 
+        updates[field as keyof MetricDefinition] !== existing[field as keyof MetricDefinition]) {
+      return 'major';
+    }
+  }
+  
+  // Check minor fields
+  for (const field of minorFields) {
+    if (updates[field as keyof MetricDefinition] !== undefined && 
+        updates[field as keyof MetricDefinition] !== existing[field as keyof MetricDefinition]) {
+      return 'minor';
+    }
+  }
+  
+  return 'patch'; // Everything else is a patch
+}
 
 /**
  * Storage interface for Metric Definitions
@@ -114,6 +179,21 @@ export class InMemoryMetricStore implements IMetricStore {
       metadata: {
         notes: input.metadata?.notes || '',
         example_queries: [],
+        version: '1.0.0',
+        created_at: now,
+        created_by: 'dashboard_user',
+        last_updated: now,
+        last_updated_by: 'dashboard_user',
+        change_history: [
+          {
+            version: '1.0.0',
+            timestamp: now,
+            changed_by: 'dashboard_user',
+            change_type: 'major',
+            changes_summary: 'Initial metric creation',
+            fields_changed: ['*']
+          }
+        ]
       },
     };
 
@@ -169,6 +249,36 @@ export class InMemoryMetricStore implements IMetricStore {
 
     const now = new Date().toISOString();
     
+    // Build updated metric with partial updates
+    const partialUpdates: Partial<MetricDefinition> = {
+      name: input.name,
+      description: input.description,
+      category: input.category,
+      tags: input.tags,
+    };
+    
+    // Determine change type and bump version
+    const changeType = determineChangeType(existing, partialUpdates);
+    const currentVersion = existing.metadata?.version || '1.0.0';
+    const newVersion = bumpVersion(currentVersion, changeType);
+    
+    // Track changed fields
+    const fieldsChanged: string[] = [];
+    if (input.name !== undefined && input.name !== existing.name) fieldsChanged.push('name');
+    if (input.description !== undefined && input.description !== existing.description) fieldsChanged.push('description');
+    if (input.category !== undefined && input.category !== existing.category) fieldsChanged.push('category');
+    if (input.tags !== undefined && JSON.stringify(input.tags) !== JSON.stringify(existing.tags)) fieldsChanged.push('tags');
+    
+    // Create change history entry
+    const changeEntry: ChangeHistoryEntry = {
+      version: newVersion,
+      timestamp: now,
+      changed_by: 'dashboard_user',
+      change_type: changeType,
+      changes_summary: `Updated ${fieldsChanged.join(', ')}`,
+      fields_changed: fieldsChanged
+    };
+    
     const updated: MetricDefinition = {
       ...existing,
       name: input.name || existing.name,
@@ -179,6 +289,16 @@ export class InMemoryMetricStore implements IMetricStore {
         ...existing.governance,
         updated_at: now,
       },
+      metadata: {
+        ...existing.metadata,
+        version: newVersion,
+        last_updated: now,
+        last_updated_by: 'dashboard_user',
+        change_history: [
+          ...(existing.metadata?.change_history || []),
+          changeEntry
+        ]
+      }
     };
 
     this.metrics.set(id, updated);

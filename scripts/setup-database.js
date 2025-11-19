@@ -34,11 +34,12 @@ async function setupDatabase() {
   console.log('║  MDL Database Setup                                          ║');
   console.log('╚══════════════════════════════════════════════════════════════╝\n');
 
-  // Validate password is provided
-  if (!config.password) {
-    console.error('❌ Error: DB_PASSWORD environment variable is required');
+  // Validate password is provided (allow empty string for local development)
+  if (process.env.DB_PASSWORD === undefined) {
+    console.error('❌ Error: DB_PASSWORD environment variable must be set');
     console.error('\nUsage:');
     console.error('  DB_PASSWORD=your_password node scripts/setup-database.js');
+    console.error('  (Use DB_PASSWORD=\'\' for no password in local development)');
     console.error('\nOr set environment variables:');
     console.error('  export DB_HOST=localhost');
     console.error('  export DB_PORT=5432');

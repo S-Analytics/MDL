@@ -225,6 +225,12 @@ export class ConfigLoader {
       metadata: {
         notes: '',
         example_queries: [],
+        version: '1.0.0',
+        created_at: new Date().toISOString(),
+        created_by: 'system',
+        last_updated: new Date().toISOString(),
+        last_updated_by: 'system',
+        change_history: [],
       },
     };
   }

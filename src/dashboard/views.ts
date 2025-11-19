@@ -1428,11 +1428,12 @@ export function getDashboardHTML(): string {
                 } else {
                     // Fetch from file storage (default)
                     console.log('Fetching data from file storage...');
+                    const cacheBuster = Date.now();
                     const [metricsRes, statsRes, domainsRes, objectivesRes] = await Promise.all([
-                        fetch('/api/metrics'),
-                        fetch('/api/stats'),
-                        fetch('/examples/sample-domains.json').catch(() => ({ json: async () => ({ domains: [] }) })),
-                        fetch('/examples/sample-objectives.json').catch(() => ({ json: async () => ({ objectives: [] }) }))
+                        fetch('/api/metrics?_=' + cacheBuster),
+                        fetch('/api/stats?_=' + cacheBuster),
+                        fetch('/examples/sample-domains.json?_=' + cacheBuster).catch(() => ({ json: async () => ({ domains: [] }) })),
+                        fetch('/examples/sample-objectives.json?_=' + cacheBuster).catch(() => ({ json: async () => ({ objectives: [] }) }))
                     ]);
                     
                     const metricsData = await metricsRes.json();
@@ -1980,6 +1981,11 @@ export function getDashboardHTML(): string {
             // Find all objectives and key results that reference this metric
             const alignments = [];
             
+            // Safety check: ensure allObjectives is defined and is an array
+            if (!allObjectives || !Array.isArray(allObjectives)) {
+                return alignments;
+            }
+            
             allObjectives.forEach(objective => {
                 if (objective.key_results && objective.key_results.length > 0) {
                     objective.key_results.forEach(kr => {
@@ -2325,7 +2331,7 @@ export function getDashboardHTML(): string {
                             \${metric.targets_and_alerts.alert_rules.map(rule => \`
                                 <li>
                                     <strong>\${rule.name}</strong><br/>
-                                    <span style="font-size: 0.9rem;">Notify: \${rule.notification_channels.join(', ')}</span>
+                                    <span style="font-size: 0.9rem;">Notify: \${(rule.notification_channels || rule.notify_channels || []).join(', ') || 'N/A'}</span>
                                 </li>
                             \`).join('')}
                         </ul>
@@ -2440,29 +2446,52 @@ export function getDashboardHTML(): string {
             if (metric.metadata) {
                 html += \`
                     <div class="detail-section">
-                        <h3>📝 Metadata</h3>
+                        <h3>📝 Metadata & Version History</h3>
                         <div class="detail-grid">
                             <div class="detail-item">
+                                <label>Version</label>
+                                <div class="value" style="font-weight: 600; color: #667eea;">\${metric.metadata.version || '1.0.0'}</div>
+                            </div>
+                            <div class="detail-item">
                                 <label>Created At</label>
-                                <div class="value">\${new Date(metric.metadata.created_at).toLocaleString()}</div>
+                                <div class="value">\${metric.metadata.created_at ? new Date(metric.metadata.created_at).toLocaleString() : 'N/A'}</div>
                             </div>
                             <div class="detail-item">
                                 <label>Created By</label>
-                                <div class="value">\${metric.metadata.created_by}</div>
+                                <div class="value">\${metric.metadata.created_by || 'N/A'}</div>
                             </div>
                             <div class="detail-item">
                                 <label>Last Updated</label>
-                                <div class="value">\${new Date(metric.metadata.last_updated).toLocaleString()}</div>
+                                <div class="value">\${metric.metadata.last_updated ? new Date(metric.metadata.last_updated).toLocaleString() : 'N/A'}</div>
                             </div>
                             <div class="detail-item">
                                 <label>Last Updated By</label>
-                                <div class="value">\${metric.metadata.last_updated_by}</div>
-                            </div>
-                            <div class="detail-item">
-                                <label>Version</label>
-                                <div class="value">\${metric.metadata.version}</div>
+                                <div class="value">\${metric.metadata.last_updated_by || 'N/A'}</div>
                             </div>
                         </div>
+                        \${metric.metadata.change_history && metric.metadata.change_history.length > 0 ? \`
+                            <div style="margin-top: 1.5rem;">
+                                <label style="display: block; margin-bottom: 0.75rem; font-weight: 500; font-size: 1rem;">📋 Change History:</label>
+                                <div style="max-height: 300px; overflow-y: auto;">
+                                    \${metric.metadata.change_history.slice().reverse().map((change, index) => 
+                                        '<div style="background: ' + (index === 0 ? '#f0f4ff' : '#f9fafb') + '; padding: 1rem; border-radius: 6px; margin-bottom: 0.75rem; border-left: 4px solid ' + (change.change_type === 'major' ? '#ef4444' : change.change_type === 'minor' ? '#f59e0b' : '#10b981') + ';">' +
+                                            '<div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">' +
+                                                '<div>' +
+                                                    '<span style="font-weight: 600; color: #1f2937;">v' + change.version + '</span>' +
+                                                    '<span class="badge" style="margin-left: 0.5rem; background: ' + (change.change_type === 'major' ? '#ef4444' : change.change_type === 'minor' ? '#f59e0b' : '#10b981') + ';">' + change.change_type.toUpperCase() + '</span>' +
+                                                '</div>' +
+                                                '<div style="font-size: 0.875rem; color: #6b7280;">' + new Date(change.timestamp).toLocaleString() + '</div>' +
+                                            '</div>' +
+                                            '<div style="font-size: 0.9rem; color: #4b5563; margin-bottom: 0.25rem;">' + (change.changes_summary || 'Changes made') + '</div>' +
+                                            '<div style="font-size: 0.85rem; color: #6b7280;">' +
+                                                '<strong>Changed by:</strong> ' + (change.changed_by || 'Unknown') + ' | ' +
+                                                '<strong>Fields:</strong> ' + (change.fields_changed ? change.fields_changed.join(', ') : 'N/A') +
+                                            '</div>' +
+                                        '</div>'
+                                    ).join('')}
+                                </div>
+                            </div>
+                        \` : ''}
                         \${metric.metadata.documentation_url ? \`
                             <div style="margin-top: 1rem;">
                                 <a href="\${metric.metadata.documentation_url}" target="_blank" class="btn btn-primary">
@@ -2841,6 +2870,12 @@ export function getDashboardHTML(): string {
                                     md += '  - Formula: \`' + metric.definition.formula + '\`\\n';
                                     md += '  - Unit: ' + metric.definition.unit + '\\n';
                                 }
+                                if (metric.metadata?.version) {
+                                    md += '  - Version: ' + metric.metadata.version + '\\n';
+                                }
+                                if (metric.metadata?.last_updated) {
+                                    md += '  - Last Updated: ' + new Date(metric.metadata.last_updated).toLocaleString() + '\\n';
+                                }
                             }
                         });
                     }
@@ -2866,6 +2901,32 @@ export function getDashboardHTML(): string {
                 : 0;
             
             md += '- **Average Progress:** ' + Math.round(avgProgress) + '%\\n\\n';
+            
+            // Metric Version History Summary
+            const metricsWithHistory = allMetrics.filter(m => 
+                objective.key_results?.some(kr => kr.metric_ids?.includes(m.metric_id)) &&
+                m.metadata?.change_history && m.metadata.change_history.length > 0
+            );
+            
+            if (metricsWithHistory.length > 0) {
+                md += '## 📝 Metric Version History\\n\\n';
+                metricsWithHistory.forEach(metric => {
+                    md += '### ' + metric.name + ' (v' + (metric.metadata?.version || '1.0.0') + ')\\n\\n';
+                    if (metric.metadata?.change_history && metric.metadata.change_history.length > 0) {
+                        const recentChanges = metric.metadata.change_history.slice(-3).reverse();
+                        recentChanges.forEach(change => {
+                            md += '- **v' + change.version + '** (' + new Date(change.timestamp).toLocaleDateString() + ')\\n';
+                            md += '  - Type: ' + change.change_type.toUpperCase() + '\\n';
+                            md += '  - Summary: ' + (change.changes_summary || 'Changes made') + '\\n';
+                            md += '  - Changed by: ' + (change.changed_by || 'Unknown') + '\\n';
+                            if (change.fields_changed && change.fields_changed.length > 0) {
+                                md += '  - Fields: ' + change.fields_changed.join(', ') + '\\n';
+                            }
+                        });
+                        md += '\\n';
+                    }
+                });
+            }
             
             md += '---\\n\\n';
             md += '*Report generated by MDL Dashboard v1.0.0*\\n';
@@ -3832,6 +3893,65 @@ export function getDashboardHTML(): string {
         });
 
         // Form submission
+        // Helper function to bump semver version
+        function bumpVersion(currentVersion, changeType) {
+            const parts = currentVersion.split('.').map(Number);
+            if (parts.length !== 3 || parts.some(isNaN)) {
+                return '1.0.0';
+            }
+            
+            let [major, minor, patch] = parts;
+            
+            switch (changeType) {
+                case 'major':
+                    major += 1;
+                    minor = 0;
+                    patch = 0;
+                    break;
+                case 'minor':
+                    minor += 1;
+                    patch = 0;
+                    break;
+                case 'patch':
+                    patch += 1;
+                    break;
+            }
+            
+            return major + '.' + minor + '.' + patch;
+        }
+        
+        // Helper function to determine change type
+        function determineChangeType(existing, updates) {
+            const majorFields = ['category', 'tier'];
+            const minorFields = ['name', 'description', 'business_domain', 'metric_type'];
+            
+            // Check if formula changed
+            if (updates.definition && existing.definition) {
+                if (updates.definition.formula !== existing.definition.formula) {
+                    return 'major';
+                }
+                if (updates.definition.unit !== existing.definition.unit) {
+                    return 'major';
+                }
+            }
+            
+            // Check major fields
+            for (const field of majorFields) {
+                if (updates[field] !== undefined && updates[field] !== existing[field]) {
+                    return 'major';
+                }
+            }
+            
+            // Check minor fields
+            for (const field of minorFields) {
+                if (updates[field] !== undefined && updates[field] !== existing[field]) {
+                    return 'minor';
+                }
+            }
+            
+            return 'patch';
+        }
+
         document.getElementById('metricForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -3846,6 +3966,63 @@ export function getDashboardHTML(): string {
                 showToast('Please select a valid business domain', 'error');
                 return;
             }
+            
+            // Get existing metric if editing
+            const existingMetric = isEditMode ? allMetrics.find(m => m.metric_id === editingMetricId) : null;
+            
+            // Build metric data for comparison
+            const newMetricData = {
+                name: formData.get('name'),
+                short_name: formData.get('short_name'),
+                description: formData.get('description'),
+                category: formData.get('category'),
+                tier: formData.get('tier'),
+                business_domain: businessDomain,
+                metric_type: formData.get('metric_type'),
+                tags: formData.get('tags') ? formData.get('tags').split(',').map(t => t.trim()).filter(Boolean) : [],
+                definition: {
+                    formula: formData.get('formula') || undefined,
+                    unit: formData.get('unit') || undefined,
+                    expected_direction: formData.get('expected_direction') || undefined,
+                    calculation_frequency: formData.get('calculation_frequency') || undefined
+                }
+            };
+            
+            // Calculate version and change tracking
+            let version = '1.0.0';
+            let changeType = 'major';
+            let changesSummary = 'Initial metric creation';
+            let fieldsChanged = ['*'];
+            
+            if (isEditMode && existingMetric) {
+                changeType = determineChangeType(existingMetric, newMetricData);
+                const currentVersion = existingMetric.metadata?.version || '1.0.0';
+                version = bumpVersion(currentVersion, changeType);
+                
+                // Track changed fields
+                fieldsChanged = [];
+                if (newMetricData.name !== existingMetric.name) fieldsChanged.push('name');
+                if (newMetricData.description !== existingMetric.description) fieldsChanged.push('description');
+                if (newMetricData.category !== existingMetric.category) fieldsChanged.push('category');
+                if (newMetricData.tier !== existingMetric.tier) fieldsChanged.push('tier');
+                if (newMetricData.business_domain !== existingMetric.business_domain) fieldsChanged.push('business_domain');
+                if (newMetricData.metric_type !== existingMetric.metric_type) fieldsChanged.push('metric_type');
+                if (JSON.stringify(newMetricData.tags) !== JSON.stringify(existingMetric.tags)) fieldsChanged.push('tags');
+                if (newMetricData.definition.formula !== existingMetric.definition?.formula) fieldsChanged.push('formula');
+                if (newMetricData.definition.unit !== existingMetric.definition?.unit) fieldsChanged.push('unit');
+                
+                changesSummary = 'Updated ' + fieldsChanged.join(', ');
+            }
+            
+            const now = new Date().toISOString();
+            const changeHistoryEntry = {
+                version: version,
+                timestamp: now,
+                changed_by: 'dashboard_user',
+                change_type: changeType,
+                changes_summary: changesSummary,
+                fields_changed: fieldsChanged
+            };
             
             const metricData = {
                 metric_id: metricId,
@@ -3872,13 +4049,20 @@ export function getDashboardHTML(): string {
                     approval_required: false
                 },
                 metadata: {
-                    created_at: new Date().toISOString(),
-                    created_by: 'dashboard_user',
-                    last_updated: new Date().toISOString(),
+                    created_at: existingMetric?.metadata?.created_at || now,
+                    created_by: existingMetric?.metadata?.created_by || 'dashboard_user',
+                    last_updated: now,
                     last_updated_by: 'dashboard_user',
-                    version: '1.0.0'
+                    version: version,
+                    change_history: [
+                        ...(existingMetric?.metadata?.change_history || []),
+                        changeHistoryEntry
+                    ]
                 }
             };
+            
+            // Merge with full metric data
+            Object.assign(metricData, newMetricData);
 
             try {
                 let response;

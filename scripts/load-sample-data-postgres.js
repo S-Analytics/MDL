@@ -30,12 +30,13 @@ const config = {
   password: process.env.DB_PASSWORD,
 };
 
-// Validate required environment variables
-if (!config.password) {
-  console.error('❌ Error: DB_PASSWORD environment variable is required');
+// Validate required environment variables (allow empty string for local dev)
+if (process.env.DB_PASSWORD === undefined) {
+  console.error('❌ Error: DB_PASSWORD environment variable must be set');
   console.error('');
   console.error('Usage:');
   console.error('  DB_PASSWORD=yourpass node scripts/load-sample-data-postgres.js');
+  console.error('  (Use DB_PASSWORD=\'\' for no password in local development)');
   console.error('');
   process.exit(1);
 }

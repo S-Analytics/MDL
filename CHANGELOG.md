@@ -9,6 +9,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### Metric Versioning System
+- **Semantic Versioning**: Automatic version tracking following semver standards (MAJOR.MINOR.PATCH)
+  - **Major version bump** (X.0.0): Breaking changes (formula, unit, category modifications)
+  - **Minor version bump** (x.X.0): Feature changes (name, description, business domain updates)
+  - **Patch version bump** (x.x.X): Minor updates (tags, governance, status changes)
+  - New `version` field in `MetricMetadata` interface
+  - Automatic version calculation based on field changes
+  - Works in both local file and PostgreSQL storage
+- **Change History Tracking**: Complete audit trail for all metric modifications
+  - `change_history` array storing all version changes
+  - Each entry includes: version, timestamp, changed_by, change_type, changes_summary, fields_changed
+  - Tracks which specific fields were modified in each update
+  - Maintains full chronological history from creation to current state
+- **Enhanced Metadata Interface**: Extended `MetricMetadata` with versioning fields
+  - `version`: Current semver version (e.g., "2.1.3")
+  - `created_at`: ISO timestamp of metric creation
+  - `created_by`: User who created the metric
+  - `last_updated`: ISO timestamp of last modification
+  - `last_updated_by`: User who made the last update
+  - `change_history`: Array of `ChangeHistoryEntry` objects
+- **Dashboard UI Enhancements**: Visual change history timeline in metric details
+  - Color-coded version badges (red=major, orange=minor, green=patch)
+  - Reverse chronological display with newest changes first
+  - Shows version number, timestamp, change type, summary, and fields changed
+  - Latest change highlighted with different background
+  - Scrollable timeline for long histories (max 300px height)
+  - Prominent version display in metadata section
+- **Storage Layer Updates**:
+  - `InMemoryMetricStore`: Versioning logic in create/update methods
+  - `PostgresMetricStore`: Same versioning logic with metadata JSONB column
+  - `bumpVersion()`: Helper function to increment version numbers
+  - `determineChangeType()`: Analyzes changes to select appropriate version bump
+- **Database Schema**: Added `metadata` JSONB column to metrics table
+  - Stores complete versioning information
+  - Migration script provided for existing databases
+  - Supports indexing and querying on version fields
+- **Documentation**: Comprehensive versioning guide (`VERSIONING_IMPLEMENTATION.md`)
+  - Detailed versioning rules and examples
+  - Testing instructions for all change types
+  - Database migration guide
+  - API integration examples
+  - Future enhancement suggestions
+
+#### Bug Fixes
+- **Strategic Alignment Dynamic Calculation**: Fixed metric details not showing current objective linkages
+  - Added `calculateMetricAlignment()` function to scan objectives for metric references
+  - Updates strategic alignment in real-time based on current objective/key result data
+  - Shows all objectives where metric is linked (supports multiple alignments)
+  - Displays objective name, key result details, business priority, and strategic theme
+  - Backwards compatible with old static alignment data
+- **Business Domain Dropdown Persistence**: Fixed dropdown not showing saved value on edit
+  - Added `setTimeout()` to defer dropdown population until DOM is fully ready
+  - Ensures selected value is properly set when reopening metric for edit
+  - Resolves timing issue with form rendering and selection
+
 #### Local Storage Management
 - **Clean Local Storage Script**: New utility script to clear all data from JSON file storage
   - File: `scripts/clean-local-storage.js` - Clears metrics, domains, and objectives
