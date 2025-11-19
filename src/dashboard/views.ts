@@ -3631,7 +3631,6 @@ export function getDashboardHTML(): string {
                 } else {
                     showToast(message, 'success');
                 }
-                }
 
                 closeImportModal();
                 await fetchData();

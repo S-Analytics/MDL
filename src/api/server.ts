@@ -781,7 +781,7 @@ export function createServer(store: IMetricStore, _config: ServerConfig = {}) {
 
       // Import using ConfigLoader
       const { ConfigLoader } = await import('../config');
-      const result = ConfigLoader['parseImportData'](data);
+      const result = ConfigLoader.parseImportData(data);
 
       const imported = {
         metrics: 0,
