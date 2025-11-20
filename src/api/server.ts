@@ -888,7 +888,7 @@ export function createServer(store: IMetricStore, _config: ServerConfig = {}) {
   // Test database connection
   app.post(
     '/api/database/test',
-    requireEditor,
+    optionalAuthenticate,
     validateBody(databaseConfigSchema),
     async (req: Request, res: Response) => {
       try {

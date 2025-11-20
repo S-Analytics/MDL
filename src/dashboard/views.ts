@@ -2636,12 +2636,11 @@ export function getDashboardHTML(): string {
             statusDiv.style.display = 'flex';
 
             const dbConfig = {
-                type: document.getElementById('dbType').value,
                 host: document.getElementById('dbHost').value,
-                port: document.getElementById('dbPort').value,
-                name: document.getElementById('dbName').value,
+                port: parseInt(document.getElementById('dbPort').value),
+                database: document.getElementById('dbName').value,
                 user: document.getElementById('dbUser').value,
-                password: document.getElementById('dbPassword').value
+                password: document.getElementById('dbPassword').value || ''
             };
 
             try {
