@@ -1,22 +1,50 @@
 import dotenv from 'dotenv';
 import express from 'express';
+import * as fs from 'fs';
 import * as path from 'path';
 import { createServer } from './api';
 import { FileUserStore } from './auth/FileUserStore';
 import { getDashboardHTML } from './dashboard';
 import { errorHandlingMiddleware, notFoundMiddleware } from './middleware/logging';
-import { InMemoryMetricStore } from './storage';
-import { setupGracefulShutdown } from './utils/database';
+import { InMemoryMetricStore, PostgresMetricStore } from './storage';
+import { IMetricStore } from './storage/MetricStore';
+import { closeDatabasePool, DatabasePool, initializeDatabasePool, setupGracefulShutdown } from './utils/database';
 import { logger, logShutdown, logStartup } from './utils/logger';
 
 // Load environment variables
 dotenv.config();
 
-// Initialize storage with default persistence path
-const DEFAULT_STORAGE_PATH = process.env.PERSISTENCE_PATH || path.join(process.cwd(), '.mdl', 'metrics.json');
-const store = new InMemoryMetricStore(DEFAULT_STORAGE_PATH);
+// Storage settings file path
+const SETTINGS_FILE = path.join(process.cwd(), '.mdl', 'settings.json');
 
-logger.info({ storagePath: DEFAULT_STORAGE_PATH }, 'Initializing metric store');
+// Read storage mode from settings file (simulating localStorage on server)
+function getStorageSettings() {
+  try {
+    if (fs.existsSync(SETTINGS_FILE)) {
+      const data = fs.readFileSync(SETTINGS_FILE, 'utf8');
+      return JSON.parse(data);
+    }
+  } catch (error) {
+    logger.warn('Failed to read storage settings, using defaults');
+  }
+  return { storage: 'local' };
+}
+
+// Storage mode configuration
+let currentSettings = getStorageSettings();
+let STORAGE_MODE = currentSettings.storage || 'local';
+const DEFAULT_STORAGE_PATH = process.env.PERSISTENCE_PATH || path.join(process.cwd(), '.mdl', 'metrics.json');
+
+// Initialize with temporary local store (will be replaced if postgres mode)
+let store: IMetricStore = new InMemoryMetricStore(DEFAULT_STORAGE_PATH);
+let dbPool: DatabasePool | null = null;
+
+// Log storage mode
+if (STORAGE_MODE === 'postgres' || STORAGE_MODE === 'postgresql') {
+  logger.info('Storage mode: PostgreSQL (from settings.json)');
+} else {
+  logger.info({ storagePath: DEFAULT_STORAGE_PATH }, 'Storage mode: local (from settings.json)');
+}
 
 // Initialize authentication if enabled
 let userStore: FileUserStore | undefined;
@@ -62,11 +90,37 @@ const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 const HOST = process.env.HOST || '0.0.0.0';
 
 async function startServer() {
+  // Initialize PostgreSQL if configured
+  if (STORAGE_MODE === 'postgres' || STORAGE_MODE === 'postgresql') {
+    const savedConfig = currentSettings.postgres;
+    const dbConfig = savedConfig || {
+      host: process.env.DB_HOST || 'localhost',
+      port: parseInt(process.env.DB_PORT || '5432'),
+      database: process.env.DB_NAME || 'mdl',
+      user: process.env.DB_USER || 'postgres',
+      password: process.env.DB_PASSWORD || '',
+    };
+
+    try {
+      dbPool = await initializeDatabasePool(dbConfig);
+      store = new PostgresMetricStore(dbConfig, dbPool);
+      logger.info({ 
+        host: dbConfig.host, 
+        port: dbConfig.port, 
+        database: dbConfig.database 
+      }, 'PostgreSQL metric store initialized');
+    } catch (error) {
+      logger.error({ error }, 'Failed to initialize PostgreSQL, falling back to local storage');
+      store = new InMemoryMetricStore(DEFAULT_STORAGE_PATH);
+      STORAGE_MODE = 'local';
+    }
+  }
+
   // Initialize auth before creating server
   await initializeAuth();
   
-  // Create API server (after auth is initialized)
-  const app = createServer(store, {
+  // Create API server (after auth is initialized) - pass getter function for dynamic store access
+  const app = createServer(() => store, {
     enableAuth: authEnabled,
     userStore,
   });
@@ -108,8 +162,8 @@ async function startServer() {
       logStartup({
         port: PORT,
         host: HOST,
-        storageMode: process.env.STORAGE_MODE || 'local',
-        dbConnected: false,
+        storageMode: STORAGE_MODE,
+        dbConnected: dbPool !== null,
       });
       
       logger.info(`🚀 Server running at http://${HOST}:${PORT}`);
@@ -125,16 +179,18 @@ async function startServer() {
       logger.info('');
       
       // Show storage configuration
-      const pgHost = process.env.DB_HOST || process.env.POSTGRES_HOST;
-      const pgPort = process.env.DB_PORT || process.env.POSTGRES_PORT;
-      const pgDb = process.env.DB_NAME || process.env.POSTGRES_DB;
-      
-      if (pgHost && pgPort && pgDb) {
-        logger.info(`💾 Storage: PostgreSQL (${pgHost}:${pgPort}/${pgDb})`);
-        logger.info(`   Note: Configure PostgreSQL in dashboard settings to use database`);
+      if (dbPool) {
+        const dbConfig = {
+          host: process.env.DB_HOST || 'localhost',
+          port: process.env.DB_PORT || '5432',
+          database: process.env.DB_NAME || 'mdl',
+        };
+        logger.info(`💾 Storage: PostgreSQL (${dbConfig.host}:${dbConfig.port}/${dbConfig.database})`);
+        logger.info(`   Status: Connected and active`);
       } else {
-        logger.info(`💾 Default Storage: ${DEFAULT_STORAGE_PATH}`);
-        logger.info(`   Note: Configure PostgreSQL in dashboard settings for database storage`);
+        const storagePath = process.env.PERSISTENCE_PATH || path.join(process.cwd(), '.mdl', 'metrics.json');
+        logger.info(`💾 Storage: ${STORAGE_MODE} (${storagePath})`);
+        logger.info(`   Set STORAGE_MODE=postgres in .env to use PostgreSQL`);
       }
       logger.info('');
       
@@ -168,6 +224,81 @@ process.on('unhandledRejection', (reason: any) => {
   logShutdown('unhandled rejection');
   process.exit(1);
 });
+
+// Function to switch storage mode dynamically
+export async function switchStorageMode(newMode: string, dbConfig?: any): Promise<{ success: boolean; error?: string }> {
+  try {
+    const mode = newMode.toLowerCase();
+    
+    if (mode === 'postgresql' || mode === 'postgres') {
+      // Initialize PostgreSQL
+      if (!dbConfig) {
+        return { success: false, error: 'Database configuration required for PostgreSQL mode' };
+      }
+      
+      // Close existing DB pool if any (this resets the global pool)
+      if (dbPool) {
+        await closeDatabasePool();
+        dbPool = null;
+      }
+      
+      // Create new DB pool and store
+      dbPool = await initializeDatabasePool(dbConfig);
+      store = new PostgresMetricStore(dbConfig, dbPool);
+      STORAGE_MODE = 'postgresql';
+      
+      // Update current settings
+      currentSettings = { storage: 'postgresql', postgres: dbConfig };
+      
+      // Save settings
+      const settingsDir = path.dirname(SETTINGS_FILE);
+      if (!fs.existsSync(settingsDir)) {
+        fs.mkdirSync(settingsDir, { recursive: true });
+      }
+      fs.writeFileSync(SETTINGS_FILE, JSON.stringify(currentSettings, null, 2));
+      
+      logger.info({ host: dbConfig.host, database: dbConfig.database }, 'Switched to PostgreSQL storage');
+      return { success: true };
+    } else {
+      // Switch to local storage
+      if (dbPool) {
+        await closeDatabasePool();
+        dbPool = null;
+      }
+      
+      store = new InMemoryMetricStore(DEFAULT_STORAGE_PATH);
+      STORAGE_MODE = 'local';
+      
+      // Update current settings
+      currentSettings = { storage: 'local' };
+      
+      // Save settings
+      const settingsDir = path.dirname(SETTINGS_FILE);
+      if (!fs.existsSync(settingsDir)) {
+        fs.mkdirSync(settingsDir, { recursive: true });
+      }
+      fs.writeFileSync(SETTINGS_FILE, JSON.stringify(currentSettings, null, 2));
+      
+      logger.info({ storagePath: DEFAULT_STORAGE_PATH }, 'Switched to local file storage');
+      return { success: true };
+    }
+  } catch (error: any) {
+    logger.error({ error }, 'Failed to switch storage mode');
+    return { success: false, error: error.message };
+  }
+}
+
+export function getCurrentStorageMode() {
+  return {
+    mode: STORAGE_MODE,
+    dbConnected: dbPool !== null,
+    settings: currentSettings
+  };
+}
+
+export function getStore(): IMetricStore {
+  return store;
+}
 
 // Export for programmatic use
 export * from './api';

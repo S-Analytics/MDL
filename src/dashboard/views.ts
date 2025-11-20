@@ -1143,34 +1143,33 @@ export function getDashboardHTML(): string {
 
                 <div class="detail-section" style="margin-top: 2rem;">
                     <h3>Data Storage Configuration</h3>
-                    <p style="color: #666; margin-bottom: 1rem;">Choose how you want to store your metrics data.</p>
                     
                     <div style="margin-bottom: 1.5rem;">
-                        <label style="display: flex; align-items: center; padding: 1rem; border: 2px solid #e2e8f0; border-radius: 6px; cursor: pointer; transition: all 0.2s;" onclick="selectStorageType('local')">
+                        <div onclick="selectStorageType('local')" style="cursor: pointer; display: flex; align-items: center; padding: 1rem; border: 2px solid #e2e8f0; border-radius: 6px; transition: border-color 0.2s;" onmouseover="this.style.borderColor='#667eea'" onmouseout="if(!document.getElementById('storageLocal').checked) this.style.borderColor='#e2e8f0'">
                             <input type="radio" name="storageType" value="local" id="storageLocal" checked style="margin-right: 1rem; width: 20px; height: 20px;">
                             <div style="flex: 1;">
                                 <div style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.25rem;">📁 Local File Storage</div>
                                 <div style="color: #666; font-size: 0.9rem;">Store metrics in local JSON files (.mdl/metrics.json)</div>
                                 <div style="color: #10b981; font-size: 0.85rem; margin-top: 0.5rem;">✓ No setup required • ✓ Fast • ✓ Portable</div>
                             </div>
-                        </label>
+                        </div>
                     </div>
 
                     <div style="margin-bottom: 1.5rem;">
-                        <label style="display: flex; align-items: center; padding: 1rem; border: 2px solid #e2e8f0; border-radius: 6px; cursor: pointer; transition: all 0.2s;" onclick="selectStorageType('database')">
+                        <div onclick="selectStorageType('database')" style="cursor: pointer; display: flex; align-items: center; padding: 1rem; border: 2px solid #e2e8f0; border-radius: 6px; transition: border-color 0.2s;" onmouseover="this.style.borderColor='#667eea'" onmouseout="if(!document.getElementById('storageDatabase').checked) this.style.borderColor='#e2e8f0'">
                             <input type="radio" name="storageType" value="database" id="storageDatabase" style="margin-right: 1rem; width: 20px; height: 20px;">
                             <div style="flex: 1;">
                                 <div style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.25rem;">🗄️ Database Storage</div>
                                 <div style="color: #666; font-size: 0.9rem;">PostgreSQL database connection</div>
                                 <div style="color: #10b981; font-size: 0.85rem; margin-top: 0.5rem;">✓ PostgreSQL support available • Run scripts/db-setup.sql first</div>
                             </div>
-                        </label>
+                        </div>
                     </div>
 
-                    <div id="databaseConfig" style="display: none; padding: 1.5rem; background: #f9fafb; border-radius: 6px; margin-top: 1rem;">
-                        <h4 style="margin-bottom: 0.5rem;">PostgreSQL Connection</h4>
+                    <div id="databaseConfig" style="padding: 1.5rem; background: #f9fafb; border-radius: 6px; margin-top: 1rem; display: none;">
+                        <h4 style="margin-bottom: 0.5rem;">Database Configuration</h4>
                         <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;">
-                            Configure your PostgreSQL database connection. Run <code style="background: white; padding: 0.125rem 0.375rem; border-radius: 3px;">DB_PASSWORD=yourpass node scripts/setup-database.js</code> to initialize the schema first.
+                            Configure your PostgreSQL database connection. Make sure the database exists and is accessible.
                         </p>
                         
                         <div class="form-group" style="margin-bottom: 1rem; display: none;">
@@ -1239,9 +1238,9 @@ export function getDashboardHTML(): string {
                     </div>
                 </div>
 
-                <div class="form-actions" style="margin-top: 2rem;">
-                    <button type="button" class="btn btn-secondary" onclick="closeSettings()">Close</button>
-                    <button type="button" class="btn btn-success" onclick="saveSettings()">Save Settings</button>
+                <div class="form-actions" style="margin-top: 2rem; display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary" onclick="closeSettings()">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
                 </div>
             </div>
         </div>
@@ -1351,119 +1350,42 @@ export function getDashboardHTML(): string {
 
         async function fetchData() {
             try {
-                // Check if PostgreSQL is configured
-                const settings = loadSettings();
-                const usePostgres = settings.storage === 'postgresql' && 
-                                   settings.postgres?.host && 
-                                   settings.postgres?.port && 
-                                   settings.postgres?.database && 
-                                   settings.postgres?.user;
-
-                if (usePostgres) {
-                    // Fetch from PostgreSQL
-                    console.log('Fetching data from PostgreSQL...');
-                    const dbConfig = {
-                        host: settings.postgres.host,
-                        port: settings.postgres.port,
-                        name: settings.postgres.database,
-                        user: settings.postgres.user,
-                        password: settings.postgres.password || ''
-                    };
-
-                    const [metricsRes, domainsRes, objectivesRes] = await Promise.all([
-                        fetch('/api/postgres/metrics', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(dbConfig)
-                        }),
-                        fetch('/api/postgres/domains', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(dbConfig)
-                        }),
-                        fetch('/api/postgres/objectives', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(dbConfig)
-                        })
-                    ]);
-
-                    const metricsData = await metricsRes.json();
-                    const domainsData = await domainsRes.json();
-                    const objectivesData = await objectivesRes.json();
-
-                    if (!metricsData.success) {
-                        throw new Error('Failed to fetch metrics from PostgreSQL: ' + metricsData.error);
-                    }
-                    if (!domainsData.success) {
-                        throw new Error('Failed to fetch domains from PostgreSQL: ' + domainsData.error);
-                    }
-                    if (!objectivesData.success) {
-                        throw new Error('Failed to fetch objectives from PostgreSQL: ' + objectivesData.error);
-                    }
-
-                    allMetrics = metricsData.data || [];
-                    allDomains = domainsData.data || [];
-                    allObjectives = objectivesData.data || [];
-
-                    // Calculate stats from fetched data
-                    stats = {
-                        total: allMetrics.length,
-                        objectives: allObjectives.length,
-                        byBusinessDomain: {},
-                        byTier: {},
-                        byOwner: {}
-                    };
-
-                    allMetrics.forEach(m => {
-                        if (m.business_domain) {
-                            stats.byBusinessDomain[m.business_domain] = (stats.byBusinessDomain[m.business_domain] || 0) + 1;
-                        }
-                        if (m.tier) {
-                            stats.byTier[m.tier] = (stats.byTier[m.tier] || 0) + 1;
-                        }
-                        if (m.governance?.owner) {
-                            stats.byOwner[m.governance.owner] = (stats.byOwner[m.governance.owner] || 0) + 1;
-                        }
-                    });
-
-                } else {
-                    // Fetch from file storage (default)
-                    console.log('Fetching data from file storage...');
-                    const cacheBuster = Date.now();
-                    const [metricsRes, statsRes, domainsRes, objectivesRes] = await Promise.all([
-                        fetch('/api/metrics?_=' + cacheBuster),
-                        fetch('/api/stats?_=' + cacheBuster),
-                        fetch('/examples/sample-domains.json?_=' + cacheBuster).catch(() => ({ json: async () => ({ domains: [] }) })),
-                        fetch('/examples/sample-objectives.json?_=' + cacheBuster).catch(() => ({ json: async () => ({ objectives: [] }) }))
-                    ]);
-                    
-                    const metricsData = await metricsRes.json();
-                    const statsData = await statsRes.json();
-                    const domainsData = await domainsRes.json();
-                    const objectivesData = await objectivesRes.json();
-                    
-                    allMetrics = metricsData.data || [];
-                    
-                    // Load domains from localStorage first, then fall back to sample data
-                    const storedDomains = await loadDomainsFromStorage();
-                    allDomains = storedDomains || domainsData.domains || [];
-                    
-                    // Load objectives from localStorage first, then fall back to sample data
-                    const storedObjectives = await loadObjectivesFromStorage();
-                    allObjectives = storedObjectives || objectivesData.objectives || [];
-                    
-                    stats = statsData.data || {};
-                    
-                    // Update objectives count
-                    stats.objectives = allObjectives.length;
-                }
+                // Fetch data from API (server handles storage mode automatically)
+                console.log('Fetching data from API...');
+                const cacheBuster = Date.now();
+                const [metricsRes, statsRes, domainsRes, objectivesRes] = await Promise.all([
+                    fetch('/api/metrics?_=' + cacheBuster),
+                    fetch('/api/stats?_=' + cacheBuster),
+                    fetch('/examples/sample-domains.json?_=' + cacheBuster).catch(() => ({ json: async () => ({ domains: [] }) })),
+                    fetch('/examples/sample-objectives.json?_=' + cacheBuster).catch(() => ({ json: async () => ({ objectives: [] }) }))
+                ]);
                 
+                const metricsData = await metricsRes.json();
+                const statsData = await statsRes.json();
+                const domainsData = await domainsRes.json();
+                const objectivesData = await objectivesRes.json();
+                
+                allMetrics = metricsData.data || [];
+                stats = statsData.data || {};
+                
+                // Load domains from localStorage first, then fall back to sample data
+                const storedDomains = await loadDomainsFromStorage();
+                allDomains = storedDomains || domainsData.domains || [];
+                
+                // Load objectives from localStorage first, then fall back to sample data
+                const storedObjectives = await loadObjectivesFromStorage();
+                allObjectives = storedObjectives || objectivesData.objectives || [];
+                
+                // Update objectives count
+                stats.objectives = allObjectives.length;
+                
+                console.log('Data fetched - Metrics count:', allMetrics.length);
                 updateStats();
                 updateCharts();
                 renderDomains();
                 renderMetrics();
-                updateStorageIndicator();
+                await updateStorageIndicator();
+                console.log('Dashboard updated successfully');
             } catch (error) {
                 console.error('Error fetching data:', error);
                 document.getElementById('metricsGrid').innerHTML = 
@@ -1471,8 +1393,8 @@ export function getDashboardHTML(): string {
             }
         }
 
-        function updateStorageIndicator() {
-            const settings = loadSettings();
+        async function updateStorageIndicator() {
+            const settings = await loadSettings();
             const indicator = document.getElementById('storageIndicator');
             
             if (settings.storage === 'postgresql' && settings.postgres?.host) {
@@ -2566,37 +2488,50 @@ export function getDashboardHTML(): string {
             document.body.style.overflow = 'auto';
         }
 
-        function loadSettings() {
+        async function loadSettings() {
             // Load app version from package.json
             document.getElementById('appVersion').textContent = '1.0.0';
             document.getElementById('appBuild').textContent = 'Production';
             document.getElementById('appEnvironment').textContent = 'Web Browser';
             
-            // Load storage settings from localStorage with proper structure
-            const defaultSettings = { storage: 'local', postgres: null };
-            const settingsStr = localStorage.getItem('mdl_settings');
-            let settings = defaultSettings;
-            
-            if (settingsStr) {
-                try {
-                    const parsed = JSON.parse(settingsStr);
-                    // Handle old format (storageType) and new format (storage)
-                    if (parsed.storageType) {
-                        settings = {
-                            storage: parsed.storageType === 'database' ? 'postgresql' : 'local',
-                            postgres: parsed.database ? {
-                                host: parsed.database.host,
-                                port: parsed.database.port,
-                                database: parsed.database.name,
-                                user: parsed.database.user,
-                                password: parsed.database.password || ''
-                            } : null
-                        };
-                    } else {
-                        settings = parsed;
+            // Try to fetch current server settings first
+            let settings = { storage: 'local', postgres: null };
+            try {
+                const response = await fetch('/api/storage/mode');
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success && result.data) {
+                        settings = result.data.settings || settings;
                     }
-                } catch (e) {
-                    console.error('Error parsing settings:', e);
+                }
+            } catch (e) {
+                console.warn('Could not fetch server settings, falling back to localStorage:', e);
+            }
+            
+            // Fallback to localStorage if server didn't provide settings
+            if (!settings.storage || settings.storage === 'local') {
+                const settingsStr = localStorage.getItem('mdl_settings');
+                if (settingsStr) {
+                    try {
+                        const parsed = JSON.parse(settingsStr);
+                        // Handle old format (storageType) and new format (storage)
+                        if (parsed.storageType) {
+                            settings = {
+                                storage: parsed.storageType === 'database' ? 'postgresql' : 'local',
+                                postgres: parsed.database ? {
+                                    host: parsed.database.host,
+                                    port: parsed.database.port,
+                                    database: parsed.database.name,
+                                    user: parsed.database.user,
+                                    password: parsed.database.password || ''
+                                } : null
+                            };
+                        } else if (parsed.storage) {
+                            settings = parsed;
+                        }
+                    } catch (e) {
+                        console.error('Error parsing settings:', e);
+                    }
                 }
             }
             
@@ -2668,7 +2603,7 @@ export function getDashboardHTML(): string {
             }
         }
 
-        function saveSettings() {
+        async function saveSettings() {
             const storageType = document.querySelector('input[name="storageType"]:checked').value;
             
             const settings = {
@@ -2684,28 +2619,37 @@ export function getDashboardHTML(): string {
                     user: document.getElementById('dbUser').value,
                     password: document.getElementById('dbPassword').value || ''
                 };
-            } else {
-                settings.postgres = null;
             }
 
+            // Save to localStorage for UI state
             localStorage.setItem('mdl_settings', JSON.stringify(settings));
             
-            showToast('Settings saved successfully! Reloading data...', 'success');
-            
-            // Update the current storage info display
-            if (storageType === 'local') {
-                document.getElementById('currentStorageInfo').innerHTML = 
-                    'Using local file storage: <code style="background: white; padding: 0.25rem 0.5rem; border-radius: 3px; font-family: monospace;">.mdl/metrics.json</code>';
-            } else {
-                document.getElementById('currentStorageInfo').innerHTML = 
-                    'Using database storage: <code style="background: white; padding: 0.25rem 0.5rem; border-radius: 3px; font-family: monospace;">' + 
-                    'postgresql @ ' + settings.postgres.host + ':' + settings.postgres.port + '/' + settings.postgres.database + '</code>';
+            try {
+                // Call API to switch storage mode on server
+                const response = await fetch('/api/storage/switch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(settings)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showToast('Storage mode switched successfully', 'success');
+                    console.log('Storage switched to:', settings.storage);
+                    closeSettings();
+                    // Reload data after switching storage
+                    console.log('Reloading dashboard data in 500ms...');
+                    setTimeout(() => {
+                        console.log('Fetching fresh data after storage switch...');
+                        fetchData();
+                    }, 500);
+                } else {
+                    showToast('Failed to switch storage: ' + (result.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                showToast('Failed to switch storage mode: ' + error.message, 'error');
             }
-            
-            closeSettings();
-            
-            // Reload data from the new storage backend
-            fetchData();
         }
 
         // Download Objective Report Functions

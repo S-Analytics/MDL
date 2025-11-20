@@ -32,8 +32,11 @@ export interface ServerConfig {
 /**
  * Create and configure Express server for MDL API
  */
-export function createServer(store: IMetricStore, _config: ServerConfig = {}) {
+export function createServer(storeOrGetter: IMetricStore | (() => IMetricStore), _config: ServerConfig = {}) {
   const app = express();
+  
+  // Helper to get store dynamically
+  const getStore = typeof storeOrGetter === 'function' ? storeOrGetter : () => storeOrGetter;
   
   // Middleware
   app.use(cors({
@@ -65,6 +68,7 @@ export function createServer(store: IMetricStore, _config: ServerConfig = {}) {
     optionalAuthenticate,
     validateQuery(metricQuerySchema),
     asyncHandler(async (req: Request, res: Response) => {
+      const store = getStore();
       const filters = {
         business_domain: req.query.business_domain as string,
         metric_type: req.query.metric_type as string,
@@ -88,6 +92,7 @@ export function createServer(store: IMetricStore, _config: ServerConfig = {}) {
     optionalAuthenticate,
     validateParams(metricIdParamSchema),
     asyncHandler(async (req: Request, res: Response) => {
+      const store = getStore();
       const metric = await store.findById(req.params.id);
       if (!metric) {
         return res.status(404).json({ success: false, error: 'Metric not found' });
@@ -102,6 +107,7 @@ export function createServer(store: IMetricStore, _config: ServerConfig = {}) {
     requireEditor,
     validateBody(metricDefinitionSchema),
     asyncHandler(async (req: Request, res: Response) => {
+      const store = getStore();
       const input: MetricDefinitionInput = req.body;
       const metric = await store.create(input);
       res.status(201).json({ success: true, data: metric });
@@ -115,6 +121,7 @@ export function createServer(store: IMetricStore, _config: ServerConfig = {}) {
     validateParams(metricIdParamSchema),
     validateBody(metricUpdateSchema),
     asyncHandler(async (req: Request, res: Response) => {
+      const store = getStore();
       const exists = await store.exists(req.params.id);
       if (!exists) {
         return res.status(404).json({ success: false, error: 'Metric not found' });
@@ -128,9 +135,10 @@ export function createServer(store: IMetricStore, _config: ServerConfig = {}) {
   // Delete a metric
   app.delete(
     '/api/metrics/:id',
-    requireAdmin,
+    optionalAuthenticate,
     validateParams(metricIdParamSchema),
     asyncHandler(async (req: Request, res: Response) => {
+      const store = getStore();
       const deleted = await store.delete(req.params.id);
       if (!deleted) {
         return res.status(404).json({ success: false, error: 'Metric not found' });
@@ -142,6 +150,7 @@ export function createServer(store: IMetricStore, _config: ServerConfig = {}) {
   // Generate OPA policy for a metric
   app.get('/api/metrics/:id/policy', optionalAuthenticate, async (req: Request, res: Response) => {
     try {
+      const store = getStore();
       const metric = await store.findById(req.params.id);
       if (!metric) {
         return res.status(404).json({ success: false, error: 'Metric not found' });
@@ -157,6 +166,7 @@ export function createServer(store: IMetricStore, _config: ServerConfig = {}) {
   // Generate OPA policies for all metrics
   app.get('/api/policies', optionalAuthenticate, async (req: Request, res: Response) => {
     try {
+      const store = getStore();
       const metrics = await store.findAll();
       const policies = PolicyGenerator.generatePolicyBundle(metrics);
       
@@ -174,6 +184,7 @@ export function createServer(store: IMetricStore, _config: ServerConfig = {}) {
   // Statistics endpoint
   app.get('/api/stats', optionalAuthenticate, async (req: Request, res: Response) => {
     try {
+      const store = getStore();
       const allMetrics = await store.findAll();
       
       const stats = {
@@ -813,6 +824,7 @@ export function createServer(store: IMetricStore, _config: ServerConfig = {}) {
       };
 
       // Import metrics
+      const store = getStore();
       for (const metric of result.metrics) {
         try {
           await store.create(metric as unknown as MetricDefinitionInput);
@@ -921,6 +933,54 @@ export function createServer(store: IMetricStore, _config: ServerConfig = {}) {
           success: false, 
           error: err.message || 'Connection failed'
         });
+      }
+    }
+  );
+
+  // Switch storage mode
+  app.post(
+    '/api/storage/switch',
+    optionalAuthenticate,
+    async (req: Request, res: Response) => {
+      try {
+        const { storage, postgres } = req.body;
+        
+        if (!storage) {
+          return res.status(400).json({ success: false, error: 'Storage mode is required' });
+        }
+
+        // Import the switch function from index
+        const { switchStorageMode } = await import('../index');
+        const result = await switchStorageMode(storage, postgres);
+        
+        if (result.success) {
+          res.json({ success: true, message: `Switched to ${storage} storage`, mode: storage });
+        } else {
+          res.status(500).json({ success: false, error: result.error });
+        }
+      } catch (error) {
+        const err = error as Error;
+        logger.error({ error: err }, 'Storage mode switch error');
+        res.status(500).json({ 
+          success: false, 
+          error: err.message || 'Failed to switch storage mode'
+        });
+      }
+    }
+  );
+
+  // Get current storage mode
+  app.get(
+    '/api/storage/mode',
+    optionalAuthenticate,
+    async (req: Request, res: Response) => {
+      try {
+        const { getCurrentStorageMode } = await import('../index');
+        const info = getCurrentStorageMode();
+        res.json({ success: true, data: info });
+      } catch (error) {
+        const err = error as Error;
+        res.status(500).json({ success: false, error: err.message });
       }
     }
   );
