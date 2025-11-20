@@ -132,6 +132,12 @@ describe('ConfigLoader', () => {
         metadata: {
           notes: '',
           example_queries: [],
+          version: '1.0.0',
+          created_at: new Date().toISOString(),
+          created_by: 'test-user',
+          last_updated: new Date().toISOString(),
+          last_updated_by: 'test-user',
+          change_history: [],
         },
       },
     ],

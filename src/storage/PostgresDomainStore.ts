@@ -148,6 +148,22 @@ export class PostgresDomainStore {
     return this.rowToDomain(result.rows[0]);
   }
 
+  async delete(id: string): Promise<boolean> {
+    const query = 'DELETE FROM business_domains WHERE domain_id = $1';
+    const result = this.dbPool
+      ? await this.dbPool.query(query, [id])
+      : await this.pool.query(query, [id]);
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async exists(id: string): Promise<boolean> {
+    const query = 'SELECT 1 FROM business_domains WHERE domain_id = $1';
+    const result = this.dbPool
+      ? await this.dbPool.query(query, [id])
+      : await this.pool.query(query, [id]);
+    return result.rows.length > 0;
+  }
+
   async close(): Promise<void> {
     if (this.dbPool) {
       await this.dbPool.close();

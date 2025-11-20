@@ -274,6 +274,42 @@ export class PostgresObjectiveStore {
     }
   }
 
+  async delete(id: string): Promise<boolean> {
+    const executeDelete = async (client: any) => {
+      // Delete key results first (foreign key constraint)
+      await client.query('DELETE FROM key_results WHERE objective_id = $1', [id]);
+      
+      // Delete objective
+      const result = await client.query('DELETE FROM objectives WHERE objective_id = $1', [id]);
+      return result.rowCount > 0;
+    };
+
+    if (this.dbPool) {
+      return await this.dbPool.transaction(executeDelete);
+    } else {
+      const client = await this.pool.connect();
+      try {
+        await client.query('BEGIN');
+        const result = await executeDelete(client);
+        await client.query('COMMIT');
+        return result;
+      } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+      } finally {
+        client.release();
+      }
+    }
+  }
+
+  async exists(id: string): Promise<boolean> {
+    const query = 'SELECT 1 FROM objectives WHERE objective_id = $1';
+    const result = this.dbPool
+      ? await this.dbPool.query(query, [id])
+      : await this.pool.query(query, [id]);
+    return result.rows.length > 0;
+  }
+
   async close(): Promise<void> {
     if (this.dbPool) {
       await this.dbPool.close();

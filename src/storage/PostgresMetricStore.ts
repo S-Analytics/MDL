@@ -162,6 +162,11 @@ export class PostgresMetricStore implements IMetricStore {
     let paramCount = 1;
 
     if (filters) {
+      if (filters.category) {
+        query += ` AND category = $${paramCount}`;
+        values.push(filters.category as string);
+        paramCount++;
+      }
       if (filters.business_domain) {
         query += ` AND business_domain = $${paramCount}`;
         values.push(filters.business_domain as string);
