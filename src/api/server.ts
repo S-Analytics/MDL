@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import express, { Request, Response } from 'express';
 import { Client } from 'pg';
 import { optionalAuthenticate, requireAdmin, requireEditor } from '../middleware/auth';
-import { requestLoggingMiddleware } from '../middleware/logging';
+import { errorHandlingMiddleware, requestLoggingMiddleware } from '../middleware/logging';
 import { validateBody, validateParams, validateQuery } from '../middleware/validation';
 import { MetricDefinitionInput } from '../models';
 import { PolicyGenerator } from '../opa';
@@ -70,6 +70,7 @@ export function createServer(storeOrGetter: IMetricStore | (() => IMetricStore),
     asyncHandler(async (req: Request, res: Response) => {
       const store = getStore();
       const filters = {
+        category: req.query.category as string,
         business_domain: req.query.business_domain as string,
         metric_type: req.query.metric_type as string,
         tier: req.query.tier as string,
@@ -985,8 +986,11 @@ export function createServer(storeOrGetter: IMetricStore | (() => IMetricStore),
     }
   );
 
-  // Note: Do not add 404 handler here - it should be added after dashboard routes
-  // This will be added in index.ts after all routes are registered
+  // Add error handling middleware (must be last)
+  app.use(errorHandlingMiddleware);
+
+  // Note: 404 handler should be added after dashboard routes in index.ts
+  // For API-only usage (like tests), the error handler above will catch 404s
 
   return app;
 }

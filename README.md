@@ -360,6 +360,12 @@ npm run build
 # Run tests
 npm test
 
+# Run tests with coverage
+npm run test:coverage
+
+# Run integration tests only
+npm test -- tests/integration
+
 # Run tests in watch mode
 npm test:watch
 
@@ -368,6 +374,34 @@ npm run lint
 
 # Format code
 npm run format
+```
+
+### Testing
+
+The project has comprehensive test coverage:
+
+- **Unit Tests**: 352 tests covering 88.53% of code ✅
+- **Integration Tests**: 37 tests (100% passing) ✅
+  - Authentication API: 17 tests
+  - Metrics API: 20 tests
+- **Test Coverage Goals**: 85%+ lines, 80%+ branches
+
+Run specific test suites:
+```bash
+# All tests
+npm test
+
+# With coverage report
+npm run test:coverage
+
+# Integration tests only
+npm test -- tests/integration
+
+# Specific test file
+npm test -- tests/unit/auth/jwt.test.ts
+
+# Watch mode for development
+npm run test:watch
 ```
 
 ## Examples

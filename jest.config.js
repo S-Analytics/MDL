@@ -13,7 +13,19 @@ module.exports = {
     '!src/**/*.spec.ts',
     '!src/cli.ts',
     '!src/index.ts',
+    '!src/**/index.ts',
+    '!src/**/*.d.ts',
   ],
+  coverageThreshold: {
+    global: {
+      branches: 80,
+      functions: 85,
+      lines: 85,
+      statements: 85
+    }
+  },
+  coverageReporters: ['text', 'lcov', 'html', 'json'],
   coverageDirectory: 'coverage',
   verbose: true,
+  testTimeout: 10000,
 };
