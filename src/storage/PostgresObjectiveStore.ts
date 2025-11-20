@@ -1,34 +1,64 @@
 import { Pool } from 'pg';
 import { KeyResult, Objective } from '../models';
+import { DatabasePool } from '../utils/database';
+import { logger } from '../utils/logger';
 import { PostgresConfig } from './PostgresMetricStore';
 
 /**
  * PostgreSQL implementation for Objectives and Key Results
+ * Can use either a provided DatabasePool or create its own legacy Pool
  */
 export class PostgresObjectiveStore {
   private pool: Pool;
+  private dbPool?: DatabasePool;
+  private isLegacyMode: boolean;
 
-  constructor(config: PostgresConfig) {
-    this.pool = new Pool({
-      host: config.host,
-      port: config.port,
-      database: config.database,
-      user: config.user,
-      password: config.password,
-      max: 10,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 2000,
-    });
+  constructor(config: PostgresConfig, dbPool?: DatabasePool) {
+    if (dbPool) {
+      // Use modern DatabasePool with health checks and retry logic
+      this.dbPool = dbPool;
+      this.isLegacyMode = false;
+      // Create a legacy pool reference for backward compatibility
+      this.pool = new Pool({
+        host: config.host,
+        port: config.port,
+        database: config.database,
+        user: config.user,
+        password: config.password,
+        max: 10,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 2000,
+      });
+      logger.info('PostgresObjectiveStore initialized with DatabasePool');
+    } else {
+      // Legacy mode for backward compatibility
+      this.isLegacyMode = true;
+      this.pool = new Pool({
+        host: config.host,
+        port: config.port,
+        database: config.database,
+        user: config.user,
+        password: config.password,
+        max: 10,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 2000,
+      });
+      logger.info('PostgresObjectiveStore initialized with legacy Pool');
+    }
   }
 
   async findAll(): Promise<Objective[]> {
     // Get all objectives
     const objectivesQuery = 'SELECT * FROM objectives ORDER BY timeframe_start DESC';
-    const objectivesResult = await this.pool.query(objectivesQuery);
+    const objectivesResult = this.dbPool
+      ? await this.dbPool.query(objectivesQuery)
+      : await this.pool.query(objectivesQuery);
     
     // Get all key results
     const keyResultsQuery = 'SELECT * FROM key_results ORDER BY objective_id, kr_id';
-    const keyResultsResult = await this.pool.query(keyResultsQuery);
+    const keyResultsResult = this.dbPool
+      ? await this.dbPool.query(keyResultsQuery)
+      : await this.pool.query(keyResultsQuery);
     
     // Map key results by objective_id
     const keyResultsMap = new Map<string, KeyResult[]>();
@@ -51,14 +81,18 @@ export class PostgresObjectiveStore {
 
   async findById(id: string): Promise<Objective | null> {
     const objectiveQuery = 'SELECT * FROM objectives WHERE objective_id = $1';
-    const objectiveResult = await this.pool.query(objectiveQuery, [id]);
+    const objectiveResult = this.dbPool
+      ? await this.dbPool.query(objectiveQuery, [id])
+      : await this.pool.query(objectiveQuery, [id]);
     
     if (objectiveResult.rows.length === 0) {
       return null;
     }
     
     const keyResultsQuery = 'SELECT * FROM key_results WHERE objective_id = $1 ORDER BY kr_id';
-    const keyResultsResult = await this.pool.query(keyResultsQuery, [id]);
+    const keyResultsResult = this.dbPool
+      ? await this.dbPool.query(keyResultsQuery, [id])
+      : await this.pool.query(keyResultsQuery, [id]);
     
     const objective = this.rowToObjective(objectiveResult.rows[0]);
     objective.key_results = keyResultsResult.rows.map(row => this.rowToKeyResult(row));
@@ -67,10 +101,7 @@ export class PostgresObjectiveStore {
   }
 
   async create(objective: Objective): Promise<Objective> {
-    const client = await this.pool.connect();
-    
-    try {
-      await client.query('BEGIN');
+    const executeCreate = async (client: any) => {
       
       // Insert objective (cast to any to access extended properties)
       const obj = objective as unknown as Record<string, unknown>;
@@ -129,25 +160,31 @@ export class PostgresObjectiveStore {
         }
       }
       
-      await client.query('COMMIT');
-      
       const result = this.rowToObjective(objectiveResult.rows[0]);
       result.key_results = keyResults;
       return result;
-      
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
-    } finally {
-      client.release();
+    };
+
+    if (this.dbPool) {
+      return await this.dbPool.transaction(executeCreate);
+    } else {
+      const client = await this.pool.connect();
+      try {
+        await client.query('BEGIN');
+        const result = await executeCreate(client);
+        await client.query('COMMIT');
+        return result;
+      } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+      } finally {
+        client.release();
+      }
     }
   }
 
   async update(objective: Objective): Promise<Objective> {
-    const client = await this.pool.connect();
-    
-    try {
-      await client.query('BEGIN');
+    const executeUpdate = async (client: any) => {
       
       // Update objective (cast to any to access extended properties)
       const obj = objective as unknown as Record<string, unknown>;
@@ -214,22 +251,35 @@ export class PostgresObjectiveStore {
         }
       }
       
-      await client.query('COMMIT');
-      
       const result = this.rowToObjective(objectiveResult.rows[0]);
       result.key_results = keyResults;
       return result;
-      
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
-    } finally {
-      client.release();
+    };
+
+    if (this.dbPool) {
+      return await this.dbPool.transaction(executeUpdate);
+    } else {
+      const client = await this.pool.connect();
+      try {
+        await client.query('BEGIN');
+        const result = await executeUpdate(client);
+        await client.query('COMMIT');
+        return result;
+      } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+      } finally {
+        client.release();
+      }
     }
   }
 
   async close(): Promise<void> {
-    await this.pool.end();
+    if (this.dbPool) {
+      await this.dbPool.close();
+    } else {
+      await this.pool.end();
+    }
   }
 
   private rowToObjective(row: Record<string, unknown>): Objective {

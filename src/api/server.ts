@@ -1,13 +1,32 @@
 import cors from 'cors';
-import express, { NextFunction, Request, Response } from 'express';
+import dotenv from 'dotenv';
+import express, { Request, Response } from 'express';
 import { Client } from 'pg';
+import { optionalAuthenticate, requireAdmin, requireEditor } from '../middleware/auth';
+import { requestLoggingMiddleware } from '../middleware/logging';
+import { validateBody, validateParams, validateQuery } from '../middleware/validation';
 import { MetricDefinitionInput } from '../models';
 import { PolicyGenerator } from '../opa';
 import { IMetricStore } from '../storage';
+import { asyncHandler } from '../utils/errors';
+import { logger, logStartup } from '../utils/logger';
+import {
+    databaseConfigSchema,
+    metricDefinitionSchema,
+    metricIdParamSchema,
+    metricQuerySchema,
+    metricUpdateSchema,
+} from '../validation/schemas';
+import { createAuthRouter } from './auth';
+
+// Load environment variables
+dotenv.config();
 
 export interface ServerConfig {
   port?: number;
   host?: string;
+  userStore?: any; // IUserStore instance for authentication
+  enableAuth?: boolean; // Enable authentication endpoints
 }
 
 /**
@@ -17,26 +36,35 @@ export function createServer(store: IMetricStore, _config: ServerConfig = {}) {
   const app = express();
   
   // Middleware
-  app.use(cors());
+  app.use(cors({
+    origin: process.env.CORS_ORIGIN || '*',
+    credentials: process.env.CORS_CREDENTIALS === 'true'
+  }));
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
-  // Request logging middleware
-  app.use((req: Request, res: Response, next: NextFunction) => {
-    console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
-    next();
-  });
+  // Request logging middleware with request IDs
+  app.use(requestLoggingMiddleware);
 
   // Health check endpoint
   app.get('/health', (req: Request, res: Response) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
+  // Authentication Routes (if enabled)
+  if (_config.enableAuth && _config.userStore) {
+    app.use('/api/auth', createAuthRouter(_config.userStore));
+    logger.info('Authentication routes enabled');
+  }
+
   // API Routes
 
   // Get all metrics
-  app.get('/api/metrics', async (req: Request, res: Response) => {
-    try {
+  app.get(
+    '/api/metrics',
+    optionalAuthenticate,
+    validateQuery(metricQuerySchema),
+    asyncHandler(async (req: Request, res: Response) => {
       const filters = {
         business_domain: req.query.business_domain as string,
         metric_type: req.query.metric_type as string,
@@ -51,47 +79,42 @@ export function createServer(store: IMetricStore, _config: ServerConfig = {}) {
       );
 
       res.json({ success: true, data: metrics, count: metrics.length });
-    } catch (error: any) {
-      res.status(500).json({ success: false, error: error.message });
-    }
-  });
+    })
+  );
 
   // Get metric by ID
-  app.get('/api/metrics/:id', async (req: Request, res: Response) => {
-    try {
+  app.get(
+    '/api/metrics/:id',
+    optionalAuthenticate,
+    validateParams(metricIdParamSchema),
+    asyncHandler(async (req: Request, res: Response) => {
       const metric = await store.findById(req.params.id);
       if (!metric) {
         return res.status(404).json({ success: false, error: 'Metric not found' });
       }
       res.json({ success: true, data: metric });
-    } catch (error: any) {
-      res.status(500).json({ success: false, error: error.message });
-    }
-  });
+    })
+  );
 
   // Create a new metric
-  app.post('/api/metrics', async (req: Request, res: Response) => {
-    try {
+  app.post(
+    '/api/metrics',
+    requireEditor,
+    validateBody(metricDefinitionSchema),
+    asyncHandler(async (req: Request, res: Response) => {
       const input: MetricDefinitionInput = req.body;
-      
-      // Validate required fields
-      if (!input.name || !input.description) {
-        return res.status(400).json({
-          success: false,
-          error: 'Missing required fields: name, description',
-        });
-      }
-
       const metric = await store.create(input);
       res.status(201).json({ success: true, data: metric });
-    } catch (error: any) {
-      res.status(500).json({ success: false, error: error.message });
-    }
-  });
+    })
+  );
 
   // Update a metric
-  app.put('/api/metrics/:id', async (req: Request, res: Response) => {
-    try {
+  app.put(
+    '/api/metrics/:id',
+    requireEditor,
+    validateParams(metricIdParamSchema),
+    validateBody(metricUpdateSchema),
+    asyncHandler(async (req: Request, res: Response) => {
       const exists = await store.exists(req.params.id);
       if (!exists) {
         return res.status(404).json({ success: false, error: 'Metric not found' });
@@ -99,26 +122,25 @@ export function createServer(store: IMetricStore, _config: ServerConfig = {}) {
 
       const metric = await store.update(req.params.id, req.body);
       res.json({ success: true, data: metric });
-    } catch (error: any) {
-      res.status(500).json({ success: false, error: error.message });
-    }
-  });
+    })
+  );
 
   // Delete a metric
-  app.delete('/api/metrics/:id', async (req: Request, res: Response) => {
-    try {
+  app.delete(
+    '/api/metrics/:id',
+    requireAdmin,
+    validateParams(metricIdParamSchema),
+    asyncHandler(async (req: Request, res: Response) => {
       const deleted = await store.delete(req.params.id);
       if (!deleted) {
         return res.status(404).json({ success: false, error: 'Metric not found' });
       }
       res.json({ success: true, message: 'Metric deleted successfully' });
-    } catch (error: any) {
-      res.status(500).json({ success: false, error: error.message });
-    }
-  });
+    })
+  );
 
   // Generate OPA policy for a metric
-  app.get('/api/metrics/:id/policy', async (req: Request, res: Response) => {
+  app.get('/api/metrics/:id/policy', optionalAuthenticate, async (req: Request, res: Response) => {
     try {
       const metric = await store.findById(req.params.id);
       if (!metric) {
@@ -133,7 +155,7 @@ export function createServer(store: IMetricStore, _config: ServerConfig = {}) {
   });
 
   // Generate OPA policies for all metrics
-  app.get('/api/policies', async (req: Request, res: Response) => {
+  app.get('/api/policies', optionalAuthenticate, async (req: Request, res: Response) => {
     try {
       const metrics = await store.findAll();
       const policies = PolicyGenerator.generatePolicyBundle(metrics);
@@ -150,7 +172,7 @@ export function createServer(store: IMetricStore, _config: ServerConfig = {}) {
   });
 
   // Statistics endpoint
-  app.get('/api/stats', async (req: Request, res: Response) => {
+  app.get('/api/stats', optionalAuthenticate, async (req: Request, res: Response) => {
     try {
       const allMetrics = await store.findAll();
       
@@ -184,7 +206,7 @@ export function createServer(store: IMetricStore, _config: ServerConfig = {}) {
   });
 
   // Get metrics from PostgreSQL
-  app.post('/api/postgres/metrics', async (req: Request, res: Response) => {
+  app.post('/api/postgres/metrics', requireEditor, async (req: Request, res: Response) => {
     try {
       const { host, port, name, user, password } = req.body;
 
@@ -215,7 +237,7 @@ export function createServer(store: IMetricStore, _config: ServerConfig = {}) {
   });
 
   // Get domains from PostgreSQL
-  app.post('/api/postgres/domains', async (req: Request, res: Response) => {
+  app.post('/api/postgres/domains', requireEditor, async (req: Request, res: Response) => {
     try {
       const { host, port, name, user, password } = req.body;
 
@@ -246,7 +268,7 @@ export function createServer(store: IMetricStore, _config: ServerConfig = {}) {
   });
 
   // Get objectives from PostgreSQL
-  app.post('/api/postgres/objectives', async (req: Request, res: Response) => {
+  app.post('/api/postgres/objectives', requireEditor, async (req: Request, res: Response) => {
     try {
       const { host, port, name, user, password } = req.body;
 
@@ -278,7 +300,7 @@ export function createServer(store: IMetricStore, _config: ServerConfig = {}) {
 
   // Save/Create domain in PostgreSQL
   // Save/Create/Update domain in PostgreSQL
-  app.post('/api/postgres/domains/save', async (req: Request, res: Response) => {
+  app.post('/api/postgres/domains/save', requireEditor, async (req: Request, res: Response) => {
     try {
       const { dbConfig, domain, isUpdate } = req.body;
 
@@ -321,7 +343,7 @@ export function createServer(store: IMetricStore, _config: ServerConfig = {}) {
   });
 
   // Save/Create/Update objective in PostgreSQL
-  app.post('/api/postgres/objectives/save', async (req: Request, res: Response) => {
+  app.post('/api/postgres/objectives/save', requireEditor, async (req: Request, res: Response) => {
     try {
       const { dbConfig, objective, isUpdate } = req.body;
 
@@ -376,7 +398,7 @@ export function createServer(store: IMetricStore, _config: ServerConfig = {}) {
   });
 
   // Save/Create/Update metric in PostgreSQL
-  app.post('/api/postgres/metrics/save', async (req: Request, res: Response) => {
+  app.post('/api/postgres/metrics/save', requireEditor, async (req: Request, res: Response) => {
     try {
       const { dbConfig, metric, isUpdate } = req.body;
 
@@ -428,7 +450,7 @@ export function createServer(store: IMetricStore, _config: ServerConfig = {}) {
   });
 
   // Delete metric from PostgreSQL
-  app.post('/api/postgres/metrics/delete', async (req: Request, res: Response) => {
+  app.post('/api/postgres/metrics/delete', requireAdmin, async (req: Request, res: Response) => {
     try {
       const { dbConfig, metricId } = req.body;
 
@@ -459,7 +481,7 @@ export function createServer(store: IMetricStore, _config: ServerConfig = {}) {
   });
 
   // Delete domain from PostgreSQL
-  app.post('/api/postgres/domains/delete', async (req: Request, res: Response) => {
+  app.post('/api/postgres/domains/delete', requireAdmin, async (req: Request, res: Response) => {
     try {
       const { dbConfig, domainId } = req.body;
 
@@ -491,7 +513,7 @@ export function createServer(store: IMetricStore, _config: ServerConfig = {}) {
   });
 
   // Delete objective from PostgreSQL
-  app.post('/api/postgres/objectives/delete', async (req: Request, res: Response) => {
+  app.post('/api/postgres/objectives/delete', requireAdmin, async (req: Request, res: Response) => {
     try {
       const { dbConfig, objectiveId } = req.body;
 
@@ -524,7 +546,7 @@ export function createServer(store: IMetricStore, _config: ServerConfig = {}) {
   });
 
   // Generate DOCX report for an objective
-  app.post('/api/export/objective/docx', async (req: Request, res: Response) => {
+  app.post('/api/export/objective/docx', requireEditor, async (req: Request, res: Response) => {
     try {
       const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, TabStopType, TabStopPosition } = require('docx');
       const { objective, metrics } = req.body;
@@ -768,7 +790,7 @@ export function createServer(store: IMetricStore, _config: ServerConfig = {}) {
   });
 
   // Universal import endpoint - supports all template types
-  app.post('/api/import', async (req: Request, res: Response) => {
+  app.post('/api/import', requireEditor, async (req: Request, res: Response) => {
     try {
       const { data, dbConfig } = req.body;
 
@@ -864,24 +886,21 @@ export function createServer(store: IMetricStore, _config: ServerConfig = {}) {
   });
 
   // Test database connection
-  app.post('/api/database/test', async (req: Request, res: Response) => {
-    try {
-      const { host, port, name, user, password } = req.body;
+  app.post(
+    '/api/database/test',
+    requireEditor,
+    validateBody(databaseConfigSchema),
+    async (req: Request, res: Response) => {
+      try {
+        const { host, port, database, user, password } = req.body;
 
-      if (!host || !port || !name || !user) {
-        return res.status(400).json({ 
-          success: false, 
-          error: 'Missing required fields: host, port, name, user' 
+        const client = new Client({
+          host,
+          port,
+          database,
+          user,
+          password: password || ''
         });
-      }
-
-      const client = new Client({
-        host,
-        port: parseInt(port),
-        database: name,
-        user,
-        password: password || ''
-      });
 
       await client.connect();
       
@@ -890,27 +909,24 @@ export function createServer(store: IMetricStore, _config: ServerConfig = {}) {
       
       await client.end();
 
-      res.json({ 
-        success: true, 
-        message: 'Connection successful',
-        database: { host, port, name, user }
-      });
-    } catch (error) {
-      const err = error as Error;
-      console.error('Database connection test error:', err);
-      res.status(500).json({ 
-        success: false, 
-        error: err.message || 'Connection failed'
-      });
+        res.json({ 
+          success: true, 
+          message: 'Connection successful',
+          database: { host, port, database, user }
+        });
+      } catch (error) {
+        const err = error as Error;
+        console.error('Database connection test error:', err);
+        res.status(500).json({ 
+          success: false, 
+          error: err.message || 'Connection failed'
+        });
+      }
     }
-  });
+  );
 
   // Note: Do not add 404 handler here - it should be added after dashboard routes
-  // Error handling middleware
-  app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-    console.error('Error:', err);
-    res.status(500).json({ success: false, error: 'Internal server error' });
-  });
+  // This will be added in index.ts after all routes are registered
 
   return app;
 }
@@ -920,12 +936,17 @@ export function createServer(store: IMetricStore, _config: ServerConfig = {}) {
  */
 export function startServer(store: IMetricStore, config: ServerConfig = {}) {
   const app = createServer(store, config);
-  const port = config.port || 3000;
-  const host = config.host || '0.0.0.0';
+  const port = config.port || parseInt(process.env.PORT || '3000');
+  const host = config.host || process.env.HOST || '0.0.0.0';
 
   return app.listen(port, host, () => {
-    console.log(`MDL API Server running at http://${host}:${port}`);
-    console.log(`Health check: http://${host}:${port}/health`);
-    console.log(`API endpoints: http://${host}:${port}/api/metrics`);
+    logStartup({
+      port,
+      host,
+      storageMode: process.env.STORAGE_MODE || 'local',
+      dbConnected: false, // Will be updated when we add DB pool
+    });
+    logger.info(`Health check: http://${host}:${port}/health`);
+    logger.info(`API endpoints: http://${host}:${port}/api/metrics`);
   });
 }
