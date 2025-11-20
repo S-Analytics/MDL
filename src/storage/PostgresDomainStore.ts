@@ -1,4 +1,6 @@
 import { Pool } from 'pg';
+import { DatabasePool } from '../utils/database';
+import { logger } from '../utils/logger';
 import { PostgresConfig } from './PostgresMetricStore';
 
 export interface BusinessDomain {
@@ -14,32 +16,60 @@ export interface BusinessDomain {
 
 /**
  * PostgreSQL implementation for Business Domains
+ * Can use either a provided DatabasePool or create its own legacy Pool
  */
 export class PostgresDomainStore {
   private pool: Pool;
+  private dbPool?: DatabasePool;
+  private isLegacyMode: boolean;
 
-  constructor(config: PostgresConfig) {
-    this.pool = new Pool({
-      host: config.host,
-      port: config.port,
-      database: config.database,
-      user: config.user,
-      password: config.password,
-      max: 10,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 2000,
-    });
+  constructor(config: PostgresConfig, dbPool?: DatabasePool) {
+    if (dbPool) {
+      // Use modern DatabasePool with health checks and retry logic
+      this.dbPool = dbPool;
+      this.isLegacyMode = false;
+      // Create a legacy pool reference for backward compatibility
+      this.pool = new Pool({
+        host: config.host,
+        port: config.port,
+        database: config.database,
+        user: config.user,
+        password: config.password,
+        max: 10,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 2000,
+      });
+      logger.info('PostgresDomainStore initialized with DatabasePool');
+    } else {
+      // Legacy mode for backward compatibility
+      this.isLegacyMode = true;
+      this.pool = new Pool({
+        host: config.host,
+        port: config.port,
+        database: config.database,
+        user: config.user,
+        password: config.password,
+        max: 10,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 2000,
+      });
+      logger.info('PostgresDomainStore initialized with legacy Pool');
+    }
   }
 
   async findAll(): Promise<BusinessDomain[]> {
     const query = 'SELECT * FROM business_domains ORDER BY name';
-    const result = await this.pool.query(query);
+    const result = this.dbPool 
+      ? await this.dbPool.query(query)
+      : await this.pool.query(query);
     return result.rows.map(row => this.rowToDomain(row));
   }
 
   async findById(id: string): Promise<BusinessDomain | null> {
     const query = 'SELECT * FROM business_domains WHERE domain_id = $1';
-    const result = await this.pool.query(query, [id]);
+    const result = this.dbPool
+      ? await this.dbPool.query(query, [id])
+      : await this.pool.query(query, [id]);
     
     if (result.rows.length === 0) {
       return null;
@@ -50,7 +80,9 @@ export class PostgresDomainStore {
 
   async findByName(name: string): Promise<BusinessDomain | null> {
     const query = 'SELECT * FROM business_domains WHERE name = $1';
-    const result = await this.pool.query(query, [name]);
+    const result = this.dbPool
+      ? await this.dbPool.query(query, [name])
+      : await this.pool.query(query, [name]);
     
     if (result.rows.length === 0) {
       return null;
@@ -79,7 +111,9 @@ export class PostgresDomainStore {
       domain.color || null,
     ];
 
-    const result = await this.pool.query(query, values);
+    const result = this.dbPool
+      ? await this.dbPool.query(query, values)
+      : await this.pool.query(query, values);
     return this.rowToDomain(result.rows[0]);
   }
 
@@ -103,7 +137,9 @@ export class PostgresDomainStore {
       domain.color || null,
     ];
 
-    const result = await this.pool.query(query, values);
+    const result = this.dbPool
+      ? await this.dbPool.query(query, values)
+      : await this.pool.query(query, values);
     
     if (result.rows.length === 0) {
       throw new Error(`Domain ${domain.domain_id} not found`);
@@ -112,8 +148,28 @@ export class PostgresDomainStore {
     return this.rowToDomain(result.rows[0]);
   }
 
+  async delete(id: string): Promise<boolean> {
+    const query = 'DELETE FROM business_domains WHERE domain_id = $1';
+    const result = this.dbPool
+      ? await this.dbPool.query(query, [id])
+      : await this.pool.query(query, [id]);
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async exists(id: string): Promise<boolean> {
+    const query = 'SELECT 1 FROM business_domains WHERE domain_id = $1';
+    const result = this.dbPool
+      ? await this.dbPool.query(query, [id])
+      : await this.pool.query(query, [id]);
+    return result.rows.length > 0;
+  }
+
   async close(): Promise<void> {
-    await this.pool.end();
+    if (this.dbPool) {
+      await this.dbPool.close();
+    } else {
+      await this.pool.end();
+    }
   }
 
   private rowToDomain(row: Record<string, unknown>): BusinessDomain {

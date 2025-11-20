@@ -4,6 +4,8 @@ import {
     MetricDefinition,
     MetricDefinitionInput
 } from '../models';
+import { DatabasePool } from '../utils/database';
+import { logger } from '../utils/logger';
 import { IMetricStore } from './MetricStore';
 
 /**
@@ -75,21 +77,45 @@ export interface PostgresConfig {
 
 /**
  * PostgreSQL implementation of IMetricStore
+ * Can use either a provided DatabasePool or create its own legacy Pool
  */
 export class PostgresMetricStore implements IMetricStore {
   private pool: Pool;
+  private dbPool?: DatabasePool;
+  private isLegacyMode: boolean;
 
-  constructor(config: PostgresConfig) {
-    this.pool = new Pool({
-      host: config.host,
-      port: config.port,
-      database: config.database,
-      user: config.user,
-      password: config.password,
-      max: 10,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 2000,
-    });
+  constructor(config: PostgresConfig, dbPool?: DatabasePool) {
+    if (dbPool) {
+      // Use modern DatabasePool with health checks and retry logic
+      this.dbPool = dbPool;
+      this.isLegacyMode = false;
+      // Create a legacy pool reference for backward compatibility
+      this.pool = new Pool({
+        host: config.host,
+        port: config.port,
+        database: config.database,
+        user: config.user,
+        password: config.password,
+        max: 10,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 2000,
+      });
+      logger.info('PostgresMetricStore initialized with DatabasePool');
+    } else {
+      // Legacy mode for backward compatibility
+      this.isLegacyMode = true;
+      this.pool = new Pool({
+        host: config.host,
+        port: config.port,
+        database: config.database,
+        user: config.user,
+        password: config.password,
+        max: 10,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 2000,
+      });
+      logger.warn('PostgresMetricStore initialized in legacy mode (no DatabasePool)');
+    }
   }
 
   async create(input: MetricDefinitionInput): Promise<MetricDefinition> {
@@ -126,7 +152,7 @@ export class PostgresMetricStore implements IMetricStore {
       JSON.stringify(metric.metadata || {}),
     ];
 
-    const result = await this.pool.query(query, values);
+    const result = await this.executeQuery(query, values);
     return this.rowToMetric(result.rows[0]);
   }
 
@@ -136,6 +162,11 @@ export class PostgresMetricStore implements IMetricStore {
     let paramCount = 1;
 
     if (filters) {
+      if (filters.category) {
+        query += ` AND category = $${paramCount}`;
+        values.push(filters.category as string);
+        paramCount++;
+      }
       if (filters.business_domain) {
         query += ` AND business_domain = $${paramCount}`;
         values.push(filters.business_domain as string);
@@ -160,13 +191,13 @@ export class PostgresMetricStore implements IMetricStore {
 
     query += ' ORDER BY name';
 
-    const result = await this.pool.query(query, values);
+    const result = await this.executeQuery(query, values);
     return result.rows.map(row => this.rowToMetric(row));
   }
 
   async findById(id: string): Promise<MetricDefinition | null> {
     const query = 'SELECT * FROM metrics WHERE metric_id = $1';
-    const result = await this.pool.query(query, [id]);
+    const result = await this.executeQuery(query, [id]);
     
     if (result.rows.length === 0) {
       return null;
@@ -305,24 +336,47 @@ export class PostgresMetricStore implements IMetricStore {
     `;
     values.push(id);
 
-    const result = await this.pool.query(query, values);
+    const result = await this.executeQuery(query, values);
     return this.rowToMetric(result.rows[0]);
   }
 
   async delete(id: string): Promise<boolean> {
     const query = 'DELETE FROM metrics WHERE metric_id = $1';
-    const result = await this.pool.query(query, [id]);
-    return result.rowCount ? result.rowCount > 0 : false;
+    const result = await this.executeQuery(query, [id]);
+    return result.rowCount > 0;
   }
 
   async exists(id: string): Promise<boolean> {
     const query = 'SELECT 1 FROM metrics WHERE metric_id = $1';
-    const result = await this.pool.query(query, [id]);
+    const result = await this.executeQuery(query, [id]);
     return result.rows.length > 0;
   }
 
   async close(): Promise<void> {
-    await this.pool.end();
+    if (this.isLegacyMode) {
+      await this.pool.end();
+    }
+    // If using DatabasePool, it will be closed by the application shutdown handler
+  }
+
+  /**
+   * Helper method to execute queries with either DatabasePool or legacy Pool
+   */
+  private async executeQuery<T = any>(
+    text: string,
+    params?: any[]
+  ): Promise<{ rows: T[]; rowCount: number }> {
+    if (this.dbPool && !this.isLegacyMode) {
+      // Use DatabasePool with retry logic
+      return await this.dbPool.query<T>(text, params, 1);
+    } else {
+      // Use legacy Pool
+      const result = await this.pool.query(text, params);
+      return {
+        rows: result.rows,
+        rowCount: result.rowCount || 0,
+      };
+    }
   }
 
   private rowToMetric(row: Record<string, unknown>): MetricDefinition {

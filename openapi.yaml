@@ -7,16 +7,20 @@ info:
     
     This API supports creating, reading, updating, and deleting metric definitions with rich metadata
     including alignment, data sources, governance, targets, alerts, and operational usage information.
-  version: 1.1.0
+  version: 2.0.0
   contact:
     name: MDL API Support
     email: support@example.com
   x-api-features:
+    - JWT-based authentication with refresh tokens
+    - Role-based access control (VIEWER, EDITOR, ADMIN)
+    - API key authentication for programmatic access
     - Semantic versioning for metrics (MAJOR.MINOR.PATCH)
     - Automatic change history tracking
     - PostgreSQL JSONB metadata storage
     - OPA policy generation
     - Enhanced reporting with version history
+    - Structured logging with request correlation
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
@@ -30,14 +34,16 @@ servers:
 tags:
   - name: Health
     description: Health check endpoints
+  - name: Authentication
+    description: User authentication and authorization endpoints
   - name: Metrics
-    description: Metric definition operations
+    description: Metric definition operations (requires authentication)
   - name: Policies
-    description: OPA policy generation
+    description: OPA policy generation (public read access)
   - name: Statistics
-    description: Metrics statistics and aggregations
+    description: Metrics statistics and aggregations (public read access)
   - name: PostgreSQL
-    description: PostgreSQL database operations for metrics, domains, and objectives
+    description: PostgreSQL database operations (requires EDITOR or ADMIN role)
   - name: Domains
     description: Business domain operations
   - name: Objectives
@@ -67,13 +73,355 @@ paths:
                     format: date-time
                     example: '2025-11-14T10:30:00.000Z'
 
+  /api/auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new user
+      description: Create a new user account with specified role
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - email
+                - password
+                - full_name
+              properties:
+                username:
+                  type: string
+                  pattern: '^[a-zA-Z0-9_-]+$'
+                  minLength: 3
+                  maxLength: 50
+                  example: john_doe
+                email:
+                  type: string
+                  format: email
+                  example: john@example.com
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  example: SecurePass123!
+                full_name:
+                  type: string
+                  minLength: 2
+                  maxLength: 100
+                  example: John Doe
+                role:
+                  type: string
+                  enum: [viewer, editor, admin]
+                  default: viewer
+                  example: editor
+      responses:
+        '201':
+          description: User successfully registered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  user:
+                    $ref: '#/components/schemas/User'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: User already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: Authenticate user and receive access and refresh tokens
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                  example: john_doe
+                password:
+                  type: string
+                  format: password
+                  example: SecurePass123!
+      responses:
+        '200':
+          description: Successfully authenticated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  user:
+                    $ref: '#/components/schemas/User'
+                  tokens:
+                    type: object
+                    properties:
+                      access_token:
+                        type: string
+                        description: JWT access token (expires in 15 minutes)
+                        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                      refresh_token:
+                        type: string
+                        description: JWT refresh token (expires in 7 days)
+                        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                      expires_in:
+                        type: integer
+                        description: Access token expiration time in seconds
+                        example: 900
+                      token_type:
+                        type: string
+                        example: Bearer
+                      token_id:
+                        type: string
+                        format: uuid
+                        example: 123e4567-e89b-12d3-a456-426614174000
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh access token
+      description: Use refresh token to obtain a new access token
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refreshToken
+              properties:
+                refreshToken:
+                  type: string
+                  description: Valid refresh token
+                  example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+      responses:
+        '200':
+          description: Token successfully refreshed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  tokens:
+                    type: object
+                    properties:
+                      access_token:
+                        type: string
+                        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                      refresh_token:
+                        type: string
+                        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                      expires_in:
+                        type: integer
+                        example: 900
+                      token_type:
+                        type: string
+                        example: Bearer
+        '401':
+          description: Invalid or expired refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: User logout
+      description: Revoke refresh token and logout
+      operationId: logoutUser
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Successfully logged out
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Successfully logged out
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: Get current user
+      description: Retrieve authenticated user information
+      operationId: getCurrentUser
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: User information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/auth/api-keys:
+    post:
+      tags:
+        - Authentication
+      summary: Create API key
+      description: Generate a new API key for programmatic access
+      operationId: createApiKey
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  minLength: 3
+                  maxLength: 100
+                  example: CI/CD Pipeline Key
+                expires_at:
+                  type: string
+                  format: date-time
+                  example: '2026-12-31T23:59:59.000Z'
+      responses:
+        '201':
+          description: API key created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  api_key:
+                    type: string
+                    description: API key (only shown once)
+                    example: mdl_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6
+                  key_id:
+                    type: string
+                    format: uuid
+                    example: 123e4567-e89b-12d3-a456-426614174000
+                  name:
+                    type: string
+                    example: CI/CD Pipeline Key
+                  created_at:
+                    type: string
+                    format: date-time
+                    example: '2025-11-19T00:00:00.000Z'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    get:
+      tags:
+        - Authentication
+      summary: List API keys
+      description: Get all API keys for the authenticated user
+      operationId: listApiKeys
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of API keys
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  api_keys:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key_id:
+                          type: string
+                          format: uuid
+                        name:
+                          type: string
+                        created_at:
+                          type: string
+                          format: date-time
+                        last_used_at:
+                          type: string
+                          format: date-time
+                        is_active:
+                          type: boolean
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
   /api/metrics:
     get:
       tags:
         - Metrics
       summary: Get all metrics
-      description: Retrieve all metric definitions with optional filtering
+      description: |
+        Retrieve all metric definitions with optional filtering.
+        Public endpoint with optional authentication - authenticated users may have access to additional fields.
       operationId: getAllMetrics
+      security:
+        - {} 
+        - BearerAuth: []
+        - ApiKeyAuth: []
       parameters:
         - name: business_domain
           in: query
@@ -136,7 +484,12 @@ paths:
         - Initial change history entry
         
         The system automatically tracks all changes with semantic versioning.
+        
+        **Required Role:** EDITOR or ADMIN
       operationId: createMetric
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
       requestBody:
         required: true
         content:
@@ -215,7 +568,12 @@ paths:
         - **MAJOR** (X.0.0): Changes to formula, unit, category, definition
         - **MINOR** (x.X.0): Changes to name, description, tier, business_domain
         - **PATCH** (x.x.X): Changes to tags, metadata, visualization
+        
+        **Authentication:** Requires EDITOR or ADMIN role
       operationId: updateMetric
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
       parameters:
         - name: id
           in: path
@@ -243,6 +601,8 @@ paths:
                     example: true
                   data:
                     $ref: '#/components/schemas/MetricDefinition'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -252,8 +612,14 @@ paths:
       tags:
         - Metrics
       summary: Delete a metric
-      description: Delete a metric definition
+      description: |
+        Delete a metric definition
+        
+        **Authentication:** Requires ADMIN role
       operationId: deleteMetric
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
       parameters:
         - name: id
           in: path
@@ -276,6 +642,8 @@ paths:
                   message:
                     type: string
                     example: Metric deleted successfully
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -510,8 +878,14 @@ paths:
       tags:
         - PostgreSQL
       summary: Fetch metrics from PostgreSQL
-      description: Retrieve all metrics from PostgreSQL database
+      description: |
+        Retrieve all metrics from PostgreSQL database
+        
+        **Authentication:** Requires EDITOR or ADMIN role
       operationId: fetchPostgresMetrics
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
       requestBody:
         required: true
         content:
@@ -533,6 +907,8 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/MetricDefinition'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -549,7 +925,12 @@ paths:
         
         When updating an existing metric, the system automatically calculates the
         appropriate version bump and adds a change history entry.
+        
+        **Authentication:** Requires EDITOR or ADMIN role
       operationId: savePostgresMetric
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
       requestBody:
         required: true
         content:
@@ -588,6 +969,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -596,8 +979,14 @@ paths:
       tags:
         - PostgreSQL
       summary: Delete metric from PostgreSQL
-      description: Delete a metric from PostgreSQL database
+      description: |
+        Delete a metric from PostgreSQL database
+        
+        **Authentication:** Requires ADMIN role
       operationId: deletePostgresMetric
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
       requestBody:
         required: true
         content:
@@ -624,6 +1013,8 @@ paths:
                   success:
                     type: boolean
                     example: true
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -632,8 +1023,14 @@ paths:
       tags:
         - PostgreSQL
       summary: Fetch domains from PostgreSQL
-      description: Retrieve all business domains from PostgreSQL database
+      description: |
+        Retrieve all business domains from PostgreSQL database
+        
+        **Authentication:** Requires EDITOR or ADMIN role
       operationId: fetchPostgresDomains
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
       requestBody:
         required: true
         content:
@@ -655,6 +1052,8 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/BusinessDomain'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -663,8 +1062,14 @@ paths:
       tags:
         - PostgreSQL
       summary: Save domain to PostgreSQL
-      description: Create or update a business domain in PostgreSQL database
+      description: |
+        Create or update a business domain in PostgreSQL database
+        
+        **Authentication:** Requires EDITOR or ADMIN role
       operationId: savePostgresDomain
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
       requestBody:
         required: true
         content:
@@ -703,6 +1108,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -711,8 +1118,14 @@ paths:
       tags:
         - PostgreSQL
       summary: Delete domain from PostgreSQL
-      description: Delete a business domain from PostgreSQL database
+      description: |
+        Delete a business domain from PostgreSQL database
+        
+        **Authentication:** Requires ADMIN role
       operationId: deletePostgresDomain
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
       requestBody:
         required: true
         content:
@@ -739,6 +1152,8 @@ paths:
                   success:
                     type: boolean
                     example: true
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -747,8 +1162,14 @@ paths:
       tags:
         - PostgreSQL
       summary: Fetch objectives from PostgreSQL
-      description: Retrieve all objectives with key results from PostgreSQL database
+      description: |
+        Retrieve all objectives with key results from PostgreSQL database
+        
+        **Authentication:** Requires EDITOR or ADMIN role
       operationId: fetchPostgresObjectives
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
       requestBody:
         required: true
         content:
@@ -778,8 +1199,14 @@ paths:
       tags:
         - PostgreSQL
       summary: Save objective to PostgreSQL
-      description: Create or update an objective with key results in PostgreSQL database
+      description: |
+        Create or update an objective with key results in PostgreSQL database
+        
+        **Authentication:** Requires EDITOR or ADMIN role
       operationId: savePostgresObjective
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
       requestBody:
         required: true
         content:
@@ -818,6 +1245,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -826,8 +1255,14 @@ paths:
       tags:
         - PostgreSQL
       summary: Delete objective from PostgreSQL
-      description: Delete an objective and its key results from PostgreSQL database (CASCADE)
+      description: |
+        Delete an objective and its key results from PostgreSQL database (CASCADE)
+        
+        **Authentication:** Requires ADMIN role
       operationId: deletePostgresObjective
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
       requestBody:
         required: true
         content:
@@ -854,6 +1289,8 @@ paths:
                   success:
                     type: boolean
                     example: true
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -1424,6 +1861,86 @@ components:
           type: string
           example: Error message
 
+    Error:
+      type: object
+      required:
+        - code
+        - message
+        - requestId
+        - timestamp
+      properties:
+        code:
+          type: string
+          description: Error code
+          example: "UNAUTHORIZED"
+        message:
+          type: string
+          description: Human-readable error message
+          example: "Authentication required"
+        details:
+          type: object
+          description: Optional additional error details
+          additionalProperties: true
+        requestId:
+          type: string
+          description: Request ID for tracking
+          example: "req_123456"
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp when error occurred
+          example: "2025-11-19T10:30:00.000Z"
+
+    User:
+      type: object
+      required:
+        - user_id
+        - username
+        - email
+        - role
+        - status
+        - created_at
+        - updated_at
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          description: Unique user identifier
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        username:
+          type: string
+          description: Unique username
+          example: "johndoe"
+        email:
+          type: string
+          format: email
+          description: User email address
+          example: "john.doe@example.com"
+        full_name:
+          type: string
+          description: User's full name
+          example: "John Doe"
+        role:
+          type: string
+          enum: [viewer, editor, admin]
+          description: User role (viewer, editor, admin)
+          example: "editor"
+        status:
+          type: string
+          enum: [active, inactive, suspended]
+          description: User account status
+          example: "active"
+        created_at:
+          type: string
+          format: date-time
+          description: When user account was created
+          example: "2025-11-01T10:00:00.000Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: When user account was last updated
+          example: "2025-11-19T10:30:00.000Z"
+
     PostgresConfig:
       type: object
       required:
@@ -1672,3 +2189,27 @@ components:
           example:
             success: false
             error: Internal server error
+
+    UnauthorizedError:
+      description: Unauthorized - Authentication required or invalid credentials
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: "UNAUTHORIZED"
+            message: "Authentication required"
+            requestId: "req_123456"
+            timestamp: "2025-11-19T10:30:00.000Z"
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT access token obtained from /api/auth/login or /api/auth/refresh
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key obtained from /api/auth/api-keys
