@@ -67,26 +67,73 @@ npm run cli stats
 
 ### 3. Use the API
 
+#### API Documentation
+
+📚 **Interactive API documentation is available at: http://localhost:3000/api-docs**
+
+The MDL API uses **URL path versioning**. Current stable version: **v1**
+
+**Base URLs:**
+- v1 API (stable): `http://localhost:3000/api/v1/`
+- Legacy (deprecated): `http://localhost:3000/api/` (sunset: June 1, 2026)
+
+#### Authentication
+
+All API endpoints require JWT Bearer token authentication. See [Authentication Guide](./AUTHENTICATION.md) for details.
+
+```bash
+# Login to get JWT token
+TOKEN=$(curl -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"Admin123!"}' \
+  | jq -r '.accessToken')
+
+# Use token in subsequent requests
+curl http://localhost:3000/api/v1/metrics \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+#### API Examples
+
 ```bash
 # Get all metrics
-curl http://localhost:3000/api/metrics
+curl http://localhost:3000/api/v1/metrics \
+  -H "Authorization: Bearer $TOKEN"
 
 # Get a specific metric
-curl http://localhost:3000/api/metrics/<metric-id>
+curl http://localhost:3000/api/v1/metrics/<metric-id> \
+  -H "Authorization: Bearer $TOKEN"
 
-# Create a new metric
-curl -X POST http://localhost:3000/api/metrics \
+# Create a new metric (requires Editor role)
+curl -X POST http://localhost:3000/api/v1/metrics \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "My Metric",
-    "description": "Description of my metric",
-    "category": "business",
-    "dataType": "number"
+    "metric_id": "METRIC-001",
+    "name": "Customer Satisfaction",
+    "description": "Measures customer satisfaction from surveys",
+    "category": "operational",
+    "metric_type": "quantitative",
+    "tier": "tier1",
+    "unit_of_measure": "percentage"
   }'
 
 # Get OPA policy for a metric
-curl http://localhost:3000/api/metrics/<metric-id>/policy
+curl http://localhost:3000/api/v1/metrics/<metric-id>/policy \
+  -H "Authorization: Bearer $TOKEN"
+
+# Get aggregate statistics
+curl http://localhost:3000/api/v1/stats \
+  -H "Authorization: Bearer $TOKEN"
 ```
+
+#### API Versioning & Migration
+
+See [API Versioning Documentation](./API_VERSIONING.md) for:
+- Versioning strategy
+- Migration guide from legacy to v1
+- Breaking vs non-breaking changes
+- Support policy and timeline
 
 ## Metric Definition Schema
 
@@ -360,6 +407,12 @@ npm run build
 # Run tests
 npm test
 
+# Run tests with coverage
+npm run test:coverage
+
+# Run integration tests only
+npm test -- tests/integration
+
 # Run tests in watch mode
 npm test:watch
 
@@ -368,6 +421,34 @@ npm run lint
 
 # Format code
 npm run format
+```
+
+### Testing
+
+The project has comprehensive test coverage:
+
+- **Unit Tests**: 352 tests covering 88.53% of code ✅
+- **Integration Tests**: 37 tests (100% passing) ✅
+  - Authentication API: 17 tests
+  - Metrics API: 20 tests
+- **Test Coverage Goals**: 85%+ lines, 80%+ branches
+
+Run specific test suites:
+```bash
+# All tests
+npm test
+
+# With coverage report
+npm run test:coverage
+
+# Integration tests only
+npm test -- tests/integration
+
+# Specific test file
+npm test -- tests/unit/auth/jwt.test.ts
+
+# Watch mode for development
+npm run test:watch
 ```
 
 ## Examples

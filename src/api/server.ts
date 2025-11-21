@@ -1,9 +1,13 @@
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express, { Request, Response } from 'express';
+import * as fs from 'fs';
+import * as yaml from 'js-yaml';
+import * as path from 'path';
 import { Client } from 'pg';
+import swaggerUi from 'swagger-ui-express';
 import { optionalAuthenticate, requireAdmin, requireEditor } from '../middleware/auth';
-import { requestLoggingMiddleware } from '../middleware/logging';
+import { errorHandlingMiddleware, requestLoggingMiddleware } from '../middleware/logging';
 import { validateBody, validateParams, validateQuery } from '../middleware/validation';
 import { MetricDefinitionInput } from '../models';
 import { PolicyGenerator } from '../opa';
@@ -18,6 +22,7 @@ import {
     metricUpdateSchema,
 } from '../validation/schemas';
 import { createAuthRouter } from './auth';
+import { createV1Router } from './routes/v1';
 
 // Load environment variables
 dotenv.config();
@@ -54,13 +59,35 @@ export function createServer(storeOrGetter: IMetricStore | (() => IMetricStore),
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
+  // API Documentation (Swagger UI)
+  try {
+    const openApiPath = path.join(__dirname, '../../openapi.yaml');
+    const openApiFile = fs.readFileSync(openApiPath, 'utf8');
+    const openApiDoc = yaml.load(openApiFile) as any;
+    
+    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiDoc, {
+      customSiteTitle: 'MDL API Documentation',
+      customfavIcon: '/favicon.ico',
+      customCss: '.swagger-ui .topbar { display: none }',
+    }));
+    
+    logger.info('API documentation available at /api-docs');
+  } catch (error) {
+    logger.warn({ error }, 'Failed to load OpenAPI documentation');
+  }
+
   // Authentication Routes (if enabled)
   if (_config.enableAuth && _config.userStore) {
     app.use('/api/auth', createAuthRouter(_config.userStore));
     logger.info('Authentication routes enabled');
   }
 
-  // API Routes
+  // API v1 Routes (versioned)
+  app.use('/api/v1', createV1Router(getStore));
+  logger.info('API v1 routes enabled at /api/v1');
+
+  // Legacy API Routes (backward compatibility - will be deprecated)
+  // TODO: Add deprecation warnings in headers for legacy endpoints
 
   // Get all metrics
   app.get(
@@ -70,6 +97,7 @@ export function createServer(storeOrGetter: IMetricStore | (() => IMetricStore),
     asyncHandler(async (req: Request, res: Response) => {
       const store = getStore();
       const filters = {
+        category: req.query.category as string,
         business_domain: req.query.business_domain as string,
         metric_type: req.query.metric_type as string,
         tier: req.query.tier as string,
@@ -985,8 +1013,11 @@ export function createServer(storeOrGetter: IMetricStore | (() => IMetricStore),
     }
   );
 
-  // Note: Do not add 404 handler here - it should be added after dashboard routes
-  // This will be added in index.ts after all routes are registered
+  // Add error handling middleware (must be last)
+  app.use(errorHandlingMiddleware);
+
+  // Note: 404 handler should be added after dashboard routes in index.ts
+  // For API-only usage (like tests), the error handler above will catch 404s
 
   return app;
 }
