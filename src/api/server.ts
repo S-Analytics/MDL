@@ -1,7 +1,11 @@
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express, { Request, Response } from 'express';
+import * as fs from 'fs';
+import * as yaml from 'js-yaml';
+import * as path from 'path';
 import { Client } from 'pg';
+import swaggerUi from 'swagger-ui-express';
 import { optionalAuthenticate, requireAdmin, requireEditor } from '../middleware/auth';
 import { errorHandlingMiddleware, requestLoggingMiddleware } from '../middleware/logging';
 import { validateBody, validateParams, validateQuery } from '../middleware/validation';
@@ -18,6 +22,7 @@ import {
     metricUpdateSchema,
 } from '../validation/schemas';
 import { createAuthRouter } from './auth';
+import { createV1Router } from './routes/v1';
 
 // Load environment variables
 dotenv.config();
@@ -54,13 +59,35 @@ export function createServer(storeOrGetter: IMetricStore | (() => IMetricStore),
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
+  // API Documentation (Swagger UI)
+  try {
+    const openApiPath = path.join(__dirname, '../../openapi.yaml');
+    const openApiFile = fs.readFileSync(openApiPath, 'utf8');
+    const openApiDoc = yaml.load(openApiFile) as any;
+    
+    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiDoc, {
+      customSiteTitle: 'MDL API Documentation',
+      customfavIcon: '/favicon.ico',
+      customCss: '.swagger-ui .topbar { display: none }',
+    }));
+    
+    logger.info('API documentation available at /api-docs');
+  } catch (error) {
+    logger.warn({ error }, 'Failed to load OpenAPI documentation');
+  }
+
   // Authentication Routes (if enabled)
   if (_config.enableAuth && _config.userStore) {
     app.use('/api/auth', createAuthRouter(_config.userStore));
     logger.info('Authentication routes enabled');
   }
 
-  // API Routes
+  // API v1 Routes (versioned)
+  app.use('/api/v1', createV1Router(getStore));
+  logger.info('API v1 routes enabled at /api/v1');
+
+  // Legacy API Routes (backward compatibility - will be deprecated)
+  // TODO: Add deprecation warnings in headers for legacy endpoints
 
   // Get all metrics
   app.get(

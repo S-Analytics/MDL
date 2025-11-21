@@ -7,7 +7,16 @@ info:
     
     This API supports creating, reading, updating, and deleting metric definitions with rich metadata
     including alignment, data sources, governance, targets, alerts, and operational usage information.
-  version: 2.0.0
+    
+    ## API Versioning
+    
+    This API uses URL path versioning (e.g., `/api/v1/`). The current stable version is **v1**.
+    
+    - **Current (v1)**: `/api/v1/` - Fully supported, receives bug fixes and new features
+    - **Legacy**: `/api/` - Deprecated, maintained for backward compatibility (6 months)
+    
+    See documentation at `/api-docs` for interactive API exploration.
+  version: 1.0.0
   contact:
     name: MDL API Support
     email: support@example.com
@@ -26,10 +35,12 @@ info:
     url: https://opensource.org/licenses/MIT
 
 servers:
+  - url: http://localhost:3000/api/v1
+    description: Local development server (v1 API)
   - url: http://localhost:3000
-    description: Local development server
-  - url: http://0.0.0.0:3000
-    description: Local server (all interfaces)
+    description: Local development server (legacy, deprecated)
+  - url: http://0.0.0.0:3000/api/v1
+    description: Local server (all interfaces, v1 API)
 
 tags:
   - name: Health

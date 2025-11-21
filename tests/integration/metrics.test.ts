@@ -171,10 +171,10 @@ describe('Metrics API Integration Tests', () => {
     }
   });
 
-  describe('GET /api/metrics', () => {
+  describe('GET /api/v1/metrics', () => {
     it('should return empty array when no metrics exist', async () => {
       const response = await request(app)
-        .get('/api/metrics')
+        .get('/api/v1/metrics')
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -186,7 +186,7 @@ describe('Metrics API Integration Tests', () => {
       const metric = await metricStore.create(createStoreMetric());
 
       const response = await request(app)
-        .get('/api/metrics')
+        .get('/api/v1/metrics')
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -200,7 +200,7 @@ describe('Metrics API Integration Tests', () => {
       await metricStore.create(createStoreMetric({ name: 'Metric 2', category: 'marketing' }));
 
       const response = await request(app)
-        .get('/api/metrics')
+        .get('/api/v1/metrics')
         .query({ category: 'finance' })
         .expect(200);
 
@@ -214,7 +214,7 @@ describe('Metrics API Integration Tests', () => {
       await metricStore.create(createStoreMetric({ name: 'Metric 2', tags: ['production'] }));
 
       const response = await request(app)
-        .get('/api/metrics')
+        .get('/api/v1/metrics')
         .query({ tags: 'test' })
         .expect(200);
 
@@ -224,12 +224,12 @@ describe('Metrics API Integration Tests', () => {
     });
   });
 
-  describe('GET /api/metrics/:id', () => {
+  describe('GET /api/v1/metrics/:id', () => {
     it('should return a metric by ID', async () => {
       const metric = await metricStore.create(createStoreMetric());
 
       const response = await request(app)
-        .get(`/api/metrics/${metric.metric_id}`)
+        .get(`/api/v1/metrics/${metric.metric_id}`)
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -239,7 +239,7 @@ describe('Metrics API Integration Tests', () => {
 
     it('should return 404 for non-existent metric', async () => {
       const response = await request(app)
-        .get('/api/metrics/NON-EXISTENT-ID')
+        .get('/api/v1/metrics/NON-EXISTENT-ID')
         .expect(404);
 
       expect(response.body.success).toBe(false);
@@ -247,12 +247,12 @@ describe('Metrics API Integration Tests', () => {
     });
   });
 
-  describe('POST /api/metrics', () => {
+  describe('POST /api/v1/metrics', () => {
     it('should create a new metric with editor role', async () => {
       const metricInput = createApiMetric({ name: 'New Test Metric' });
 
       const response = await request(app)
-        .post('/api/metrics')
+        .post('/api/v1/metrics')
         .set('Authorization', `Bearer ${editorToken}`)
         .send(metricInput);
 
@@ -268,14 +268,14 @@ describe('Metrics API Integration Tests', () => {
 
     it('should reject creation without authentication', async () => {
       await request(app)
-        .post('/api/metrics')
+        .post('/api/v1/metrics')
         .send(createApiMetric())
         .expect(401);
     });
 
     it('should reject creation with viewer role', async () => {
       await request(app)
-        .post('/api/metrics')
+        .post('/api/v1/metrics')
         .set('Authorization', `Bearer ${viewerToken}`)
         .send(createApiMetric())
         .expect(403);
@@ -288,14 +288,14 @@ describe('Metrics API Integration Tests', () => {
       };
 
       await request(app)
-        .post('/api/metrics')
+        .post('/api/v1/metrics')
         .set('Authorization', `Bearer ${editorToken}`)
         .send(invalidMetric)
         .expect(400);
     });
   });
 
-  describe('PUT /api/metrics/:id', () => {
+  describe('PUT /api/v1/metrics/:id', () => {
     it('should update a metric with editor role', async () => {
       const metric = await metricStore.create(createStoreMetric());
 
@@ -306,7 +306,7 @@ describe('Metrics API Integration Tests', () => {
       };
 
       const response = await request(app)
-        .put(`/api/metrics/${metric.metric_id}`)
+        .put(`/api/v1/metrics/${metric.metric_id}`)
         .set('Authorization', `Bearer ${editorToken}`)
         .send(updates);
 
@@ -324,7 +324,7 @@ describe('Metrics API Integration Tests', () => {
       const metric = await metricStore.create(createStoreMetric());
 
       await request(app)
-        .put(`/api/metrics/${metric.metric_id}`)
+        .put(`/api/v1/metrics/${metric.metric_id}`)
         .send({ name: 'Updated' })
         .expect(401);
     });
@@ -333,7 +333,7 @@ describe('Metrics API Integration Tests', () => {
       const metric = await metricStore.create(createStoreMetric());
 
       await request(app)
-        .put(`/api/metrics/${metric.metric_id}`)
+        .put(`/api/v1/metrics/${metric.metric_id}`)
         .set('Authorization', `Bearer ${viewerToken}`)
         .send({ name: 'Updated' })
         .expect(403);
@@ -341,19 +341,26 @@ describe('Metrics API Integration Tests', () => {
 
     it('should return 404 for non-existent metric', async () => {
       await request(app)
-        .put('/api/metrics/NON-EXISTENT-ID')
+        .put('/api/v1/metrics/NON-EXISTENT-ID')
         .set('Authorization', `Bearer ${editorToken}`)
         .send({ metric_id: 'NON-EXISTENT-ID', name: 'Updated' })
         .expect(404);
     });
   });
 
-  describe('DELETE /api/metrics/:id', () => {
+  describe('DELETE /api/v1/metrics/:id', () => {
     it('should delete a metric', async () => {
       const metric = await metricStore.create(createStoreMetric());
+      const { token } = await createTestUserWithToken(userStore, {
+        username: 'admin_delete',
+        email: 'admin_delete@test.com',
+        password: 'AdminPass123!',
+        role: 'admin',
+      });
 
       const response = await request(app)
-        .delete(`/api/metrics/${metric.metric_id}`)
+        .delete(`/api/v1/metrics/${metric.metric_id}`)
+        .set('Authorization', `Bearer ${token}`)
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -365,8 +372,16 @@ describe('Metrics API Integration Tests', () => {
     });
 
     it('should return 404 for non-existent metric', async () => {
+      const { token } = await createTestUserWithToken(userStore, {
+        username: 'admin_deletetest',
+        email: 'admin_deletetest@test.com',
+        password: 'AdminPass123!',
+        role: 'admin',
+      });
+
       const response = await request(app)
-        .delete('/api/metrics/NON-EXISTENT-ID')
+        .delete('/api/v1/metrics/NON-EXISTENT-ID')
+        .set('Authorization', `Bearer ${token}`)
         .expect(404);
 
       expect(response.body.success).toBe(false);
@@ -374,33 +389,34 @@ describe('Metrics API Integration Tests', () => {
     });
   });
 
-  describe('GET /api/metrics/:id/policy', () => {
+  describe('GET /api/v1/metrics/:id/policy', () => {
     it('should generate OPA policy for a metric', async () => {
       const metric = await metricStore.create(createStoreMetric());
 
       const response = await request(app)
-        .get(`/api/metrics/${metric.metric_id}/policy`)
+        .get(`/api/v1/metrics/${metric.metric_id}/policy`)
         .expect(200);
 
-      expect(response.type).toBe('text/plain');
-      expect(response.text).toContain('package metrics');
-      expect(response.text).toContain(metric.metric_id);
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.metric_id).toBe(metric.metric_id);
+      expect(response.body.data.policy).toContain('package metrics');
+      expect(response.body.data.policy).toContain(metric.metric_id);
     });
 
     it('should return 404 for non-existent metric', async () => {
       await request(app)
-        .get('/api/metrics/NON-EXISTENT-ID/policy')
+        .get('/api/v1/metrics/NON-EXISTENT-ID/policy')
         .expect(404);
     });
   });
 
-  describe('GET /api/policies', () => {
+  describe('GET /api/v1/policies', () => {
     it('should generate policy bundle for all metrics', async () => {
       await metricStore.create(createStoreMetric({ name: 'Metric 1' }));
       await metricStore.create(createStoreMetric({ name: 'Metric 2' }));
 
       const response = await request(app)
-        .get('/api/policies')
+        .get('/api/v1/policies')
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -410,7 +426,7 @@ describe('Metrics API Integration Tests', () => {
 
     it('should return empty bundle when no metrics exist', async () => {
       const response = await request(app)
-        .get('/api/policies')
+        .get('/api/v1/policies')
         .expect(200);
 
       expect(response.body.success).toBe(true);
