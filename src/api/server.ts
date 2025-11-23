@@ -7,7 +7,10 @@ import * as path from 'path';
 import { Client } from 'pg';
 import swaggerUi from 'swagger-ui-express';
 import { optionalAuthenticate, requireAdmin, requireEditor } from '../middleware/auth';
+import { compressionMiddleware } from '../middleware/compression';
 import { errorHandlingMiddleware, requestLoggingMiddleware } from '../middleware/logging';
+import { metricsEndpointHandler, metricsMiddleware } from '../middleware/metrics';
+import { getPerformanceStatsEndpoint, performanceMonitoring } from '../middleware/performance';
 import { validateBody, validateParams, validateQuery } from '../middleware/validation';
 import { MetricDefinitionInput } from '../models';
 import { PolicyGenerator } from '../opa';
@@ -48,8 +51,26 @@ export function createServer(storeOrGetter: IMetricStore | (() => IMetricStore),
     origin: process.env.CORS_ORIGIN || '*',
     credentials: process.env.CORS_CREDENTIALS === 'true'
   }));
+  
+  // Response compression (must be before express.json to compress responses)
+  app.use(compressionMiddleware({
+    level: parseInt(process.env.COMPRESSION_LEVEL || '6'),
+    threshold: parseInt(process.env.COMPRESSION_THRESHOLD || '1024'),
+    enabled: process.env.ENABLE_COMPRESSION !== 'false', // Enabled by default
+  }));
+  
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
+
+  // Metrics collection middleware (before other middleware to capture all requests)
+  app.use(metricsMiddleware);
+
+  // Performance monitoring middleware
+  app.use(performanceMonitoring({
+    slowRequestThreshold: parseInt(process.env.SLOW_REQUEST_THRESHOLD || '1000', 10),
+    addResponseTimeHeader: true,
+    logAllRequests: process.env.LOG_ALL_REQUESTS === 'true',
+  }));
 
   // Request logging middleware with request IDs
   app.use(requestLoggingMiddleware);
@@ -58,6 +79,12 @@ export function createServer(storeOrGetter: IMetricStore | (() => IMetricStore),
   app.get('/health', (req: Request, res: Response) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
+
+  // Prometheus metrics endpoint
+  app.get('/metrics', metricsEndpointHandler);
+
+  // Performance stats endpoint
+  app.get('/api/performance/stats', optionalAuthenticate, getPerformanceStatsEndpoint);
 
   // API Documentation (Swagger UI)
   try {

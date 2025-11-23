@@ -1221,6 +1221,65 @@ export function getDashboardHTML(): string {
                 </div>
 
                 <div class="detail-section" style="margin-top: 2rem;">
+                    <h3>Performance & Caching</h3>
+                    <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;">
+                        Configure Redis cache for improved performance. Falls back to .env settings if not configured here.
+                    </p>
+                    
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="display: flex; align-items: center; cursor: pointer; padding: 1rem; border: 2px solid #e2e8f0; border-radius: 6px;">
+                            <input type="checkbox" id="redisEnabled" style="margin-right: 1rem; width: 20px; height: 20px;" onchange="toggleRedisConfig()">
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.25rem;">⚡ Enable Redis Cache</div>
+                                <div style="color: #666; font-size: 0.9rem;">Improves API performance with 80%+ cache hit rate</div>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div id="redisConfig" style="padding: 1.5rem; background: #f9fafb; border-radius: 6px; display: none;">
+                        <h4 style="margin-bottom: 0.5rem;">Redis Configuration</h4>
+                        <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;">
+                            Configure your Redis connection. Leave empty to use .env defaults.
+                        </p>
+                        
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Host</label>
+                                <input type="text" id="redisHost" placeholder="localhost (from .env)" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px;">
+                            </div>
+                            <div class="form-group">
+                                <label>Port</label>
+                                <input type="text" id="redisPort" placeholder="6379 (from .env)" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px;">
+                            </div>
+                        </div>
+
+                        <div class="form-grid" style="margin-top: 1rem;">
+                            <div class="form-group">
+                                <label>Password (Optional)</label>
+                                <input type="password" id="redisPassword" placeholder="Leave empty if no password" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px;">
+                            </div>
+                            <div class="form-group">
+                                <label>Database Number</label>
+                                <input type="number" id="redisDb" placeholder="0 (from .env)" min="0" max="15" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px;">
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+                            <button class="btn btn-secondary" onclick="testRedisConnection()">Test Connection</button>
+                            <div id="redisConnectionStatus" style="display: none; align-items: center; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.9rem;"></div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 1.5rem; padding: 1rem; background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 6px;">
+                        <div style="font-weight: 600; color: #92400e; margin-bottom: 0.5rem;">ℹ️ Optional Feature</div>
+                        <div style="color: #78350f; font-size: 0.9rem;">
+                            Redis caching is optional. If Redis is not available, the application will function normally with database-only performance.
+                            Settings here override .env defaults when enabled.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detail-section" style="margin-top: 2rem;">
                     <h3>About MDL</h3>
                     <p style="color: #666; line-height: 1.6;">
                         MDL (Metrics Definition Library) is a comprehensive application to store and manage Metric Definitions 
@@ -2495,7 +2554,7 @@ export function getDashboardHTML(): string {
             document.getElementById('appEnvironment').textContent = 'Web Browser';
             
             // Try to fetch current server settings first
-            let settings = { storage: 'local', postgres: null };
+            let settings = { storage: 'local', postgres: null, redis: null };
             try {
                 const response = await fetch('/api/storage/mode');
                 if (response.ok) {
@@ -2524,7 +2583,8 @@ export function getDashboardHTML(): string {
                                     database: parsed.database.name,
                                     user: parsed.database.user,
                                     password: parsed.database.password || ''
-                                } : null
+                                } : null,
+                                redis: parsed.redis || null
                             };
                         } else if (parsed.storage) {
                             settings = parsed;
@@ -2548,6 +2608,21 @@ export function getDashboardHTML(): string {
             } else {
                 document.getElementById('storageLocal').checked = true;
                 document.getElementById('databaseConfig').style.display = 'none';
+            }
+            
+            // Load Redis configuration
+            if (settings.redis && settings.redis.enabled) {
+                document.getElementById('redisEnabled').checked = true;
+                document.getElementById('redisConfig').style.display = 'block';
+                
+                // Load saved Redis config
+                document.getElementById('redisHost').value = settings.redis.host || '';
+                document.getElementById('redisPort').value = settings.redis.port || '';
+                document.getElementById('redisPassword').value = settings.redis.password || '';
+                document.getElementById('redisDb').value = settings.redis.db !== undefined ? settings.redis.db : '';
+            } else {
+                document.getElementById('redisEnabled').checked = false;
+                document.getElementById('redisConfig').style.display = 'none';
             }
             
             return settings;
@@ -2603,6 +2678,51 @@ export function getDashboardHTML(): string {
             }
         }
 
+        function toggleRedisConfig() {
+            const enabled = document.getElementById('redisEnabled').checked;
+            const configDiv = document.getElementById('redisConfig');
+            configDiv.style.display = enabled ? 'block' : 'none';
+        }
+
+        async function testRedisConnection() {
+            const statusDiv = document.getElementById('redisConnectionStatus');
+            statusDiv.textContent = '⏳ Testing Redis connection...';
+            statusDiv.style.background = '#fef3c7';
+            statusDiv.style.color = '#92400e';
+            statusDiv.style.display = 'flex';
+
+            const redisConfig = {
+                host: document.getElementById('redisHost').value || undefined,
+                port: document.getElementById('redisPort').value ? parseInt(document.getElementById('redisPort').value) : undefined,
+                password: document.getElementById('redisPassword').value || undefined,
+                db: document.getElementById('redisDb').value !== '' ? parseInt(document.getElementById('redisDb').value) : undefined
+            };
+
+            try {
+                const response = await fetch('/api/cache/test', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(redisConfig)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    statusDiv.textContent = '✓ Redis connection successful';
+                    statusDiv.style.background = '#d1fae5';
+                    statusDiv.style.color = '#065f46';
+                } else {
+                    statusDiv.textContent = '✗ Connection failed: ' + (result.error || 'Unknown error');
+                    statusDiv.style.background = '#fee2e2';
+                    statusDiv.style.color = '#991b1b';
+                }
+            } catch (error) {
+                statusDiv.textContent = '✗ Redis test endpoint not available';
+                statusDiv.style.background = '#fef3c7';
+                statusDiv.style.color = '#92400e';
+            }
+        }
+
         async function saveSettings() {
             const storageType = document.querySelector('input[name="storageType"]:checked').value;
             
@@ -2619,6 +2739,25 @@ export function getDashboardHTML(): string {
                     user: document.getElementById('dbUser').value,
                     password: document.getElementById('dbPassword').value || ''
                 };
+            }
+
+            // Save Redis configuration if enabled
+            const redisEnabled = document.getElementById('redisEnabled').checked;
+            if (redisEnabled) {
+                const redisHost = document.getElementById('redisHost').value;
+                const redisPort = document.getElementById('redisPort').value;
+                const redisPassword = document.getElementById('redisPassword').value;
+                const redisDb = document.getElementById('redisDb').value;
+
+                settings.redis = {
+                    enabled: true,
+                    ...(redisHost && { host: redisHost }),
+                    ...(redisPort && { port: parseInt(redisPort) }),
+                    ...(redisPassword && { password: redisPassword }),
+                    ...(redisDb !== '' && { db: parseInt(redisDb) })
+                };
+            } else {
+                settings.redis = { enabled: false };
             }
 
             // Save to localStorage for UI state

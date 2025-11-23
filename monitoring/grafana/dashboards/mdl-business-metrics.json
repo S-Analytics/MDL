@@ -1,0 +1,321 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "mdl-business-metrics",
+    "title": "MDL - Business Metrics",
+    "tags": ["mdl", "business", "metrics"],
+    "timezone": "browser",
+    "schemaVersion": 27,
+    "version": 1,
+    "refresh": "1m",
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+        "type": "stat",
+        "title": "Total Metrics",
+        "targets": [
+          {
+            "expr": "mdl_metrics_total",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"]
+          },
+          "orientation": "auto",
+          "textMode": "value_and_name",
+          "colorMode": "value",
+          "graphMode": "area"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": 0, "color": "blue" },
+                { "value": 100, "color": "green" },
+                { "value": 1000, "color": "yellow" }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 2,
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+        "type": "piechart",
+        "title": "Metrics by Category",
+        "targets": [
+          {
+            "expr": "mdl_metrics_total",
+            "legendFormat": "{{category}}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"]
+          },
+          "pieType": "pie",
+          "displayLabels": ["name", "percent"],
+          "legend": {
+            "displayMode": "table",
+            "placement": "right",
+            "values": ["value", "percent"]
+          }
+        }
+      },
+      {
+        "id": 3,
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+        "type": "graph",
+        "title": "Metrics Created Over Time",
+        "targets": [
+          {
+            "expr": "rate(mdl_metrics_created_total[1h])",
+            "legendFormat": "{{category}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "metrics/hour",
+            "format": "short"
+          },
+          {
+            "show": false
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+        "type": "graph",
+        "title": "Metrics Creation Rate (24h trend)",
+        "targets": [
+          {
+            "expr": "sum(increase(mdl_metrics_created_total[1h]))",
+            "legendFormat": "Metrics/hour",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "count",
+            "format": "short"
+          },
+          {
+            "show": false
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "gridPos": { "h": 8, "w": 8, "x": 0, "y": 16 },
+        "type": "stat",
+        "title": "Total Domains",
+        "targets": [
+          {
+            "expr": "mdl_domains_total",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"]
+          },
+          "textMode": "value",
+          "colorMode": "value",
+          "graphMode": "area"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": 0, "color": "blue" }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 6,
+        "gridPos": { "h": 8, "w": 8, "x": 8, "y": 16 },
+        "type": "stat",
+        "title": "Total Objectives",
+        "targets": [
+          {
+            "expr": "mdl_objectives_total",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"]
+          },
+          "textMode": "value",
+          "colorMode": "value",
+          "graphMode": "area"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": 0, "color": "green" }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 7,
+        "gridPos": { "h": 8, "w": 8, "x": 16, "y": 16 },
+        "type": "graph",
+        "title": "Domains & Objectives Growth",
+        "targets": [
+          {
+            "expr": "mdl_domains_total",
+            "legendFormat": "Domains",
+            "refId": "A"
+          },
+          {
+            "expr": "mdl_objectives_total",
+            "legendFormat": "Objectives",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "count",
+            "format": "short"
+          },
+          {
+            "show": false
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "gridPos": { "h": 8, "w": 24, "x": 0, "y": 24 },
+        "type": "table",
+        "title": "Metrics by Category (Detailed)",
+        "targets": [
+          {
+            "expr": "mdl_metrics_total",
+            "format": "table",
+            "instant": true,
+            "refId": "A"
+          }
+        ],
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true,
+                "__name__": true,
+                "instance": true,
+                "job": true
+              },
+              "indexByName": {
+                "category": 0,
+                "Value": 1
+              },
+              "renameByName": {
+                "Value": "Count",
+                "category": "Category"
+              }
+            }
+          }
+        ],
+        "options": {
+          "showHeader": true
+        }
+      },
+      {
+        "id": 9,
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 32 },
+        "type": "graph",
+        "title": "Domains Created Over Time",
+        "targets": [
+          {
+            "expr": "rate(mdl_domains_created_total[1h])",
+            "legendFormat": "Domains/hour",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "domains/hour",
+            "format": "short"
+          },
+          {
+            "show": false
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 32 },
+        "type": "graph",
+        "title": "Objectives Created Over Time",
+        "targets": [
+          {
+            "expr": "rate(mdl_objectives_created_total[1h])",
+            "legendFormat": "Objectives/hour",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "objectives/hour",
+            "format": "short"
+          },
+          {
+            "show": false
+          }
+        ]
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "datasource",
+          "type": "datasource",
+          "query": "prometheus"
+        },
+        {
+          "name": "category",
+          "type": "query",
+          "datasource": "Prometheus",
+          "query": "label_values(mdl_metrics_total, category)",
+          "multi": true,
+          "includeAll": true,
+          "allValue": ".*"
+        }
+      ]
+    }
+  },
+  "overwrite": true
+}

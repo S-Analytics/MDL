@@ -1,18 +1,25 @@
+// Load environment variables FIRST (before any other imports)
 import dotenv from 'dotenv';
+dotenv.config();
+
+// Initialize tracing BEFORE any other imports to enable auto-instrumentation
+import { initializeTracing } from './tracing';
+const tracingSdk = initializeTracing();
+
 import express from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
 import { createServer } from './api';
 import { FileUserStore } from './auth/FileUserStore';
+import type { CacheWarmer } from './cache/warmer';
+import { createCacheWarmer } from './cache/warmer';
 import { getDashboardHTML } from './dashboard';
+import { BusinessMetricsCollector } from './metrics/BusinessMetricsCollector';
 import { errorHandlingMiddleware, notFoundMiddleware } from './middleware/logging';
 import { InMemoryMetricStore, PostgresMetricStore } from './storage';
 import { IMetricStore } from './storage/MetricStore';
 import { closeDatabasePool, DatabasePool, initializeDatabasePool, setupGracefulShutdown } from './utils/database';
 import { logger, logShutdown, logStartup } from './utils/logger';
-
-// Load environment variables
-dotenv.config();
 
 // Storage settings file path
 const SETTINGS_FILE = path.join(process.cwd(), '.mdl', 'settings.json');
@@ -38,6 +45,8 @@ const DEFAULT_STORAGE_PATH = process.env.PERSISTENCE_PATH || path.join(process.c
 // Initialize with temporary local store (will be replaced if postgres mode)
 let store: IMetricStore = new InMemoryMetricStore(DEFAULT_STORAGE_PATH);
 let dbPool: DatabasePool | null = null;
+let cacheWarmer: CacheWarmer | null = null;
+let businessMetricsCollector: BusinessMetricsCollector | null = null;
 
 // Log storage mode
 if (STORAGE_MODE === 'postgres' || STORAGE_MODE === 'postgresql') {
@@ -125,6 +134,12 @@ async function startServer() {
     userStore,
   });
 
+  // Initialize cache warmer
+  if (process.env.ENABLE_CACHE === 'true') {
+    cacheWarmer = createCacheWarmer(store);
+    logger.info('Cache warmer initialized');
+  }
+
   // Serve static files from examples directory
   app.use('/examples', express.static(path.join(process.cwd(), 'examples')));
 
@@ -178,6 +193,29 @@ async function startServer() {
       logger.info(`💚 Health: http://${HOST}:${PORT}/health`);
       logger.info('');
       
+      // Start cache warming (non-blocking)
+      if (cacheWarmer) {
+        cacheWarmer.start().then(() => {
+          const warmerStatus = cacheWarmer!.getStatus();
+          if (warmerStatus.enabled) {
+            logger.info('🔥 Cache warming: completed initial run');
+            if (warmerStatus.scheduledInterval) {
+              logger.info(`   Scheduled interval: ${warmerStatus.scheduledInterval} minutes`);
+            }
+          }
+        }).catch(error => {
+          logger.error({ error }, 'Cache warming startup failed');
+        });
+        logger.info('🔥 Cache warming: starting...');
+      }
+      
+      // Start business metrics collection
+      businessMetricsCollector = new BusinessMetricsCollector(() => store, 60000); // Collect every 60 seconds
+      businessMetricsCollector.start();
+      logger.info('📊 Business metrics collector: started (60s interval)');
+      
+      logger.info('');
+      
       // Show storage configuration
       if (dbPool) {
         const dbConfig = {
@@ -211,6 +249,33 @@ startServer().catch((error) => {
 
 // Setup graceful shutdown handlers
 setupGracefulShutdown();
+
+// Enhanced shutdown to include cache warmer and metrics collector
+process.on('SIGTERM', () => {
+  if (cacheWarmer) {
+    cacheWarmer.stop();
+    logger.info('Cache warmer stopped');
+  }
+  if (businessMetricsCollector) {
+    businessMetricsCollector.stop();
+    logger.info('Business metrics collector stopped');
+  }
+});
+
+process.on('SIGINT', () => {
+  if (cacheWarmer) {
+    cacheWarmer.stop();
+    logger.info('Cache warmer stopped');
+  }
+  if (businessMetricsCollector) {
+    businessMetricsCollector.stop();
+    logger.info('Business metrics collector stopped');
+  }
+  if (cacheWarmer) {
+    cacheWarmer.stop();
+    logger.info('Cache warmer stopped');
+  }
+});
 
 // Handle uncaught errors
 process.on('uncaughtException', (error: Error) => {

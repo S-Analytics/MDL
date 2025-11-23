@@ -1,9 +1,12 @@
 import { Request, Response, Router } from 'express';
 import { optionalAuthenticate, requireAdmin, requireEditor } from '../../../middleware/auth';
+import { cacheMiddleware, invalidateCache } from '../../../middleware/cache';
 import { validateBody, validateParams, validateQuery } from '../../../middleware/validation';
+import { MetricDefinition } from '../../../models';
 import { PolicyGenerator } from '../../../opa';
 import { IMetricStore } from '../../../storage';
 import { asyncHandler } from '../../../utils/errors';
+import { addPaginationHeaders, PaginatedResponse, parsePaginationParams } from '../../../utils/pagination';
 import {
     metricDefinitionSchema,
     metricIdParamSchema,
@@ -22,14 +25,26 @@ export function createMetricsRouter(getStore: () => IMetricStore): Router {
 
   /**
    * GET /api/v1/metrics
-   * Get all metrics with optional filtering
+   * Get all metrics with optional filtering and pagination
+   * 
+   * Query parameters:
+   * - category: Filter by category
+   * - business_domain: Filter by business domain
+   * - metric_type: Filter by metric type
+   * - tier: Filter by tier
+   * - tags: Comma-separated list of tags
+   * - page: Page number (default: 1)
+   * - limit: Items per page (default: 50, max: 100)
    */
   router.get(
     '/',
     optionalAuthenticate,
     validateQuery(metricQuerySchema),
+    cacheMiddleware({ ttl: 300 }), // Cache for 5 minutes
     asyncHandler(async (req: Request, res: Response) => {
       const store = getStore();
+      
+      // Parse filters
       const filters = {
         category: req.query.category as string,
         business_domain: req.query.business_domain as string,
@@ -38,13 +53,34 @@ export function createMetricsRouter(getStore: () => IMetricStore): Router {
         tags: req.query.tags ? (req.query.tags as string).split(',') : undefined,
       };
 
-      const metrics = await store.findAll(
+      // Parse pagination parameters
+      const pagination = parsePaginationParams(req.query as Record<string, unknown>);
+
+      // Fetch metrics with optional filters and pagination
+      const result = await store.findAll(
         Object.keys(filters).some((k) => filters[k as keyof typeof filters])
           ? filters
-          : undefined
+          : undefined,
+        pagination
       );
 
-      res.json({ success: true, data: metrics, count: metrics.length });
+      // Check if result is paginated
+      if ('pagination' in result) {
+        const paginatedResult = result as PaginatedResponse<MetricDefinition>;
+        
+        // Add pagination headers
+        addPaginationHeaders(res, paginatedResult.pagination);
+        
+        res.json({
+          success: true,
+          data: paginatedResult.data,
+          pagination: paginatedResult.pagination,
+        });
+      } else {
+        // Legacy non-paginated response (shouldn't happen with new implementation)
+        const metrics = result as MetricDefinition[];
+        res.json({ success: true, data: metrics, count: metrics.length });
+      }
     })
   );
 
@@ -56,6 +92,7 @@ export function createMetricsRouter(getStore: () => IMetricStore): Router {
     '/:id',
     optionalAuthenticate,
     validateParams(metricIdParamSchema),
+    cacheMiddleware({ ttl: 600 }), // Cache for 10 minutes
     asyncHandler(async (req: Request, res: Response) => {
       const store = getStore();
       const metric = await store.findById(req.params.id);
@@ -74,6 +111,7 @@ export function createMetricsRouter(getStore: () => IMetricStore): Router {
     '/',
     requireEditor,
     validateBody(metricDefinitionSchema),
+    invalidateCache('mdl:*metrics*'), // Invalidate all metrics cache
     asyncHandler(async (req: Request, res: Response) => {
       const store = getStore();
       const metric = await store.create(req.body);
@@ -90,6 +128,7 @@ export function createMetricsRouter(getStore: () => IMetricStore): Router {
     requireEditor,
     validateParams(metricIdParamSchema),
     validateBody(metricUpdateSchema),
+    invalidateCache('mdl:*metrics*'), // Invalidate all metrics cache
     asyncHandler(async (req: Request, res: Response) => {
       const store = getStore();
       const existing = await store.findById(req.params.id);
@@ -110,6 +149,7 @@ export function createMetricsRouter(getStore: () => IMetricStore): Router {
     '/:id',
     requireAdmin,
     validateParams(metricIdParamSchema),
+    invalidateCache('mdl:*metrics*'), // Invalidate all metrics cache
     asyncHandler(async (req: Request, res: Response) => {
       const store = getStore();
       const existing = await store.findById(req.params.id);
@@ -129,6 +169,7 @@ export function createMetricsRouter(getStore: () => IMetricStore): Router {
   router.get(
     '/:id/policy',
     optionalAuthenticate,
+    cacheMiddleware({ ttl: 600 }), // Cache for 10 minutes
     asyncHandler(async (req: Request, res: Response) => {
       const store = getStore();
       const metric = await store.findById(req.params.id);
