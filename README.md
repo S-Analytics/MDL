@@ -558,6 +558,40 @@ DB_PASSWORD=yourpass npm run db:clean
 
 See [CLEAN_LOCAL_STORAGE.md](./CLEAN_LOCAL_STORAGE.md) for detailed local storage management guide.
 
+## Documentation
+
+### 📚 Complete Documentation Index
+
+For comprehensive documentation, see [`docs/README.md`](./docs/README.md) which includes:
+
+**Authentication & Security:**
+- [AUTHENTICATION.md](./AUTHENTICATION.md) - Complete authentication system guide
+- [docs/authentication/](./docs/authentication/) - Authentication details, quick reference, and test results
+
+**API Documentation:**
+- [openapi.yaml](./openapi.yaml) - OpenAPI 3.0 specification
+- http://localhost:3000/api-docs - Interactive Swagger UI
+- [docs/api/](./docs/api/) - API versioning strategy and Insomnia collection
+
+**Testing:**
+- [coverage/](./coverage/) - Test coverage reports
+- [docs/testing/](./docs/testing/) - E2E testing plans and cache testing results
+
+**Monitoring & Operations:**
+- [monitoring/README.md](./monitoring/README.md) - Monitoring setup and usage
+- [monitoring/runbooks/](./monitoring/runbooks/) - Operational runbooks for incident response
+
+**Project Status & Planning:**
+- [PHASE_2_COMPLETION_SUMMARY.md](./PHASE_2_COMPLETION_SUMMARY.md) - Phase 2 comprehensive summary
+- [GAPS_AND_IMPROVEMENTS.md](./GAPS_AND_IMPROVEMENTS.md) - Gap analysis and recommendations
+- [CHANGELOG.md](./CHANGELOG.md) - Project change history
+- [docs/phases/](./docs/phases/) - Detailed phase implementation documentation
+
+**Completed Work:**
+- [docs/completed/](./docs/completed/) - Archived task completion summaries
+
+---
+
 ## License
 
 MIT

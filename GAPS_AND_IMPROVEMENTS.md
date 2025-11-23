@@ -864,6 +864,19 @@ The MDL application has made significant progress toward production readiness wi
 
 ---
 
+## 📚 Related Documentation
+
+For detailed implementation documentation, see:
+
+- **Phase Status**: [PHASE_2_MAJOR.md](./PHASE_2_MAJOR.md) - Overall Phase 2 status
+- **Phase Summary**: [PHASE_2_COMPLETION_SUMMARY.md](./PHASE_2_COMPLETION_SUMMARY.md) - Comprehensive Phase 2 summary
+- **Phase Details**: [docs/phases/](./docs/phases/) - Detailed phase implementation documents
+- **Authentication**: [AUTHENTICATION.md](./AUTHENTICATION.md) - Authentication system guide
+- **Monitoring**: [monitoring/README.md](./monitoring/README.md) - Monitoring setup and operations
+- **All Documentation**: [docs/README.md](./docs/README.md) - Complete documentation index
+
+---
+
 *Document Version: 2.0.0*  
 *Last Updated: November 23, 2025*  
 *Phase 1 Completion Date: November 20, 2025*  
