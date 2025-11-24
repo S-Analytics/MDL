@@ -35,6 +35,7 @@ async function createUserAndLogin(
       username: uniqueUsername,
       email: uniqueEmail,
       password: password,
+      full_name: `${username} User`,
       role: role,
     },
   });
@@ -43,13 +44,22 @@ async function createUserAndLogin(
     throw new Error(`Failed to create user: ${response.status()} ${await response.text()}`);
   }
 
-  const { accessToken } = await response.json();
+  const responseData = await response.json();
+  const accessToken = responseData.tokens?.access_token || responseData.access_token;
+  const refreshToken = responseData.tokens?.refresh_token || responseData.refresh_token;
+  const user = responseData.user;
 
-  // Set the access token in localStorage
+  if (!accessToken) {
+    throw new Error(`No access token in response: ${JSON.stringify(responseData)}`);
+  }
+
+  // Set the tokens in localStorage
   await page.goto('http://localhost:3000');
-  await page.evaluate((token) => {
+  await page.evaluate(({ token, refresh, userData }) => {
     localStorage.setItem('accessToken', token);
-  }, accessToken);
+    if (refresh) localStorage.setItem('refreshToken', refresh);
+    if (userData) localStorage.setItem('user', JSON.stringify(userData));
+  }, { token: accessToken, refresh: refreshToken, userData: user });
 
   // Navigate to home page to activate session
   await page.goto('http://localhost:3000');
@@ -63,10 +73,10 @@ async function loginWithCredentials(
   username: string,
   password: string
 ): Promise<void> {
-  await page.goto('http://localhost:3000/login');
+  await page.goto('http://localhost:3000/auth/login');
   
-  await page.fill('input[name="username"]', username);
-  await page.fill('input[name="password"]', password);
+  await page.fill('input[name="username"], input[id="username"]', username);
+  await page.fill('input[name="password"], input[id="password"]', password);
   await page.click('button[type="submit"]');
   
   // Wait for navigation to complete

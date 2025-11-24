@@ -12,8 +12,9 @@ import { expect, test } from '../helpers/fixtures';
 
 test.describe('User Login', () => {
   test.beforeEach(async ({ page }) => {
-    // Start with a clean session
-    await page.goto('http://localhost:3000');
+    // Start with a clean session - use context to avoid navigation
+    await page.context().clearCookies();
+    await page.goto('http://localhost:3000/auth/login');
     await page.evaluate(() => {
       localStorage.clear();
       sessionStorage.clear();
@@ -21,12 +22,12 @@ test.describe('User Login', () => {
   });
 
   test('should display login page', async ({ page }) => {
-    await page.goto('http://localhost:3000/login');
+    await page.goto('http://localhost:3000/auth/login');
     
     await expect(page).toHaveTitle(/MDL/);
-    await expect(page.locator('h1')).toContainText(/Login|Sign In/i);
-    await expect(page.locator('input[name="username"]')).toBeVisible();
-    await expect(page.locator('input[name="password"]')).toBeVisible();
+    await expect(page.locator('h1, h2')).toContainText(/Welcome Back/i);
+    await expect(page.locator('input[name="username"], input[id="username"]')).toBeVisible();
+    await expect(page.locator('input[name="password"], input[id="password"]')).toBeVisible();
     await expect(page.locator('button[type="submit"]')).toBeVisible();
   });
 
@@ -41,16 +42,17 @@ test.describe('User Login', () => {
         username: username,
         email: `${username}@test.com`,
         password: password,
-        role: 'admin',
+        full_name: `${username} User`,
+        role: 'viewer',
       },
     });
 
     expect(response.ok()).toBeTruthy();
 
     // Now login via UI
-    await page.goto('http://localhost:3000/login');
-    await page.fill('input[name="username"]', username);
-    await page.fill('input[name="password"]', password);
+    await page.goto('http://localhost:3000/auth/login');
+    await page.fill('input[name="username"], input[id="username"]', username);
+    await page.fill('input[name="password"], input[id="password"]', password);
     await page.click('button[type="submit"]');
 
     // Should redirect to home page
@@ -65,17 +67,17 @@ test.describe('User Login', () => {
   });
 
   test('should fail login with invalid credentials', async ({ page }) => {
-    await page.goto('http://localhost:3000/login');
+    await page.goto('http://localhost:3000/auth/login');
     
-    await page.fill('input[name="username"]', 'nonexistent_user');
-    await page.fill('input[name="password"]', 'WrongPassword123!');
+    await page.fill('input[name="username"], input[id="username"]', 'nonexistent_user');
+    await page.fill('input[name="password"], input[id="password"]', 'WrongPassword123!');
     await page.click('button[type="submit"]');
 
     // Should show error message
-    await expect(page.locator('text=/Invalid credentials|Login failed|Authentication failed/i')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('text=/Invalid credentials|Login failed|Authentication failed|Invalid username or password/i')).toBeVisible({ timeout: 5000 });
     
     // Should still be on login page
-    await expect(page).toHaveURL(/login/);
+    await expect(page).toHaveURL(/auth\/login/);
     
     // Should not have token
     const token = await page.evaluate(() => localStorage.getItem('accessToken'));
@@ -83,15 +85,15 @@ test.describe('User Login', () => {
   });
 
   test('should fail login with empty fields', async ({ page }) => {
-    await page.goto('http://localhost:3000/login');
+    await page.goto('http://localhost:3000/auth/login');
     
     await page.click('button[type="submit"]');
 
     // Should show validation errors or stay on login page
-    await expect(page).toHaveURL(/login/);
+    await expect(page).toHaveURL(/auth\/login/);
     
     // HTML5 validation should prevent submission or show error
-    const usernameInput = page.locator('input[name="username"]');
+    const usernameInput = page.locator('input[name="username"], input[id="username"]');
     const isRequired = await usernameInput.getAttribute('required');
     expect(isRequired).not.toBeNull();
   });
@@ -107,15 +109,16 @@ test.describe('User Login', () => {
         username: username,
         email: `${username}@test.com`,
         password: password,
+        full_name: `${username} User`,
         role: 'admin',
       },
     });
 
     expect(response.ok()).toBeTruthy();
 
-    await page.goto('http://localhost:3000/login');
-    await page.fill('input[name="username"]', username);
-    await page.fill('input[name="password"]', password);
+    await page.goto('http://localhost:3000/auth/login');
+    await page.fill('input[name="username"], input[id="username"]', username);
+    await page.fill('input[name="password"], input[id="password"]', password);
     await page.click('button[type="submit"]');
     await page.waitForURL('http://localhost:3000/**', { timeout: 10000 });
 
@@ -132,7 +135,7 @@ test.describe('User Login', () => {
     expect(token).toBeTruthy();
     
     // Should not redirect to login
-    await expect(page).not.toHaveURL(/login/);
+    await expect(page).not.toHaveURL(/auth\/login/);
   });
 });
 
@@ -146,7 +149,7 @@ test.describe('User Logout', () => {
     await page.click('button:has-text("Logout")');
     
     // Wait for redirect to login page
-    await page.waitForURL('http://localhost:3000/login', { timeout: 10000 });
+    await page.waitForURL('http://localhost:3000/auth/login', { timeout: 10000 });
 
     // Token should be cleared
     const tokenAfter = await page.evaluate(() => localStorage.getItem('accessToken'));
@@ -156,13 +159,13 @@ test.describe('User Logout', () => {
   test('should redirect to login when accessing protected route after logout', async ({ authenticatedPage: page }) => {
     // Logout
     await page.click('button:has-text("Logout")');
-    await page.waitForURL('http://localhost:3000/login', { timeout: 10000 });
+    await page.waitForURL('http://localhost:3000/auth/login', { timeout: 10000 });
 
     // Try to access protected route
-    await page.goto('http://localhost:3000/metrics');
+    await page.goto('http://localhost:3000/dashboard');
 
     // Should redirect to login
-    await expect(page).toHaveURL(/login/);
+    await expect(page).toHaveURL(/auth\/login/);
   });
 });
 
@@ -175,9 +178,9 @@ test.describe('Session Management', () => {
     });
 
     // Try to access protected route
-    await page.goto('http://localhost:3000/metrics');
+    await page.goto('http://localhost:3000/dashboard');
 
     // Should redirect to login or show error
-    await expect(page).toHaveURL(/login|error/);
+    await expect(page).toHaveURL(/auth\/login|error/);
   });
 });

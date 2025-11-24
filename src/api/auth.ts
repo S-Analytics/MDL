@@ -416,6 +416,62 @@ export function createAuthRouter(userStore: IUserStore) {
   // ============================================================================
 
   /**
+   * POST /auth/users
+   * Create a new user (admin only)
+   */
+  router.post(
+    '/users',
+    authenticate,
+    requireAdmin,
+    validateBody(registerSchema),
+    asyncHandler(async (req: Request, res: Response) => {
+      const { username, email, password, full_name, role, status } = req.body;
+
+      // Validate password strength
+      const passwordValidation = validatePasswordStrength(password);
+      if (!passwordValidation.valid) {
+        throw new ValidationError(passwordValidation.errors.join('; '));
+      }
+
+      // Hash password
+      const password_hash = await hashPassword(password);
+
+      // Create user
+      const userData: UserCreateInput = {
+        username,
+        email,
+        password_hash,
+        full_name,
+        role: role || UserRole.VIEWER,
+      };
+
+      const user = await userStore.create(userData);
+
+      // Update status if provided and not default active
+      if (status && status !== 'active') {
+        const updatedUser = await userStore.update(user.user_id, { 
+          user_id: user.user_id,
+          status 
+        });
+        if (updatedUser) {
+          res.status(201).json({
+            success: true,
+            user: toUserSafe(updatedUser),
+            message: 'User created successfully',
+          });
+          return;
+        }
+      }
+
+      res.status(201).json({
+        success: true,
+        user: toUserSafe(user),
+        message: 'User created successfully',
+      });
+    })
+  );
+
+  /**
    * GET /auth/users
    * List all users (admin only)
    */

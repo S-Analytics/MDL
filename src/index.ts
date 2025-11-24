@@ -11,9 +11,12 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { createServer } from './api';
 import { FileUserStore } from './auth/FileUserStore';
+import { PostgresUserStore } from './auth/PostgresUserStore';
 import type { CacheWarmer } from './cache/warmer';
 import { createCacheWarmer } from './cache/warmer';
 import { getDashboardHTML } from './dashboard';
+import { getChangePasswordPageHTML, getLoginPageHTML, getRegisterPageHTML } from './dashboard/authViews';
+import { getUserManagementPageHTML } from './dashboard/userManagementViews';
 import { BusinessMetricsCollector } from './metrics/BusinessMetricsCollector';
 import { errorHandlingMiddleware, notFoundMiddleware } from './middleware/logging';
 import { InMemoryMetricStore, PostgresMetricStore } from './storage';
@@ -56,16 +59,26 @@ if (STORAGE_MODE === 'postgres' || STORAGE_MODE === 'postgresql') {
 }
 
 // Initialize authentication if enabled
-let userStore: FileUserStore | undefined;
+let userStore: FileUserStore | PostgresUserStore | undefined;
 const authEnabled = process.env.AUTH_ENABLED === 'true';
+const authStorageMode = process.env.AUTH_STORAGE_MODE || 'file'; // 'file' or 'database'
 
 async function initializeAuth() {
   if (authEnabled) {
-    const authFilePath = process.env.AUTH_FILE_PATH || path.join(process.cwd(), 'data', 'users.json');
-    userStore = new FileUserStore(authFilePath);
-    await userStore.initialize();
-    
-    logger.info({ path: authFilePath }, 'Authentication initialized (File storage)');
+    if (authStorageMode === 'database' && dbPool) {
+      // Use PostgreSQL for auth storage with the same dbPool
+      userStore = new PostgresUserStore(dbPool);
+      await userStore.initialize();
+      
+      logger.info({ mode: 'database' }, 'Authentication initialized (PostgreSQL storage)');
+    } else {
+      // Use file-based auth storage
+      const authFilePath = process.env.AUTH_FILE_PATH || path.join(process.cwd(), 'data', 'users.json');
+      userStore = new FileUserStore(authFilePath);
+      await userStore.initialize();
+      
+      logger.info({ path: authFilePath, mode: 'file' }, 'Authentication initialized (File storage)');
+    }
     
     // Create default admin user in development
     if (process.env.NODE_ENV === 'development' || process.env.DEV_CREATE_DEFAULT_USER === 'true') {
@@ -143,7 +156,9 @@ async function startServer() {
   // Serve static files from examples directory
   app.use('/examples', express.static(path.join(process.cwd(), 'examples')));
 
-  // Add dashboard route
+  // Add dashboard routes
+  // When AUTH_ENABLED=true, the dashboard HTML contains client-side JavaScript
+  // that checks localStorage for an access token and redirects to /auth/login if not found
   app.get('/', (req, res) => {
     res.send(getDashboardHTML());
   });
@@ -157,6 +172,27 @@ async function startServer() {
     });
     res.send(getDashboardHTML());
   });
+
+  // Authentication pages (if auth is enabled)
+  if (authEnabled) {
+    app.get('/auth/login', (req, res) => {
+      res.send(getLoginPageHTML());
+    });
+
+    app.get('/auth/register', (req, res) => {
+      res.send(getRegisterPageHTML());
+    });
+
+    app.get('/auth/change-password', (req, res) => {
+      res.send(getChangePasswordPageHTML());
+    });
+
+    app.get('/admin/users', (req, res) => {
+      res.send(getUserManagementPageHTML());
+    });
+
+    logger.info('Auth pages enabled: /auth/login, /auth/register, /auth/change-password, /admin/users');
+  }
 
   // 404 handler (must be after all routes)
   app.use(notFoundMiddleware);

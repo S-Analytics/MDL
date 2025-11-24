@@ -710,13 +710,27 @@ export function getDashboardHTML(): string {
                 <p>Metrics Definition Library - Governance & Transparency</p>
                 <div id="storageIndicator" style="margin-top: 0.5rem; font-size: 0.85rem; opacity: 0.9;"></div>
             </div>
-            <button class="icon-btn icon-btn-large" onclick="openSettings()" style="background: rgba(255,255,255,0.2); color: white;">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                Settings
-            </button>
+            <div style="display: flex; gap: 1rem;">
+                <button class="icon-btn icon-btn-large" onclick="openSettings()" style="background: rgba(255,255,255,0.2); color: white;">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Settings
+                </button>
+                <button id="manageUsersBtn" class="icon-btn icon-btn-large" onclick="window.location.href='/admin/users'" style="background: rgba(255,255,255,0.2); color: white; display: none;">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                    Manage Users
+                </button>
+                <button class="icon-btn icon-btn-large" onclick="logout()" style="background: rgba(255,255,255,0.2); color: white;">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    Logout
+                </button>
+            </div>
         </div>
     </div>
     
@@ -1402,6 +1416,48 @@ export function getDashboardHTML(): string {
     </div>
 
     <script>
+        // Authentication check - redirect to login if not authenticated
+        // This runs IMMEDIATELY when the page loads, before any other code executes
+        (function() {
+            const currentPath = window.location.pathname;
+            
+            // Only perform auth check on dashboard pages (not on auth pages themselves)
+            if (currentPath === '/' || currentPath === '/dashboard') {
+                // Small delay to ensure localStorage is ready after navigation
+                setTimeout(function() {
+                    const token = localStorage.getItem('accessToken');
+                    
+                    if (!token) {
+                        // No token found - redirect to login immediately
+                        console.warn('No access token found, redirecting to login');
+                        window.location.replace('/auth/login');
+                    } else {
+                        // User is authenticated - check if admin to show Manage Users button
+                        const userStr = localStorage.getItem('user');
+                        console.log('User data from localStorage:', userStr);
+                        if (userStr) {
+                            try {
+                                const user = JSON.parse(userStr);
+                                console.log('Parsed user:', user);
+                                console.log('User role:', user.role);
+                                if (user.role === 'admin') {
+                                    console.log('User is admin, showing Manage Users button');
+                                    const manageUsersBtn = document.getElementById('manageUsersBtn');
+                                    console.log('manageUsersBtn element:', manageUsersBtn);
+                                    if (manageUsersBtn) {
+                                        manageUsersBtn.style.display = 'flex';
+                                        console.log('Button display set to flex');
+                                    }
+                                }
+                            } catch (e) {
+                                console.error('Failed to parse user data:', e);
+                            }
+                        }
+                    }
+                }, 50); // 50ms delay to ensure localStorage is accessible
+            }
+        })();
+
         let allMetrics = [];
         let allObjectives = [];
         let allDomains = [];
@@ -1409,15 +1465,28 @@ export function getDashboardHTML(): string {
 
         async function fetchData() {
             try {
+                // Get authentication token
+                const token = localStorage.getItem('accessToken');
+                const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+
                 // Fetch data from API (server handles storage mode automatically)
                 console.log('Fetching data from API...');
                 const cacheBuster = Date.now();
                 const [metricsRes, statsRes, domainsRes, objectivesRes] = await Promise.all([
-                    fetch('/api/metrics?_=' + cacheBuster),
-                    fetch('/api/stats?_=' + cacheBuster),
+                    fetch('/api/metrics?_=' + cacheBuster, { headers }),
+                    fetch('/api/stats?_=' + cacheBuster, { headers }),
                     fetch('/examples/sample-domains.json?_=' + cacheBuster).catch(() => ({ json: async () => ({ domains: [] }) })),
                     fetch('/examples/sample-objectives.json?_=' + cacheBuster).catch(() => ({ json: async () => ({ objectives: [] }) }))
                 ]);
+                
+                // Check for authentication errors
+                if (metricsRes.status === 401 || statsRes.status === 401) {
+                    console.warn('Authentication failed, redirecting to login');
+                    localStorage.removeItem('accessToken');
+                    localStorage.removeItem('refreshToken');
+                    window.location.href = '/auth/login';
+                    return;
+                }
                 
                 const metricsData = await metricsRes.json();
                 const statsData = await statsRes.json();
@@ -2545,6 +2614,37 @@ export function getDashboardHTML(): string {
         function closeSettings() {
             document.getElementById('settingsModal').classList.remove('active');
             document.body.style.overflow = 'auto';
+        }
+
+        async function logout() {
+            try {
+                // Get token for logout API call
+                const token = localStorage.getItem('accessToken');
+                
+                // Call logout API to invalidate server-side session
+                if (token) {
+                    await fetch('/api/auth/logout', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': 'Bearer ' + token,
+                            'Content-Type': 'application/json'
+                        }
+                    }).catch(err => console.warn('Logout API call failed:', err));
+                }
+                
+                // Clear local storage
+                localStorage.removeItem('accessToken');
+                localStorage.removeItem('refreshToken');
+                
+                // Redirect to login page
+                window.location.href = '/auth/login';
+            } catch (error) {
+                console.error('Logout error:', error);
+                // Even if logout fails, clear tokens and redirect
+                localStorage.removeItem('accessToken');
+                localStorage.removeItem('refreshToken');
+                window.location.href = '/auth/login';
+            }
         }
 
         async function loadSettings() {
