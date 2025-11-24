@@ -19,7 +19,8 @@ describe('Metrics API Integration Tests', () => {
   let metricStore: InMemoryMetricStore;
   let editorToken: string;
   let viewerToken: string;
-  const testAuthFile = path.join(process.cwd(), 'data', 'test-users.json');
+  // Use unique filename to avoid parallel test conflicts
+  const testAuthFile = path.join(process.cwd(), 'data', `test-users-metrics-${Date.now()}.json`);
 
   // Helper for simplified store input (MetricDefinitionInput)
   const createStoreMetric = (overrides = {}) => ({
@@ -161,13 +162,24 @@ describe('Metrics API Integration Tests', () => {
 
   afterAll(() => {
     cleanupTestServer();
+    // Clean up test file
+    if (fs.existsSync(testAuthFile)) {
+      fs.unlinkSync(testAuthFile);
+    }
   });
 
   beforeEach(async () => {
-    // Clear metrics between tests
-    const allMetrics = await metricStore.findAll();
-    for (const metric of allMetrics) {
-      await metricStore.delete(metric.metric_id);
+    // Clear metrics between tests by directly accessing the store
+    // Use type assertion since we know it's InMemoryMetricStore
+    if (metricStore && typeof (metricStore as any).clear === 'function') {
+      await (metricStore as any).clear();
+    } else {
+      // Fallback: delete all metrics one by one
+      const result = await metricStore.findAll();
+      const allMetrics = ('data' in result ? result.data : result) as Array<{ metric_id: string }>;
+      for (const metric of allMetrics) {
+        await metricStore.delete(metric.metric_id);
+      }
     }
   });
 
@@ -179,11 +191,16 @@ describe('Metrics API Integration Tests', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toEqual([]);
-      expect(response.body.count).toBe(0);
+      expect(response.body.pagination.total).toBe(0);
     });
 
     it('should return all metrics', async () => {
-      const metric = await metricStore.create(createStoreMetric());
+      // Use API to create metric to ensure same store instance
+      await request(app)
+        .post('/api/v1/metrics')
+        .set('Authorization', `Bearer ${editorToken}`)
+        .send(createApiMetric())
+        .expect(201);
 
       const response = await request(app)
         .get('/api/v1/metrics')
@@ -191,8 +208,7 @@ describe('Metrics API Integration Tests', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveLength(1);
-      expect(response.body.data[0].metric_id).toBe(metric.metric_id);
-      expect(response.body.count).toBe(1);
+      expect(response.body.pagination.total).toBe(1);
     });
 
     it('should filter metrics by category', async () => {

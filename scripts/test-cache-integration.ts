@@ -1,5 +1,3 @@
-#!/usr/bin/env ts-node
-
 /**
  * Integration test for cache middleware
  * 

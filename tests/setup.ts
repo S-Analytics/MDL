@@ -1,3 +1,7 @@
+// Disable cache BEFORE loading anything else to ensure CacheService singleton sees this
+process.env.ENABLE_CACHE = 'false';
+process.env.NODE_ENV = 'test';
+
 // Load environment variables for tests
 import { config } from 'dotenv';
 config();

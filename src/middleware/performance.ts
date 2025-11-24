@@ -153,17 +153,26 @@ export function performanceMonitoring(config?: PerformanceConfig) {
     const startTime = process.hrtime.bigint();
     const startMemory = process.memoryUsage().heapUsed;
 
+    // Add response time header before headers are sent
+    const originalSend = res.send;
+    res.send = function(data?: any) {
+      const endTime = process.hrtime.bigint();
+      const duration = Number(endTime - startTime) / 1e6; // Convert to milliseconds
+      
+      // Add response time header if enabled and headers not sent
+      if (finalConfig.addResponseTimeHeader && !res.headersSent) {
+        res.setHeader('X-Response-Time', `${duration.toFixed(2)}ms`);
+      }
+      
+      return originalSend.call(this, data);
+    };
+
     // Capture response when finished
     res.on('finish', () => {
       const endTime = process.hrtime.bigint();
       const duration = Number(endTime - startTime) / 1e6; // Convert to milliseconds
       const endMemory = process.memoryUsage().heapUsed;
       const memoryDelta = (endMemory - startMemory) / 1024 / 1024; // Convert to MB
-
-      // Add response time header if enabled
-      if (finalConfig.addResponseTimeHeader) {
-        res.setHeader('X-Response-Time', `${duration.toFixed(2)}ms`);
-      }
 
       const isSlow = duration > finalConfig.slowRequestThreshold;
 

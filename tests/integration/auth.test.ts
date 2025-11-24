@@ -15,7 +15,8 @@ import { cleanupTestServer, createTestServer, createTestUserWithToken } from '..
 describe('Authentication API Integration Tests', () => {
   let app: Application;
   let userStore: FileUserStore;
-  const testAuthFile = path.join(process.cwd(), 'data', 'test-users.json');
+  // Use unique filename to avoid parallel test conflicts
+  const testAuthFile = path.join(process.cwd(), 'data', `test-users-auth-${Date.now()}.json`);
 
   beforeAll(async () => {
     // Create test auth file
@@ -38,6 +39,10 @@ describe('Authentication API Integration Tests', () => {
 
   afterAll(() => {
     cleanupTestServer();
+    // Clean up test file
+    if (fs.existsSync(testAuthFile)) {
+      fs.unlinkSync(testAuthFile);
+    }
   });
 
   beforeEach(async () => {
@@ -287,9 +292,9 @@ describe('Authentication API Integration Tests', () => {
   describe('POST /api/auth/logout', () => {
     let token: string;
     let refreshToken: string;
-    const logoutUsername = `logoutuser_${Date.now()}`;
 
     beforeEach(async () => {
+      const logoutUsername = `logoutuser_${Date.now()}_${Math.random().toString(36).slice(2)}`;
       const result = await createTestUserWithToken(userStore, {
         username: logoutUsername,
         email: `${logoutUsername}@test.com`,
