@@ -6,7 +6,7 @@
     - generic [ref=e4]:
       - heading "📊 MDL Dashboard" [level=1] [ref=e5]
       - paragraph [ref=e6]: Metrics Definition Library - Governance & Transparency
-      - generic [ref=e7]: "🗄️ Connected to PostgreSQL: localhost:5432/mdl"
+      - generic [ref=e7]: 📁 Using local file storage
     - button "Settings" [ref=e8] [cursor=pointer]:
       - img [ref=e9]
       - text: Settings
@@ -15,7 +15,7 @@
     - generic [ref=e13]:
       - generic [ref=e14]:
         - heading "Total Metrics" [level=3] [ref=e15]
-        - generic [ref=e16]: "1"
+        - generic [ref=e16]: "11"
       - generic [ref=e17]:
         - heading "Objectives" [level=3] [ref=e18]
         - generic [ref=e19]: "4"
@@ -24,7 +24,7 @@
         - generic [ref=e22]: "6"
       - generic [ref=e23]:
         - heading "Owner Teams" [level=3] [ref=e24]
-        - generic [ref=e25]: "0"
+        - generic [ref=e25]: "7"
     - generic [ref=e26]:
       - generic [ref=e27]:
         - heading "Business Domains" [level=2] [ref=e28]
@@ -34,7 +34,7 @@
       - generic [ref=e32]:
         - generic [ref=e33]:
           - heading "Digital Experience" [level=3] [ref=e34]
-          - generic [ref=e35]: "0"
+          - generic [ref=e35]: "1"
           - paragraph [ref=e36]: Metrics related to user interaction, engagement, and satisfaction with digital products and services
           - generic [ref=e37]:
             - generic [ref=e38]:
@@ -56,7 +56,7 @@
               - img [ref=e51]
         - generic [ref=e53]:
           - heading "Platform" [level=3] [ref=e54]
-          - generic [ref=e55]: "0"
+          - generic [ref=e55]: "3"
           - paragraph [ref=e56]: Technical infrastructure, system performance, and platform reliability metrics
           - generic [ref=e57]:
             - generic [ref=e58]:
@@ -78,7 +78,7 @@
               - img [ref=e71]
         - generic [ref=e73]:
           - heading "Revenue" [level=3] [ref=e74]
-          - generic [ref=e75]: "0"
+          - generic [ref=e75]: "2"
           - paragraph [ref=e76]: Financial performance, revenue generation, and monetization metrics
           - generic [ref=e77]:
             - generic [ref=e78]:
@@ -100,7 +100,7 @@
               - img [ref=e91]
         - generic [ref=e93]:
           - heading "Customer Success" [level=3] [ref=e94]
-          - generic [ref=e95]: "0"
+          - generic [ref=e95]: "2"
           - paragraph [ref=e96]: Customer retention, satisfaction, and success metrics
           - generic [ref=e97]:
             - generic [ref=e98]:
@@ -122,7 +122,7 @@
               - img [ref=e111]
         - generic [ref=e113]:
           - heading "Sales" [level=3] [ref=e114]
-          - generic [ref=e115]: "0"
+          - generic [ref=e115]: "1"
           - paragraph [ref=e116]: Sales performance, conversion rates, and sales pipeline metrics
           - generic [ref=e117]:
             - generic [ref=e118]:
@@ -144,7 +144,7 @@
               - img [ref=e131]
         - generic [ref=e133]:
           - heading "Engineering" [level=3] [ref=e134]
-          - generic [ref=e135]: "0"
+          - generic [ref=e135]: "2"
           - paragraph [ref=e136]: Software engineering quality, development processes, and code health metrics
           - generic [ref=e137]:
             - generic [ref=e138]:
@@ -440,59 +440,492 @@
       - generic [ref=e411]:
         - img [ref=e413]:
           - generic [ref=e414]:
-            - generic: No Tier
-            - generic: Unassigned
-        - generic [ref=e417]: Hover over segments to explore
-    - generic [ref=e418]:
-      - heading "All Metrics" [level=2] [ref=e419]
-      - generic [ref=e420]:
-        - textbox "Search metrics..." [ref=e421]
-        - combobox [ref=e422]:
+            - generic: Tier-1
+            - generic: Tier-2
+            - generic: Platform
+            - generic: Revenue
+            - generic: Customer Succ...
+            - generic: Digital Exper...
+            - generic: Sales
+            - generic: Engineering
+            - generic: Platform
+        - generic [ref=e424]: Hover over segments to explore
+    - generic [ref=e425]:
+      - heading "All Metrics" [level=2] [ref=e426]
+      - generic [ref=e427]:
+        - textbox "Search metrics..." [ref=e428]
+        - combobox [ref=e429]:
           - option "All Categories" [selected]
-          - option "test"
-        - button "Add Metric" [ref=e423] [cursor=pointer]:
-          - img [ref=e424]
+          - option "KPI"
+          - option "Performance"
+          - option "Finance"
+          - option "Retention"
+          - option "Engineering"
+          - option "Customer Experience"
+          - option "Reliability"
+          - option "Growth"
+        - button "Add Metric" [ref=e430] [cursor=pointer]:
+          - img [ref=e431]
           - text: Add Metric
-        - button "Import" [ref=e426] [cursor=pointer]:
-          - img [ref=e427]
+        - button "Import" [ref=e433] [cursor=pointer]:
+          - img [ref=e434]
           - text: Import
-        - button "Export" [ref=e429] [cursor=pointer]:
-          - img [ref=e430]
+        - button "Export" [ref=e436] [cursor=pointer]:
+          - img [ref=e437]
           - text: Export
-        - button "Refresh" [ref=e432] [cursor=pointer]:
-          - img [ref=e433]
+        - button "Refresh" [ref=e439] [cursor=pointer]:
+          - img [ref=e440]
           - text: Refresh
-      - generic [ref=e436] [cursor=pointer]:
-        - generic [ref=e437]:
-          - heading [level=3]
-          - generic [ref=e438]: "ID: METRIC-1763667997059"
-          - paragraph [ref=e439]: Test
+      - generic [ref=e442]:
+        - generic [ref=e443] [cursor=pointer]:
           - generic [ref=e444]:
-            - generic [ref=e445]:
-              - strong [ref=e446]: "Owner Team:"
-              - text: N/A
-            - generic [ref=e447]:
-              - strong [ref=e448]: "Technical Owner:"
-              - text: N/A
-            - generic [ref=e449]:
-              - strong [ref=e450]: "Classification:"
-              - text: N/A
-            - generic [ref=e451]:
-              - strong [ref=e452]: "Status:"
-              - text: N/A
-          - generic [ref=e453]:
-            - generic [ref=e454]:
-              - strong [ref=e455]: "Formula:"
-              - text: undefined
-            - generic [ref=e456]:
-              - strong [ref=e457]: "Unit:"
-              - text: undefined
-            - generic [ref=e458]:
-              - strong [ref=e459]: "Direction:"
-              - text: undefined
-        - generic [ref=e460]:
-          - button [ref=e461]:
-            - img [ref=e462]
-          - button [ref=e464]:
-            - img [ref=e465]
+            - heading "Login Success Rate" [level=3] [ref=e445]
+            - generic [ref=e446]: "ID: METRIC-LOGIN-SUCCESS-RATE"
+            - paragraph [ref=e447]: Percentage of login attempts that result in a successful authentication.
+            - generic [ref=e448]:
+              - generic [ref=e449]: Tier-1
+              - generic [ref=e450]: Digital Experience
+              - generic [ref=e451]: leading
+              - generic [ref=e452]: authentication
+              - generic [ref=e453]: ux
+              - generic [ref=e454]: security
+            - generic [ref=e455]:
+              - generic [ref=e456]:
+                - strong [ref=e457]: "Owner Team:"
+                - text: Digital Analytics
+              - generic [ref=e458]:
+                - strong [ref=e459]: "Technical Owner:"
+                - text: data_engineering
+              - generic [ref=e460]:
+                - strong [ref=e461]: "Classification:"
+                - text: Non-PII
+              - generic [ref=e462]:
+                - strong [ref=e463]: "Status:"
+                - text: active
+            - generic [ref=e464]:
+              - generic [ref=e465]:
+                - strong [ref=e466]: "Formula:"
+                - text: successful_logins / total_login_attempts
+              - generic [ref=e467]:
+                - strong [ref=e468]: "Unit:"
+                - text: ratio
+              - generic [ref=e469]:
+                - strong [ref=e470]: "Direction:"
+                - text: increase
+          - generic [ref=e471]:
+            - button [ref=e472]:
+              - img [ref=e473]
+            - button [ref=e475]:
+              - img [ref=e476]
+        - generic [ref=e478] [cursor=pointer]:
+          - generic [ref=e479]:
+            - heading "API Response Time (P95)" [level=3] [ref=e480]
+            - generic [ref=e481]: "ID: METRIC-API-RESPONSE-TIME-P95"
+            - paragraph [ref=e482]: 95th percentile response time for API requests, indicating the performance experienced by most users.
+            - generic [ref=e483]:
+              - generic [ref=e484]: Tier-1
+              - generic [ref=e485]: Platform
+              - generic [ref=e486]: operational
+              - generic [ref=e487]: performance
+              - generic [ref=e488]: api
+              - generic [ref=e489]: latency
+              - generic [ref=e490]: slo
+              - generic [ref=e491]: test
+            - generic [ref=e492]:
+              - generic [ref=e493]:
+                - strong [ref=e494]: "Owner Team:"
+                - text: Platform Engineering
+              - generic [ref=e495]:
+                - strong [ref=e496]: "Technical Owner:"
+                - text: sre_team
+              - generic [ref=e497]:
+                - strong [ref=e498]: "Classification:"
+                - text: internal
+              - generic [ref=e499]:
+                - strong [ref=e500]: "Status:"
+                - text: active
+            - generic [ref=e501]:
+              - generic [ref=e502]:
+                - strong [ref=e503]: "Formula:"
+                - text: PERCENTILE_95(api_response_time)
+              - generic [ref=e504]:
+                - strong [ref=e505]: "Unit:"
+                - text: milliseconds
+              - generic [ref=e506]:
+                - strong [ref=e507]: "Direction:"
+                - text: decrease
+          - generic [ref=e508]:
+            - button [ref=e509]:
+              - img [ref=e510]
+            - button [ref=e512]:
+              - img [ref=e513]
+        - generic [ref=e515] [cursor=pointer]:
+          - generic [ref=e516]:
+            - heading "Annual Recurring Revenue (ARR)" [level=3] [ref=e517]
+            - generic [ref=e518]: "ID: METRIC-REVENUE-ARR"
+            - paragraph [ref=e519]: Total value of recurring revenue normalized to a one-year period.
+            - generic [ref=e520]:
+              - generic [ref=e521]: Tier-1
+              - generic [ref=e522]: Revenue
+              - generic [ref=e523]: lagging
+              - generic [ref=e524]: revenue
+              - generic [ref=e525]: finance
+              - generic [ref=e526]: growth
+              - generic [ref=e527]: saas
+            - generic [ref=e528]:
+              - generic [ref=e529]:
+                - strong [ref=e530]: "Owner Team:"
+                - text: Finance
+              - generic [ref=e531]:
+                - strong [ref=e532]: "Technical Owner:"
+                - text: finance_analytics
+              - generic [ref=e533]:
+                - strong [ref=e534]: "Classification:"
+                - text: confidential
+              - generic [ref=e535]:
+                - strong [ref=e536]: "Status:"
+                - text: active
+            - generic [ref=e537]:
+              - generic [ref=e538]:
+                - strong [ref=e539]: "Formula:"
+                - text: SUM(monthly_recurring_revenue * 12)
+              - generic [ref=e540]:
+                - strong [ref=e541]: "Unit:"
+                - text: USD
+              - generic [ref=e542]:
+                - strong [ref=e543]: "Direction:"
+                - text: increase
+          - generic [ref=e544]:
+            - button [ref=e545]:
+              - img [ref=e546]
+            - button [ref=e548]:
+              - img [ref=e549]
+        - generic [ref=e551] [cursor=pointer]:
+          - generic [ref=e552]:
+            - heading "Customer Churn Rate" [level=3] [ref=e553]
+            - generic [ref=e554]: "ID: METRIC-CUSTOMER-CHURN-RATE"
+            - paragraph [ref=e555]: Percentage of customers who cancel or do not renew their subscriptions in a given period.
+            - generic [ref=e556]:
+              - generic [ref=e557]: Tier-1
+              - generic [ref=e558]: Customer Success
+              - generic [ref=e559]: lagging
+              - generic [ref=e560]: churn
+              - generic [ref=e561]: retention
+              - generic [ref=e562]: customer_success
+              - generic [ref=e563]: growth
+            - generic [ref=e564]:
+              - generic [ref=e565]:
+                - strong [ref=e566]: "Owner Team:"
+                - text: Customer Success
+              - generic [ref=e567]:
+                - strong [ref=e568]: "Technical Owner:"
+                - text: cs_analytics
+              - generic [ref=e569]:
+                - strong [ref=e570]: "Classification:"
+                - text: confidential
+              - generic [ref=e571]:
+                - strong [ref=e572]: "Status:"
+                - text: active
+            - generic [ref=e573]:
+              - generic [ref=e574]:
+                - strong [ref=e575]: "Formula:"
+                - text: churned_customers / total_customers_at_start
+              - generic [ref=e576]:
+                - strong [ref=e577]: "Unit:"
+                - text: percentage
+              - generic [ref=e578]:
+                - strong [ref=e579]: "Direction:"
+                - text: decrease
+          - generic [ref=e580]:
+            - button [ref=e581]:
+              - img [ref=e582]
+            - button [ref=e584]:
+              - img [ref=e585]
+        - generic [ref=e587] [cursor=pointer]:
+          - generic [ref=e588]:
+            - heading "Deployment Frequency" [level=3] [ref=e589]
+            - generic [ref=e590]: "ID: METRIC-DEPLOYMENT-FREQUENCY"
+            - paragraph [ref=e591]: Number of successful production deployments per time period, indicating team velocity and continuous delivery maturity.
+            - generic [ref=e592]:
+              - generic [ref=e593]: Tier-2
+              - generic [ref=e594]: Platform
+              - generic [ref=e595]: operational
+              - generic [ref=e596]: devops
+              - generic [ref=e597]: dora
+              - generic [ref=e598]: velocity
+              - generic [ref=e599]: continuous_delivery
+            - generic [ref=e600]:
+              - generic [ref=e601]:
+                - strong [ref=e602]: "Owner Team:"
+                - text: Platform Engineering
+              - generic [ref=e603]:
+                - strong [ref=e604]: "Technical Owner:"
+                - text: devops_team
+              - generic [ref=e605]:
+                - strong [ref=e606]: "Classification:"
+                - text: internal
+              - generic [ref=e607]:
+                - strong [ref=e608]: "Status:"
+                - text: active
+            - generic [ref=e609]:
+              - generic [ref=e610]:
+                - strong [ref=e611]: "Formula:"
+                - text: COUNT(successful_deployments) / time_period
+              - generic [ref=e612]:
+                - strong [ref=e613]: "Unit:"
+                - text: deployments_per_day
+              - generic [ref=e614]:
+                - strong [ref=e615]: "Direction:"
+                - text: increase
+          - generic [ref=e616]:
+            - button [ref=e617]:
+              - img [ref=e618]
+            - button [ref=e620]:
+              - img [ref=e621]
+        - generic [ref=e623] [cursor=pointer]:
+          - generic [ref=e624]:
+            - heading "Customer Satisfaction Score (CSAT)" [level=3] [ref=e625]
+            - generic [ref=e626]: "ID: METRIC-CSAT"
+            - paragraph [ref=e627]: Measure of customer satisfaction based on post-interaction surveys, typically on a 5-point scale.
+            - generic [ref=e628]:
+              - generic [ref=e629]: Tier-1
+              - generic [ref=e630]: Customer Success
+              - generic [ref=e631]: lagging
+              - generic [ref=e632]: customer_experience
+              - generic [ref=e633]: satisfaction
+              - generic [ref=e634]: feedback
+              - generic [ref=e635]: nps
+            - generic [ref=e636]:
+              - generic [ref=e637]:
+                - strong [ref=e638]: "Owner Team:"
+                - text: Customer Success
+              - generic [ref=e639]:
+                - strong [ref=e640]: "Technical Owner:"
+                - text: product_team
+              - generic [ref=e641]:
+                - strong [ref=e642]: "Classification:"
+                - text: internal
+              - generic [ref=e643]:
+                - strong [ref=e644]: "Status:"
+                - text: active
+            - generic [ref=e645]:
+              - generic [ref=e646]:
+                - strong [ref=e647]: "Formula:"
+                - text: SUM(satisfaction_scores) / COUNT(responses)
+              - generic [ref=e648]:
+                - strong [ref=e649]: "Unit:"
+                - text: score
+              - generic [ref=e650]:
+                - strong [ref=e651]: "Direction:"
+                - text: increase
+          - generic [ref=e652]:
+            - button [ref=e653]:
+              - img [ref=e654]
+            - button [ref=e656]:
+              - img [ref=e657]
+        - generic [ref=e659] [cursor=pointer]:
+          - generic [ref=e660]:
+            - heading "System Uptime" [level=3] [ref=e661]
+            - generic [ref=e662]: "ID: METRIC-SYSTEM-UPTIME"
+            - paragraph [ref=e663]: Percentage of time the system is available and operational over a given period.
+            - generic [ref=e664]:
+              - generic [ref=e665]: Tier-1
+              - generic [ref=e666]: Platform
+              - generic [ref=e667]: operational
+              - generic [ref=e668]: reliability
+              - generic [ref=e669]: slo
+              - generic [ref=e670]: availability
+              - generic [ref=e671]: uptime
+            - generic [ref=e672]:
+              - generic [ref=e673]:
+                - strong [ref=e674]: "Owner Team:"
+                - text: SRE
+              - generic [ref=e675]:
+                - strong [ref=e676]: "Technical Owner:"
+                - text: sre_team
+              - generic [ref=e677]:
+                - strong [ref=e678]: "Classification:"
+                - text: internal
+              - generic [ref=e679]:
+                - strong [ref=e680]: "Status:"
+                - text: active
+            - generic [ref=e681]:
+              - generic [ref=e682]:
+                - strong [ref=e683]: "Formula:"
+                - text: (total_time - downtime) / total_time * 100
+              - generic [ref=e684]:
+                - strong [ref=e685]: "Unit:"
+                - text: percentage
+              - generic [ref=e686]:
+                - strong [ref=e687]: "Direction:"
+                - text: increase
+          - generic [ref=e688]:
+            - button [ref=e689]:
+              - img [ref=e690]
+            - button [ref=e692]:
+              - img [ref=e693]
+        - generic [ref=e695] [cursor=pointer]:
+          - generic [ref=e696]:
+            - heading "Customer Lifetime Value (LTV)" [level=3] [ref=e697]
+            - generic [ref=e698]: "ID: METRIC-CUSTOMER-LTV"
+            - paragraph [ref=e699]: Predicted total revenue that a customer will generate over their entire relationship with the company.
+            - generic [ref=e700]:
+              - generic [ref=e701]: Tier-1
+              - generic [ref=e702]: Revenue
+              - generic [ref=e703]: lagging
+              - generic [ref=e704]: revenue
+              - generic [ref=e705]: retention
+              - generic [ref=e706]: growth
+              - generic [ref=e707]: customer_value
+            - generic [ref=e708]:
+              - generic [ref=e709]:
+                - strong [ref=e710]: "Owner Team:"
+                - text: Finance
+              - generic [ref=e711]:
+                - strong [ref=e712]: "Technical Owner:"
+                - text: finance_analytics
+              - generic [ref=e713]:
+                - strong [ref=e714]: "Classification:"
+                - text: confidential
+              - generic [ref=e715]:
+                - strong [ref=e716]: "Status:"
+                - text: active
+            - generic [ref=e717]:
+              - generic [ref=e718]:
+                - strong [ref=e719]: "Formula:"
+                - text: ARPU * (1 / churn_rate)
+              - generic [ref=e720]:
+                - strong [ref=e721]: "Unit:"
+                - text: USD
+              - generic [ref=e722]:
+                - strong [ref=e723]: "Direction:"
+                - text: increase
+          - generic [ref=e724]:
+            - button [ref=e725]:
+              - img [ref=e726]
+            - button [ref=e728]:
+              - img [ref=e729]
+        - generic [ref=e731] [cursor=pointer]:
+          - generic [ref=e732]:
+            - heading "Trial to Paid Conversion Rate" [level=3] [ref=e733]
+            - generic [ref=e734]: "ID: METRIC-TRIAL-CONVERSION-RATE"
+            - paragraph [ref=e735]: Percentage of trial users who convert to paying customers.
+            - generic [ref=e736]:
+              - generic [ref=e737]: Tier-1
+              - generic [ref=e738]: Sales
+              - generic [ref=e739]: leading
+              - generic [ref=e740]: conversion
+              - generic [ref=e741]: growth
+              - generic [ref=e742]: sales
+              - generic [ref=e743]: funnel
+            - generic [ref=e744]:
+              - generic [ref=e745]:
+                - strong [ref=e746]: "Owner Team:"
+                - text: Growth
+              - generic [ref=e747]:
+                - strong [ref=e748]: "Technical Owner:"
+                - text: product_team
+              - generic [ref=e749]:
+                - strong [ref=e750]: "Classification:"
+                - text: internal
+              - generic [ref=e751]:
+                - strong [ref=e752]: "Status:"
+                - text: active
+            - generic [ref=e753]:
+              - generic [ref=e754]:
+                - strong [ref=e755]: "Formula:"
+                - text: paid_conversions / trial_starts * 100
+              - generic [ref=e756]:
+                - strong [ref=e757]: "Unit:"
+                - text: percentage
+              - generic [ref=e758]:
+                - strong [ref=e759]: "Direction:"
+                - text: increase
+          - generic [ref=e760]:
+            - button [ref=e761]:
+              - img [ref=e762]
+            - button [ref=e764]:
+              - img [ref=e765]
+        - generic [ref=e767] [cursor=pointer]:
+          - generic [ref=e768]:
+            - heading "Pull Request Cycle Time" [level=3] [ref=e769]
+            - generic [ref=e770]: "ID: METRIC-PR-CYCLE-TIME"
+            - paragraph [ref=e771]: Average time from PR creation to merge, measuring development velocity and review efficiency.
+            - generic [ref=e772]:
+              - generic [ref=e773]: Tier-2
+              - generic [ref=e774]: Engineering
+              - generic [ref=e775]: operational
+              - generic [ref=e776]: devops
+              - generic [ref=e777]: velocity
+              - generic [ref=e778]: code_review
+              - generic [ref=e779]: efficiency
+            - generic [ref=e780]:
+              - generic [ref=e781]:
+                - strong [ref=e782]: "Owner Team:"
+                - text: Engineering Leadership
+              - generic [ref=e783]:
+                - strong [ref=e784]: "Technical Owner:"
+                - text: engineering_leadership
+              - generic [ref=e785]:
+                - strong [ref=e786]: "Classification:"
+                - text: internal
+              - generic [ref=e787]:
+                - strong [ref=e788]: "Status:"
+                - text: active
+            - generic [ref=e789]:
+              - generic [ref=e790]:
+                - strong [ref=e791]: "Formula:"
+                - text: AVG(pr_merge_time - pr_create_time)
+              - generic [ref=e792]:
+                - strong [ref=e793]: "Unit:"
+                - text: hours
+              - generic [ref=e794]:
+                - strong [ref=e795]: "Direction:"
+                - text: decrease
+          - generic [ref=e796]:
+            - button [ref=e797]:
+              - img [ref=e798]
+            - button [ref=e800]:
+              - img [ref=e801]
+        - generic [ref=e803] [cursor=pointer]:
+          - generic [ref=e804]:
+            - heading "Code Coverage" [level=3] [ref=e805]
+            - generic [ref=e806]: "ID: METRIC-CODE-COVERAGE"
+            - paragraph [ref=e807]: Percentage of code lines covered by automated tests.
+            - generic [ref=e808]:
+              - generic [ref=e809]: Tier-2
+              - generic [ref=e810]: Engineering
+              - generic [ref=e811]: operational
+              - generic [ref=e812]: testing
+              - generic [ref=e813]: quality
+              - generic [ref=e814]: ci_cd
+              - generic [ref=e815]: reliability
+            - generic [ref=e816]:
+              - generic [ref=e817]:
+                - strong [ref=e818]: "Owner Team:"
+                - text: Engineering Leadership
+              - generic [ref=e819]:
+                - strong [ref=e820]: "Technical Owner:"
+                - text: engineering_leadership
+              - generic [ref=e821]:
+                - strong [ref=e822]: "Classification:"
+                - text: internal
+              - generic [ref=e823]:
+                - strong [ref=e824]: "Status:"
+                - text: active
+            - generic [ref=e825]:
+              - generic [ref=e826]:
+                - strong [ref=e827]: "Formula:"
+                - text: covered_lines / total_lines * 100
+              - generic [ref=e828]:
+                - strong [ref=e829]: "Unit:"
+                - text: percentage
+              - generic [ref=e830]:
+                - strong [ref=e831]: "Direction:"
+                - text: increase
+          - generic [ref=e832]:
+            - button [ref=e833]:
+              - img [ref=e834]
+            - button [ref=e836]:
+              - img [ref=e837]
 ```
