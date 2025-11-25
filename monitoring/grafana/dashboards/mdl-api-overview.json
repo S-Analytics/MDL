@@ -1,0 +1,356 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "mdl-api-overview",
+    "title": "MDL API - Overview",
+    "tags": ["mdl", "api", "overview"],
+    "timezone": "browser",
+    "schemaVersion": 27,
+    "version": 1,
+    "refresh": "30s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "timepicker": {
+      "refresh_intervals": ["5s", "10s", "30s", "1m", "5m", "15m", "30m", "1h"]
+    },
+    "panels": [
+      {
+        "id": 1,
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+        "type": "graph",
+        "title": "Request Rate (req/s)",
+        "targets": [
+          {
+            "expr": "rate(mdl_http_requests_total[5m])",
+            "legendFormat": "{{method}} {{route}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "requests/sec",
+            "format": "short"
+          },
+          {
+            "show": false
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+        "type": "graph",
+        "title": "Request Duration P95 (seconds)",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(mdl_http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "{{method}} {{route}}",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.50, rate(mdl_http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "P50 {{method}} {{route}}",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "seconds",
+            "format": "s"
+          },
+          {
+            "show": false
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "gridPos": { "h": 8, "w": 8, "x": 0, "y": 8 },
+        "type": "graph",
+        "title": "Error Rate (%)",
+        "targets": [
+          {
+            "expr": "(rate(mdl_http_requests_total{status=~\"5..\"}[5m]) / rate(mdl_http_requests_total[5m])) * 100",
+            "legendFormat": "5xx errors",
+            "refId": "A"
+          },
+          {
+            "expr": "(rate(mdl_http_requests_total{status=~\"4..\"}[5m]) / rate(mdl_http_requests_total[5m])) * 100",
+            "legendFormat": "4xx errors",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "percent",
+            "format": "percent"
+          },
+          {
+            "show": false
+          }
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [5],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": ["A", "5m", "now"]
+              },
+              "reducer": {
+                "params": [],
+                "type": "avg"
+              },
+              "type": "query"
+            }
+          ],
+          "executionErrorState": "alerting",
+          "frequency": "1m",
+          "handler": 1,
+          "name": "Error Rate alert",
+          "noDataState": "no_data"
+        }
+      },
+      {
+        "id": 4,
+        "gridPos": { "h": 8, "w": 8, "x": 8, "y": 8 },
+        "type": "stat",
+        "title": "Request Success Rate",
+        "targets": [
+          {
+            "expr": "(rate(mdl_http_requests_total{status=~\"2..\"}[5m]) / rate(mdl_http_requests_total[5m])) * 100",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"]
+          },
+          "orientation": "auto",
+          "textMode": "auto",
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "min": 0,
+            "max": 100,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": 0, "color": "red" },
+                { "value": 95, "color": "yellow" },
+                { "value": 99, "color": "green" }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 5,
+        "gridPos": { "h": 8, "w": 8, "x": 16, "y": 8 },
+        "type": "stat",
+        "title": "Cache Hit Rate",
+        "targets": [
+          {
+            "expr": "(sum(rate(mdl_cache_hits_total[5m])) / (sum(rate(mdl_cache_hits_total[5m])) + sum(rate(mdl_cache_misses_total[5m])))) * 100",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"]
+          },
+          "orientation": "auto",
+          "textMode": "auto",
+          "colorMode": "value",
+          "graphMode": "area"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "min": 0,
+            "max": 100,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": 0, "color": "red" },
+                { "value": 50, "color": "yellow" },
+                { "value": 80, "color": "green" }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 6,
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+        "type": "graph",
+        "title": "Database Pool Connections",
+        "targets": [
+          {
+            "expr": "mdl_db_pool_active_connections",
+            "legendFormat": "Active",
+            "refId": "A"
+          },
+          {
+            "expr": "mdl_db_pool_max_connections",
+            "legendFormat": "Max",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "connections",
+            "format": "short"
+          },
+          {
+            "show": false
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+        "type": "graph",
+        "title": "Database Query Duration P95",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(mdl_db_query_duration_seconds_bucket[5m]))",
+            "legendFormat": "{{operation}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "seconds",
+            "format": "s"
+          },
+          {
+            "show": false
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
+        "type": "graph",
+        "title": "Memory Usage",
+        "targets": [
+          {
+            "expr": "process_resident_memory_bytes{job=\"mdl-api\"}",
+            "legendFormat": "Resident Memory",
+            "refId": "A"
+          },
+          {
+            "expr": "nodejs_heap_size_used_bytes{job=\"mdl-api\"}",
+            "legendFormat": "Heap Used",
+            "refId": "B"
+          },
+          {
+            "expr": "nodejs_heap_size_total_bytes{job=\"mdl-api\"}",
+            "legendFormat": "Heap Total",
+            "refId": "C"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "bytes",
+            "format": "bytes"
+          },
+          {
+            "show": false
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
+        "type": "graph",
+        "title": "Event Loop Lag",
+        "targets": [
+          {
+            "expr": "rate(nodejs_eventloop_lag_seconds{job=\"mdl-api\"}[5m])",
+            "legendFormat": "Event Loop Lag",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "seconds",
+            "format": "s"
+          },
+          {
+            "show": false
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "gridPos": { "h": 8, "w": 24, "x": 0, "y": 32 },
+        "type": "table",
+        "title": "Top Routes by Request Count",
+        "targets": [
+          {
+            "expr": "topk(10, sum by (method, route) (rate(mdl_http_requests_total[5m])))",
+            "format": "table",
+            "instant": true,
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "showHeader": true
+        },
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "align": "auto",
+              "displayMode": "auto"
+            }
+          },
+          "overrides": []
+        }
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "datasource",
+          "type": "datasource",
+          "query": "prometheus",
+          "current": {
+            "value": "Prometheus",
+            "text": "Prometheus"
+          }
+        }
+      ]
+    },
+    "annotations": {
+      "list": [
+        {
+          "datasource": "Prometheus",
+          "enable": true,
+          "expr": "ALERTS{alertstate=\"firing\"}",
+          "iconColor": "red",
+          "name": "Alerts",
+          "step": "60s",
+          "tagKeys": "alertname,severity",
+          "textFormat": "{{alertname}}",
+          "titleFormat": "Alert"
+        }
+      ]
+    }
+  },
+  "overwrite": true
+}

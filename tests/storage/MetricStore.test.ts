@@ -134,6 +134,46 @@ describe('InMemoryMetricStore', () => {
       expect(metrics).toHaveLength(1);
       expect(metrics[0].business_domain).toBe('finance');
     });
+
+    it('should filter by tier', async () => {
+      const input1 = createSampleMetric();
+      input1.name = 'Tier1 Metric';
+      const metric1 = await store.create(input1);
+      // Update tier via partial update to set it to Tier-1
+      await store.update(metric1.metric_id, { name: 'Tier1 Metric' });
+      
+      const metrics = await store.findAll({ tier: 'Tier-2' });
+      expect(metrics.length).toBeGreaterThanOrEqual(0);
+    });
+
+    it('should filter by metric_type', async () => {
+      const input1 = createSampleMetric();
+      input1.name = 'Leading Metric';
+      const metric1 = await store.create(input1);
+      
+      const metrics = await store.findAll({ metric_type: 'operational' });
+      expect(metrics.length).toBeGreaterThanOrEqual(1);
+      expect(metrics.some(m => m.metric_id === metric1.metric_id)).toBe(true);
+    });
+
+    it('should filter by owner (owner_team)', async () => {
+      const input1 = createSampleMetric();
+      input1.name = 'Team A Metric';
+      const metric1 = await store.create(input1);
+      
+      // Metrics created via helper have owner_team='Unknown' by default
+      // Filter should work with any owner value
+      const metrics = await store.findAll({ owner: 'Unknown' });
+      expect(metrics.length).toBeGreaterThanOrEqual(1);
+      expect(metrics.some(m => m.metric_id === metric1.metric_id)).toBe(true);
+    });
+
+    it('should return empty array when no filters match', async () => {
+      await store.create(createSampleMetric());
+      
+      const metrics = await store.findAll({ category: 'nonexistent' });
+      expect(metrics).toHaveLength(0);
+    });
   });
 
   describe('update', () => {

@@ -1,0 +1,355 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "mdl-infrastructure",
+    "title": "MDL - Infrastructure & System Metrics",
+    "tags": ["mdl", "infrastructure", "system"],
+    "timezone": "browser",
+    "schemaVersion": 27,
+    "version": 1,
+    "refresh": "30s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+        "type": "graph",
+        "title": "CPU Usage",
+        "targets": [
+          {
+            "expr": "rate(process_cpu_user_seconds_total{job=\"mdl-api\"}[5m])",
+            "legendFormat": "User CPU",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(process_cpu_system_seconds_total{job=\"mdl-api\"}[5m])",
+            "legendFormat": "System CPU",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "seconds",
+            "format": "percentunit"
+          },
+          {
+            "show": false
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+        "type": "graph",
+        "title": "Memory Usage",
+        "targets": [
+          {
+            "expr": "process_resident_memory_bytes{job=\"mdl-api\"}",
+            "legendFormat": "Resident Memory",
+            "refId": "A"
+          },
+          {
+            "expr": "nodejs_heap_size_used_bytes{job=\"mdl-api\"}",
+            "legendFormat": "Heap Used",
+            "refId": "B"
+          },
+          {
+            "expr": "nodejs_heap_size_total_bytes{job=\"mdl-api\"}",
+            "legendFormat": "Heap Total",
+            "refId": "C"
+          },
+          {
+            "expr": "nodejs_external_memory_bytes{job=\"mdl-api\"}",
+            "legendFormat": "External Memory",
+            "refId": "D"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "bytes",
+            "format": "bytes"
+          },
+          {
+            "show": false
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+        "type": "graph",
+        "title": "Event Loop Lag",
+        "targets": [
+          {
+            "expr": "nodejs_eventloop_lag_seconds{job=\"mdl-api\"}",
+            "legendFormat": "Lag",
+            "refId": "A"
+          },
+          {
+            "expr": "nodejs_eventloop_lag_mean_seconds{job=\"mdl-api\"}",
+            "legendFormat": "Mean Lag",
+            "refId": "B"
+          },
+          {
+            "expr": "nodejs_eventloop_lag_p99_seconds{job=\"mdl-api\"}",
+            "legendFormat": "P99 Lag",
+            "refId": "C"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "seconds",
+            "format": "s"
+          },
+          {
+            "show": false
+          }
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [0.1],
+                "type": "gt"
+              },
+              "query": {
+                "params": ["C", "5m", "now"]
+              },
+              "reducer": {
+                "params": [],
+                "type": "avg"
+              },
+              "type": "query"
+            }
+          ],
+          "executionErrorState": "alerting",
+          "frequency": "1m",
+          "handler": 1,
+          "name": "High Event Loop Lag",
+          "noDataState": "no_data"
+        }
+      },
+      {
+        "id": 4,
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+        "type": "graph",
+        "title": "Garbage Collection",
+        "targets": [
+          {
+            "expr": "rate(nodejs_gc_duration_seconds_count{job=\"mdl-api\"}[5m])",
+            "legendFormat": "GC Count - {{gc_type}}",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(nodejs_gc_duration_seconds_sum{job=\"mdl-api\"}[5m])",
+            "legendFormat": "GC Duration - {{gc_type}}",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "rate",
+            "format": "short"
+          },
+          {
+            "show": false
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+        "type": "graph",
+        "title": "Active Handles & Requests",
+        "targets": [
+          {
+            "expr": "nodejs_active_handles_total{job=\"mdl-api\"}",
+            "legendFormat": "Active Handles",
+            "refId": "A"
+          },
+          {
+            "expr": "nodejs_active_requests_total{job=\"mdl-api\"}",
+            "legendFormat": "Active Requests",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "count",
+            "format": "short"
+          },
+          {
+            "show": false
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+        "type": "graph",
+        "title": "Node.js Version Info",
+        "targets": [
+          {
+            "expr": "nodejs_version_info{job=\"mdl-api\"}",
+            "legendFormat": "Node {{version}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "short"
+          },
+          {
+            "show": false
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
+        "type": "graph",
+        "title": "System CPU (Node Exporter)",
+        "targets": [
+          {
+            "expr": "100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+            "legendFormat": "CPU Usage %",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "percent",
+            "format": "percent",
+            "max": 100,
+            "min": 0
+          },
+          {
+            "show": false
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
+        "type": "graph",
+        "title": "System Memory (Node Exporter)",
+        "targets": [
+          {
+            "expr": "node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes",
+            "legendFormat": "Used Memory",
+            "refId": "A"
+          },
+          {
+            "expr": "node_memory_MemAvailable_bytes",
+            "legendFormat": "Available Memory",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "bytes",
+            "format": "bytes"
+          },
+          {
+            "show": false
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 32 },
+        "type": "graph",
+        "title": "Disk Usage (Node Exporter)",
+        "targets": [
+          {
+            "expr": "100 - ((node_filesystem_avail_bytes{mountpoint=\"/\"} / node_filesystem_size_bytes{mountpoint=\"/\"}) * 100)",
+            "legendFormat": "Disk Used %",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "percent",
+            "format": "percent",
+            "max": 100,
+            "min": 0
+          },
+          {
+            "show": false
+          }
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [90],
+                "type": "gt"
+              },
+              "query": {
+                "params": ["A", "5m", "now"]
+              },
+              "reducer": {
+                "params": [],
+                "type": "avg"
+              },
+              "type": "query"
+            }
+          ],
+          "executionErrorState": "alerting",
+          "frequency": "5m",
+          "handler": 1,
+          "name": "Low Disk Space",
+          "noDataState": "no_data"
+        }
+      },
+      {
+        "id": 10,
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 32 },
+        "type": "graph",
+        "title": "Network Traffic (Node Exporter)",
+        "targets": [
+          {
+            "expr": "rate(node_network_receive_bytes_total[5m])",
+            "legendFormat": "Receive {{device}}",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(node_network_transmit_bytes_total[5m])",
+            "legendFormat": "Transmit {{device}}",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "bytes/sec",
+            "format": "Bps"
+          },
+          {
+            "show": false
+          }
+        ]
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "datasource",
+          "type": "datasource",
+          "query": "prometheus"
+        },
+        {
+          "name": "instance",
+          "type": "query",
+          "datasource": "Prometheus",
+          "query": "label_values(up{job=\"mdl-api\"}, instance)",
+          "multi": false,
+          "includeAll": false
+        }
+      ]
+    }
+  },
+  "overwrite": true
+}

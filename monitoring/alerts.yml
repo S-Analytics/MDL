@@ -1,0 +1,144 @@
+groups:
+  - name: mdl_api_alerts
+    interval: 30s
+    rules:
+      # High Error Rate Alert
+      - alert: HighErrorRate
+        expr: |
+          (
+            rate(http_requests_total{status=~"5.."}[5m]) 
+            / 
+            rate(http_requests_total[5m])
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          component: api
+        annotations:
+          summary: "High error rate detected ({{ $value | humanizePercentage }})"
+          description: "API is experiencing {{ $value | humanizePercentage }} error rate on {{ $labels.instance }}"
+
+      # Slow Response Times Alert
+      - alert: SlowResponseTimes
+        expr: |
+          histogram_quantile(0.95, 
+            rate(http_request_duration_seconds_bucket[5m])
+          ) > 1.0
+        for: 5m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "Slow API response times (P95: {{ $value }}s)"
+          description: "95th percentile response time is {{ $value }}s on {{ $labels.instance }}"
+
+      # High Request Rate Alert
+      - alert: HighRequestRate
+        expr: rate(http_requests_total[5m]) > 100
+        for: 5m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "High request rate detected ({{ $value }} req/s)"
+          description: "API is receiving {{ $value }} requests per second on {{ $labels.instance }}"
+
+      # Low Cache Hit Rate Alert (if Redis enabled)
+      - alert: LowCacheHitRate
+        expr: |
+          (
+            rate(cache_hits_total[5m]) 
+            / 
+            (rate(cache_hits_total[5m]) + rate(cache_misses_total[5m]))
+          ) < 0.50
+        for: 10m
+        labels:
+          severity: warning
+          component: cache
+        annotations:
+          summary: "Low cache hit rate ({{ $value | humanizePercentage }})"
+          description: "Cache hit rate dropped to {{ $value | humanizePercentage }} on {{ $labels.instance }}"
+
+      # Database Connection Pool Exhaustion
+      - alert: DatabasePoolExhaustion
+        expr: database_pool_active_connections / database_pool_max_connections > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Database connection pool near exhaustion ({{ $value | humanizePercentage }})"
+          description: "Database pool is {{ $value | humanizePercentage }} full on {{ $labels.instance }}"
+
+      # API Instance Down
+      - alert: APIInstanceDown
+        expr: up{job="mdl-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: api
+        annotations:
+          summary: "API instance is down"
+          description: "API instance {{ $labels.instance }} has been down for more than 1 minute"
+
+      # High Memory Usage
+      - alert: HighMemoryUsage
+        expr: |
+          (
+            process_resident_memory_bytes 
+            / 
+            node_memory_MemTotal_bytes{job="node-exporter"}
+          ) > 0.80
+        for: 5m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High memory usage ({{ $value | humanizePercentage }})"
+          description: "Memory usage is {{ $value | humanizePercentage }} on {{ $labels.instance }}"
+
+      # Disk Space Low
+      - alert: DiskSpaceLow
+        expr: |
+          (
+            node_filesystem_avail_bytes{mountpoint="/",job="node-exporter"} 
+            / 
+            node_filesystem_size_bytes{mountpoint="/",job="node-exporter"}
+          ) < 0.10
+        for: 5m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "Low disk space ({{ $value | humanizePercentage }} remaining)"
+          description: "Disk space is {{ $value | humanizePercentage }} full on {{ $labels.instance }}"
+
+  - name: mdl_business_alerts
+    interval: 60s
+    rules:
+      # No Metrics Created (Business Logic)
+      - alert: NoMetricsCreated
+        expr: rate(metrics_created_total[1h]) == 0
+        for: 1h
+        labels:
+          severity: info
+          component: business
+        annotations:
+          summary: "No metrics created in the last hour"
+          description: "No new metrics have been created on {{ $labels.instance }} for 1 hour"
+
+      # Unusual Domain Activity
+      - alert: UnusualDomainActivity
+        expr: |
+          (
+            rate(domains_created_total[1h]) 
+            - 
+            rate(domains_created_total[1h] offset 24h)
+          ) > 10
+        for: 1h
+        labels:
+          severity: info
+          component: business
+        annotations:
+          summary: "Unusual domain creation activity"
+          description: "Domain creation rate increased by {{ $value }} on {{ $labels.instance }}"

@@ -4,6 +4,10 @@ import {
     MetricDefinition,
     MetricDefinitionInput
 } from '../models';
+import { createStorageSpan, executeWithSpan } from '../tracing/spans';
+import { DatabasePool } from '../utils/database';
+import { logger } from '../utils/logger';
+import { getQueryMonitor } from '../utils/queryMonitor';
 import { IMetricStore } from './MetricStore';
 
 /**
@@ -75,67 +79,124 @@ export interface PostgresConfig {
 
 /**
  * PostgreSQL implementation of IMetricStore
+ * Can use either a provided DatabasePool or create its own legacy Pool
  */
 export class PostgresMetricStore implements IMetricStore {
   private pool: Pool;
+  private dbPool?: DatabasePool;
+  private isLegacyMode: boolean;
 
-  constructor(config: PostgresConfig) {
-    this.pool = new Pool({
-      host: config.host,
-      port: config.port,
-      database: config.database,
-      user: config.user,
-      password: config.password,
-      max: 10,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 2000,
-    });
+  constructor(config: PostgresConfig, dbPool?: DatabasePool) {
+    if (dbPool) {
+      // Use modern DatabasePool with health checks and retry logic
+      this.dbPool = dbPool;
+      this.isLegacyMode = false;
+      // Create a legacy pool reference for backward compatibility
+      this.pool = new Pool({
+        host: config.host,
+        port: config.port,
+        database: config.database,
+        user: config.user,
+        password: config.password,
+        max: 10,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 2000,
+      });
+      logger.info('PostgresMetricStore initialized with DatabasePool');
+    } else {
+      // Legacy mode for backward compatibility
+      this.isLegacyMode = true;
+      this.pool = new Pool({
+        host: config.host,
+        port: config.port,
+        database: config.database,
+        user: config.user,
+        password: config.password,
+        max: 10,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 2000,
+      });
+      logger.warn('PostgresMetricStore initialized in legacy mode (no DatabasePool)');
+    }
   }
 
   async create(input: MetricDefinitionInput): Promise<MetricDefinition> {
-    // For now, create operation expects MetricDefinition structure, not MetricDefinitionInput
-    // This is a simplified implementation
-    const metric = input as unknown as MetricDefinition;
-    const metric_id = metric.metric_id || `METRIC-${Date.now()}`;
-    
-    const query = `
-      INSERT INTO metrics (
-        metric_id, name, description, category, tier, business_domain, 
-        metric_type, tags, definition, strategic_alignment, governance, 
-        targets, alert_rules, visualization, usage, metadata
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
-      RETURNING *
-    `;
+    const span = createStorageSpan('create', {
+      'metric.category': (input as any).category || 'unknown',
+    });
 
-    const values = [
-      metric_id,
-      metric.name,
-      metric.description || null,
-      metric.category || null,
-      metric.tier || null,
-      metric.business_domain || null,
-      metric.metric_type || null,
-      JSON.stringify(metric.tags || []),
-      JSON.stringify(metric.definition || {}),
-      JSON.stringify(metric.alignment || {}),
-      JSON.stringify(metric.governance || {}),
-      JSON.stringify(metric.targets_and_alerts || {}),
-      JSON.stringify(metric.targets_and_alerts?.alert_rules || []),
-      JSON.stringify(metric.visualization || {}),
-      JSON.stringify(metric.operational_usage || {}),
-      JSON.stringify(metric.metadata || {}),
-    ];
+    return executeWithSpan(span, async () => {
+      // For now, create operation expects MetricDefinition structure, not MetricDefinitionInput
+      // This is a simplified implementation
+      const metric = input as unknown as MetricDefinition;
+      const metric_id = metric.metric_id || `METRIC-${Date.now()}`;
+      
+      span.setAttribute('metric.id', metric_id);
+      
+      const query = `
+        INSERT INTO metrics (
+          metric_id, name, description, category, tier, business_domain, 
+          metric_type, tags, definition, strategic_alignment, governance, 
+          targets, alert_rules, visualization, usage, metadata
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+        RETURNING *
+      `;
 
-    const result = await this.pool.query(query, values);
-    return this.rowToMetric(result.rows[0]);
+      const values = [
+        metric_id,
+        metric.name,
+        metric.description || null,
+        metric.category || null,
+        metric.tier || null,
+        metric.business_domain || null,
+        metric.metric_type || null,
+        JSON.stringify(metric.tags || []),
+        JSON.stringify(metric.definition || {}),
+        JSON.stringify(metric.alignment || {}),
+        JSON.stringify(metric.governance || {}),
+        JSON.stringify(metric.targets_and_alerts || {}),
+        JSON.stringify(metric.targets_and_alerts?.alert_rules || []),
+        JSON.stringify(metric.visualization || {}),
+        JSON.stringify(metric.operational_usage || {}),
+        JSON.stringify(metric.metadata || {}),
+      ];
+
+      const result = await this.executeQuery(query, values);
+      const created = this.rowToMetric(result.rows[0]);
+      
+      // Record business metric creation
+      const { metricsService } = await import('../metrics/MetricsService');
+      metricsService.recordMetricCreated(created.category || 'unknown');
+      
+      span.addEvent('metric.created', {
+        'metric.id': created.metric_id,
+        'metric.name': created.name,
+      });
+      
+      return created;
+    });
   }
 
-  async findAll(filters?: Record<string, unknown>): Promise<MetricDefinition[]> {
+  // Overload signatures
+  async findAll(filters: Record<string, unknown> | undefined, pagination: { page: number; limit: number; offset: number }): Promise<import('../utils/pagination').PaginatedResponse<MetricDefinition>>;
+  async findAll(filters?: Record<string, unknown>): Promise<MetricDefinition[]>;
+  
+  // Implementation
+  async findAll(
+    filters?: Record<string, unknown>,
+    pagination?: { page: number; limit: number; offset: number }
+  ): Promise<MetricDefinition[] | import('../utils/pagination').PaginatedResponse<MetricDefinition>> {
     let query = 'SELECT * FROM metrics WHERE 1=1';
     const values: (string | number | string[])[] = [];
     let paramCount = 1;
 
+    // Build WHERE clause
     if (filters) {
+      if (filters.category) {
+        query += ` AND category = $${paramCount}`;
+        values.push(filters.category as string);
+        paramCount++;
+      }
       if (filters.business_domain) {
         query += ` AND business_domain = $${paramCount}`;
         values.push(filters.business_domain as string);
@@ -158,21 +219,67 @@ export class PostgresMetricStore implements IMetricStore {
       }
     }
 
-    query += ' ORDER BY name';
+    // If pagination is requested, get total count and return paginated response
+    if (pagination) {
+      const { page, limit, offset } = pagination;
 
-    const result = await this.pool.query(query, values);
+      // Get total count with same filters
+      const countQuery = query.replace('SELECT * FROM metrics', 'SELECT COUNT(*) FROM metrics');
+      const countResult = await this.executeQuery(countQuery, values);
+      const total = Number.parseInt(countResult.rows[0].count, 10);
+
+      // Get paginated data
+      const dataQuery = `${query} ORDER BY name LIMIT $${paramCount} OFFSET $${paramCount + 1}`;
+      const dataValues = [...values, limit, offset];
+      const dataResult = await this.executeQuery(dataQuery, dataValues);
+      const data = dataResult.rows.map(row => this.rowToMetric(row));
+
+      // Calculate pagination metadata
+      const pages = Math.ceil(total / limit) || 1;
+
+      return {
+        data,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages,
+          hasNext: page < pages,
+          hasPrev: page > 1,
+        },
+      };
+    }
+
+    // No pagination - return all results
+    query += ' ORDER BY name';
+    const result = await this.executeQuery(query, values);
     return result.rows.map(row => this.rowToMetric(row));
   }
 
   async findById(id: string): Promise<MetricDefinition | null> {
-    const query = 'SELECT * FROM metrics WHERE metric_id = $1';
-    const result = await this.pool.query(query, [id]);
-    
-    if (result.rows.length === 0) {
-      return null;
-    }
-    
-    return this.rowToMetric(result.rows[0]);
+    const span = createStorageSpan('findById', {
+      'metric.id': id,
+    });
+
+    return executeWithSpan(span, async () => {
+      const query = 'SELECT * FROM metrics WHERE metric_id = $1';
+      const result = await this.executeQuery(query, [id]);
+      
+      const found = result.rows.length > 0;
+      span.setAttribute('metric.found', found);
+      
+      if (!found) {
+        return null;
+      }
+      
+      const metric = this.rowToMetric(result.rows[0]);
+      span.addEvent('metric.retrieved', {
+        'metric.name': metric.name,
+        'metric.category': metric.category || 'unknown',
+      });
+      
+      return metric;
+    });
   }
 
   async update(id: string, updates: Partial<MetricDefinitionInput>): Promise<MetricDefinition> {
@@ -305,24 +412,64 @@ export class PostgresMetricStore implements IMetricStore {
     `;
     values.push(id);
 
-    const result = await this.pool.query(query, values);
+    const result = await this.executeQuery(query, values);
     return this.rowToMetric(result.rows[0]);
   }
 
   async delete(id: string): Promise<boolean> {
     const query = 'DELETE FROM metrics WHERE metric_id = $1';
-    const result = await this.pool.query(query, [id]);
-    return result.rowCount ? result.rowCount > 0 : false;
+    const result = await this.executeQuery(query, [id]);
+    return result.rowCount > 0;
   }
 
   async exists(id: string): Promise<boolean> {
     const query = 'SELECT 1 FROM metrics WHERE metric_id = $1';
-    const result = await this.pool.query(query, [id]);
+    const result = await this.executeQuery(query, [id]);
     return result.rows.length > 0;
   }
 
   async close(): Promise<void> {
-    await this.pool.end();
+    if (this.isLegacyMode) {
+      await this.pool.end();
+    }
+    // If using DatabasePool, it will be closed by the application shutdown handler
+  }
+
+  /**
+   * Helper method to execute queries with either DatabasePool or legacy Pool
+   */
+  private async executeQuery<T = any>(
+    text: string,
+    params?: any[]
+  ): Promise<{ rows: T[]; rowCount: number }> {
+    const startTime = Date.now();
+    const queryMonitor = getQueryMonitor();
+
+    try {
+      let result;
+      if (this.dbPool && !this.isLegacyMode) {
+        // Use DatabasePool with retry logic
+        result = await this.dbPool.query<T>(text, params, 1);
+      } else {
+        // Use legacy Pool
+        const queryResult = await this.pool.query(text, params);
+        result = {
+          rows: queryResult.rows,
+          rowCount: queryResult.rowCount || 0,
+        };
+      }
+
+      // Record query performance
+      const duration = Date.now() - startTime;
+      queryMonitor.recordQuery(text, duration, params);
+
+      return result;
+    } catch (error) {
+      // Record failed query
+      const duration = Date.now() - startTime;
+      queryMonitor.recordQuery(text, duration, params);
+      throw error;
+    }
   }
 
   private rowToMetric(row: Record<string, unknown>): MetricDefinition {

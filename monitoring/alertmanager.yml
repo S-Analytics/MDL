@@ -1,0 +1,116 @@
+global:
+  resolve_timeout: 5m
+  # SMTP configuration (optional - configure for email alerts)
+  # smtp_smarthost: 'smtp.gmail.com:587'
+  # smtp_from: 'alerts@mdl.example.com'
+  # smtp_auth_username: 'your-email@gmail.com'
+  # smtp_auth_password: 'your-app-password'
+
+# Templates for alert notifications
+templates:
+  - '/etc/alertmanager/*.tmpl'
+
+# Route tree for alert routing
+route:
+  # Default receiver for all alerts
+  receiver: 'default-receiver'
+  
+  # Group alerts by these labels
+  group_by: ['alertname', 'cluster', 'service']
+  
+  # How long to wait before sending initial notification
+  group_wait: 10s
+  
+  # How long to wait before sending notification about new alerts added to group
+  group_interval: 10s
+  
+  # How long to wait before re-sending notification
+  repeat_interval: 12h
+
+  # Child routes for specific alert types
+  routes:
+    # Critical alerts - immediate notification
+    - match:
+        severity: critical
+      receiver: 'critical-receiver'
+      group_wait: 0s
+      repeat_interval: 5m
+
+    # Warning alerts - grouped notification
+    - match:
+        severity: warning
+      receiver: 'warning-receiver'
+      group_wait: 30s
+      repeat_interval: 1h
+
+    # Info alerts - less frequent notifications
+    - match:
+        severity: info
+      receiver: 'info-receiver'
+      group_wait: 5m
+      repeat_interval: 24h
+
+# Inhibition rules - suppress alerts based on other active alerts
+inhibit_rules:
+  # Inhibit warning alerts if critical alert is firing
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'instance']
+
+  # Inhibit all alerts if API instance is down
+  - source_match:
+      alertname: 'APIInstanceDown'
+    target_match_re:
+      component: '.*'
+    equal: ['instance']
+
+# Receivers define notification channels
+receivers:
+  # Default receiver (console logging)
+  - name: 'default-receiver'
+    webhook_configs:
+      - url: 'http://localhost:9093/api/v1/alerts'
+        send_resolved: true
+
+  # Critical alerts receiver
+  - name: 'critical-receiver'
+    # Webhook example (can integrate with Slack, PagerDuty, etc.)
+    webhook_configs:
+      - url: 'http://localhost:9093/api/v1/alerts'
+        send_resolved: true
+    
+    # Email example (uncomment and configure SMTP above)
+    # email_configs:
+    #   - to: 'oncall@mdl.example.com'
+    #     headers:
+    #       subject: '[CRITICAL] MDL Alert: {{ .GroupLabels.alertname }}'
+    #     html: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+    
+    # Slack example (requires Slack webhook URL)
+    # slack_configs:
+    #   - api_url: 'https://hooks.slack.com/services/YOUR/WEBHOOK/URL'
+    #     channel: '#mdl-alerts-critical'
+    #     title: 'Critical Alert: {{ .GroupLabels.alertname }}'
+    #     text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+    #     send_resolved: true
+
+  # Warning alerts receiver
+  - name: 'warning-receiver'
+    webhook_configs:
+      - url: 'http://localhost:9093/api/v1/alerts'
+        send_resolved: true
+    
+    # Slack example
+    # slack_configs:
+    #   - api_url: 'https://hooks.slack.com/services/YOUR/WEBHOOK/URL'
+    #     channel: '#mdl-alerts-warning'
+    #     title: 'Warning: {{ .GroupLabels.alertname }}'
+    #     text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+
+  # Info alerts receiver
+  - name: 'info-receiver'
+    webhook_configs:
+      - url: 'http://localhost:9093/api/v1/alerts'
+        send_resolved: true

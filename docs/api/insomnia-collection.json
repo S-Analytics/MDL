@@ -25,8 +25,18 @@
         "db_password": "",
         "sample_metric_id": "METRIC-LOGIN-SUCCESS-RATE",
         "sample_domain_id": "auth-5678",
-        "sample_objective_id": "OBJ-20251115041315"
+        "sample_objective_id": "OBJ-20251115041315",
+        "access_token": "",
+        "refresh_token": "",
+        "api_key": ""
       }
+    },
+    {
+      "_id": "fld_auth",
+      "_type": "request_group",
+      "parentId": "wrk_mdl",
+      "name": "Authentication",
+      "description": "Authentication endpoints for user registration, login, and token management"
     },
     {
       "_id": "fld_health",
@@ -83,6 +93,141 @@
       "parentId": "wrk_mdl",
       "name": "PostgreSQL - Objectives",
       "description": "PostgreSQL objectives and key results operations"
+    },
+    {
+      "_id": "req_auth_register",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Register User",
+      "url": "{{ _.base_url }}/api/auth/register",
+      "method": "POST",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"username\": \"testuser\",\n  \"email\": \"testuser@example.com\",\n  \"password\": \"SecurePassword123!\",\n  \"full_name\": \"Test User\",\n  \"role\": \"editor\"\n}"
+      },
+      "description": "Register a new user account. Role can be 'viewer', 'editor', or 'admin'. Default is 'viewer'."
+    },
+    {
+      "_id": "req_auth_login",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Login",
+      "url": "{{ _.base_url }}/api/auth/login",
+      "method": "POST",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"username\": \"testuser\",\n  \"password\": \"SecurePassword123!\"\n}"
+      },
+      "description": "Login with username and password. Returns access_token (15min) and refresh_token (7 days). Copy the tokens to environment variables."
+    },
+    {
+      "_id": "req_auth_refresh",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Refresh Token",
+      "url": "{{ _.base_url }}/api/auth/refresh",
+      "method": "POST",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"refresh_token\": \"{{ _.refresh_token }}\"\n}"
+      },
+      "description": "Refresh the access token using a valid refresh token. Returns a new access_token."
+    },
+    {
+      "_id": "req_auth_logout",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Logout",
+      "url": "{{ _.base_url }}/api/auth/logout",
+      "method": "POST",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.access_token }}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"refresh_token\": \"{{ _.refresh_token }}\"\n}"
+      },
+      "description": "Logout by revoking the refresh token. Requires authentication."
+    },
+    {
+      "_id": "req_auth_me",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Get Current User",
+      "url": "{{ _.base_url }}/api/auth/me",
+      "method": "GET",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.access_token }}"
+        }
+      ],
+      "body": {},
+      "description": "Get current authenticated user information. Requires authentication."
+    },
+    {
+      "_id": "req_auth_create_api_key",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Create API Key",
+      "url": "{{ _.base_url }}/api/auth/api-keys",
+      "method": "POST",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.access_token }}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"My API Key\",\n  \"expires_in_days\": 90\n}"
+      },
+      "description": "Create a new API key for programmatic access. Requires authentication. Copy the returned key to the api_key environment variable."
+    },
+    {
+      "_id": "req_auth_list_api_keys",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "List API Keys",
+      "url": "{{ _.base_url }}/api/auth/api-keys",
+      "method": "GET",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.access_token }}"
+        }
+      ],
+      "body": {},
+      "description": "List all API keys for the current user. Requires authentication."
     },
     {
       "_id": "req_health_check",
@@ -215,6 +360,10 @@
         {
           "name": "Content-Type",
           "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.access_token }}"
         }
       ],
       "body": {
@@ -234,6 +383,10 @@
         {
           "name": "Content-Type",
           "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.access_token }}"
         }
       ],
       "body": {
@@ -249,9 +402,14 @@
       "name": "Delete Metric",
       "url": "{{ _.base_url }}/api/metrics/{{ _.sample_metric_id }}",
       "method": "DELETE",
-      "headers": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.access_token }}"
+        }
+      ],
       "body": {},
-      "description": "Delete a metric definition by ID"
+      "description": "Delete a metric definition by ID. Requires ADMIN role."
     },
     {
       "_id": "req_get_metric_policy",
@@ -316,6 +474,10 @@
         {
           "name": "Content-Type",
           "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.access_token }}"
         }
       ],
       "body": {
@@ -335,6 +497,10 @@
         {
           "name": "Content-Type",
           "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.access_token }}"
         }
       ],
       "body": {
@@ -354,13 +520,17 @@
         {
           "name": "Content-Type",
           "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.access_token }}"
         }
       ],
       "body": {
         "mimeType": "application/json",
         "text": "{\n  \"dbConfig\": {\n    \"host\": \"{{ _.db_host }}\",\n    \"port\": {{ _.db_port }},\n    \"database\": \"{{ _.db_name }}\",\n    \"user\": \"{{ _.db_user }}\",\n    \"password\": \"{{ _.db_password }}\"\n  },\n  \"metricId\": \"{{ _.sample_metric_id }}\"\n}"
       },
-      "description": "Delete a metric from PostgreSQL database"
+      "description": "Delete a metric from PostgreSQL database. Requires ADMIN role."
     },
     {
       "_id": "req_pg_fetch_domains",
@@ -373,6 +543,10 @@
         {
           "name": "Content-Type",
           "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.access_token }}"
         }
       ],
       "body": {
@@ -392,6 +566,10 @@
         {
           "name": "Content-Type",
           "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.access_token }}"
         }
       ],
       "body": {
@@ -411,13 +589,17 @@
         {
           "name": "Content-Type",
           "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.access_token }}"
         }
       ],
       "body": {
         "mimeType": "application/json",
         "text": "{\n  \"dbConfig\": {\n    \"host\": \"{{ _.db_host }}\",\n    \"port\": {{ _.db_port }},\n    \"database\": \"{{ _.db_name }}\",\n    \"user\": \"{{ _.db_user }}\",\n    \"password\": \"{{ _.db_password }}\"\n  },\n  \"domainId\": \"{{ _.sample_domain_id }}\"\n}"
       },
-      "description": "Delete a business domain from PostgreSQL"
+      "description": "Delete a business domain from PostgreSQL. Requires ADMIN role."
     },
     {
       "_id": "req_pg_fetch_objectives",
@@ -430,6 +612,10 @@
         {
           "name": "Content-Type",
           "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.access_token }}"
         }
       ],
       "body": {
@@ -449,6 +635,10 @@
         {
           "name": "Content-Type",
           "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.access_token }}"
         }
       ],
       "body": {
@@ -468,13 +658,17 @@
         {
           "name": "Content-Type",
           "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.access_token }}"
         }
       ],
       "body": {
         "mimeType": "application/json",
         "text": "{\n  \"dbConfig\": {\n    \"host\": \"{{ _.db_host }}\",\n    \"port\": {{ _.db_port }},\n    \"database\": \"{{ _.db_name }}\",\n    \"user\": \"{{ _.db_user }}\",\n    \"password\": \"{{ _.db_password }}\"\n  },\n  \"objectiveId\": \"{{ _.sample_objective_id }}\"\n}"
       },
-      "description": "Delete an objective and its key results from PostgreSQL (CASCADE)"
+      "description": "Delete an objective and its key results from PostgreSQL (CASCADE). Requires ADMIN role."
     }
   ]
 }

@@ -132,6 +132,12 @@ describe('ConfigLoader', () => {
         metadata: {
           notes: '',
           example_queries: [],
+          version: '1.0.0',
+          created_at: new Date().toISOString(),
+          created_by: 'test-user',
+          last_updated: new Date().toISOString(),
+          last_updated_by: 'test-user',
+          change_history: [],
         },
       },
     ],
@@ -351,6 +357,90 @@ metrics:
       fs.unlinkSync(nestedFile);
       fs.rmdirSync(path.join(testDir, 'nested', 'dir'));
       fs.rmdirSync(path.join(testDir, 'nested'));
+    });
+
+    it('should throw error for unsupported file format in saveToFile', () => {
+      const txtFile = path.join(testDir, 'test.txt');
+      expect(() => {
+        ConfigLoader.saveToFile(txtFile, sampleLegacyMetrics);
+      }).toThrow('Unsupported file format');
+    });
+  });
+
+  describe('saveCatalogToFile error handling', () => {
+    it('should throw error for unsupported file format in saveCatalogToFile', () => {
+      const txtFile = path.join(testDir, 'test.txt');
+      expect(() => {
+        ConfigLoader.saveCatalogToFile(txtFile, sampleCatalog);
+      }).toThrow('Unsupported file format');
+    });
+
+    it('should create directory if it does not exist for catalog', () => {
+      const nestedFile = path.join(testDir, 'nested2', 'dir2', 'catalog.json');
+      ConfigLoader.saveCatalogToFile(nestedFile, sampleCatalog);
+      
+      expect(fs.existsSync(nestedFile)).toBe(true);
+      
+      // Clean up
+      fs.unlinkSync(nestedFile);
+      fs.rmdirSync(path.join(testDir, 'nested2', 'dir2'));
+      fs.rmdirSync(path.join(testDir, 'nested2'));
+    });
+  });
+
+  describe('catalog validation', () => {
+    it('should throw error when catalog is missing required fields', () => {
+      const invalidCatalog = {
+        catalog_version: '1.0.0',
+        // missing catalog_name and metrics
+      };
+      fs.writeFileSync(jsonFile, JSON.stringify(invalidCatalog));
+      
+      expect(() => {
+        ConfigLoader.loadCatalogFromFile(jsonFile);
+      }).toThrow('missing required fields');
+    });
+
+    it('should throw error when catalog metrics is not an array', () => {
+      const invalidCatalog = {
+        catalog_version: '1.0.0',
+        catalog_name: 'Test',
+        metrics: 'not-an-array'
+      };
+      fs.writeFileSync(jsonFile, JSON.stringify(invalidCatalog));
+      
+      expect(() => {
+        ConfigLoader.loadCatalogFromFile(jsonFile);
+      }).toThrow('Catalog metrics must be an array');
+    });
+
+    it('should throw error when metric in catalog is missing required fields', () => {
+      const invalidCatalog = {
+        catalog_version: '1.0.0',
+        catalog_name: 'Test',
+        metrics: [
+          {
+            metric_id: 'M1',
+            // missing name, description, category
+          }
+        ]
+      };
+      fs.writeFileSync(jsonFile, JSON.stringify(invalidCatalog));
+      
+      expect(() => {
+        ConfigLoader.loadCatalogFromFile(jsonFile);
+      }).toThrow('missing required fields');
+    });
+  });
+
+  describe('parseMetricDefinitions error handling', () => {
+    it('should throw error for invalid config format', () => {
+      const invalidData = { invalid: 'format' };
+      fs.writeFileSync(jsonFile, JSON.stringify(invalidData));
+      
+      expect(() => {
+        ConfigLoader.loadFromFile(jsonFile);
+      }).toThrow('Invalid config format');
     });
   });
 });

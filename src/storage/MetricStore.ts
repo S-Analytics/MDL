@@ -67,12 +67,17 @@ function determineChangeType(existing: MetricDefinition, updates: Partial<Metric
   return 'patch'; // Everything else is a patch
 }
 
+import { PaginatedResponse } from '../utils/pagination';
+
 /**
- * Storage interface for Metric Definitions
+ * Overload signatures for findAll to maintain type safety
  */
 export interface IMetricStore {
   create(input: MetricDefinitionInput): Promise<MetricDefinition>;
   findById(id: string): Promise<MetricDefinition | null>;
+  // When pagination is provided, returns paginated response
+  findAll(filters: MetricFilters | undefined, pagination: { page: number; limit: number; offset: number }): Promise<PaginatedResponse<MetricDefinition>>;
+  // When pagination is not provided, returns array
   findAll(filters?: MetricFilters): Promise<MetricDefinition[]>;
   update(id: string, input: Partial<MetricDefinitionInput>): Promise<MetricDefinition>;
   delete(id: string): Promise<boolean>;
@@ -206,7 +211,15 @@ export class InMemoryMetricStore implements IMetricStore {
     return this.metrics.get(id) || null;
   }
 
-  async findAll(filters?: MetricFilters): Promise<MetricDefinition[]> {
+  // Overload signatures
+  async findAll(filters: MetricFilters | undefined, pagination: { page: number; limit: number; offset: number }): Promise<PaginatedResponse<MetricDefinition>>;
+  async findAll(filters?: MetricFilters): Promise<MetricDefinition[]>;
+  
+  // Implementation
+  async findAll(
+    filters?: MetricFilters,
+    pagination?: { page: number; limit: number; offset: number }
+  ): Promise<MetricDefinition[] | PaginatedResponse<MetricDefinition>> {
     let results = Array.from(this.metrics.values());
 
     if (filters) {
@@ -233,6 +246,26 @@ export class InMemoryMetricStore implements IMetricStore {
           m.governance?.technical_owner === filters.owner
         );
       }
+    }
+
+    // If pagination is requested, return paginated response
+    if (pagination) {
+      const { page, limit, offset } = pagination;
+      const total = results.length;
+      const pages = Math.ceil(total / limit) || 1;
+      const paginatedData = results.slice(offset, offset + limit);
+
+      return {
+        data: paginatedData,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages,
+          hasNext: page < pages,
+          hasPrev: page > 1,
+        },
+      };
     }
 
     return results;
