@@ -1,4 +1,4 @@
-import { expect, test } from '../helpers/fixtures';
+import { expect, test, BASE_URL, buildApiUrl } from '../helpers/fixtures';
 
 /**
  * E2E Tests for Metrics CRUD Operations
@@ -16,7 +16,7 @@ import { expect, test } from '../helpers/fixtures';
 test.describe('Metrics Management', () => {
   test.describe('Metrics Listing and Display', () => {
     test('should display metrics grid on dashboard', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       
       // Wait for metrics to load
       await authenticatedPage.waitForSelector('#metricsGrid', { timeout: 10000 });
@@ -31,7 +31,7 @@ test.describe('Metrics Management', () => {
     });
 
     test('should filter metrics by search term', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForSelector('#metricsGrid', { timeout: 10000 });
       
       // Get initial metric count
@@ -56,7 +56,7 @@ test.describe('Metrics Management', () => {
     });
 
     test('should filter metrics by category', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForSelector('#metricsGrid', { timeout: 10000 });
       
       // Get all category options
@@ -83,7 +83,7 @@ test.describe('Metrics Management', () => {
     });
 
     test('should display "No metrics found" when no results', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForSelector('#metricsGrid', { timeout: 10000 });
       
       // Search for something that definitely won't exist
@@ -99,7 +99,7 @@ test.describe('Metrics Management', () => {
 
   test.describe('Metric Creation', () => {
     test('should open metric creation form', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       
       // Click the "Add New Metric" button
       const addButton = authenticatedPage.locator('button:has-text("Add New Metric")').first();
@@ -124,7 +124,7 @@ test.describe('Metrics Management', () => {
     });
 
     test('should create a new metric with required fields only', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       
       // Open form
       await authenticatedPage.locator('button:has-text("Add New Metric")').first().click();
@@ -163,7 +163,7 @@ test.describe('Metrics Management', () => {
     });
 
     test('should create a metric with all fields populated', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       
       // Open form
       await authenticatedPage.locator('button:has-text("Add New Metric")').first().click();
@@ -218,7 +218,7 @@ test.describe('Metrics Management', () => {
     });
 
     test('should validate required fields', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       
       // Open form
       await authenticatedPage.locator('button:has-text("Add New Metric")').first().click();
@@ -240,7 +240,7 @@ test.describe('Metrics Management', () => {
 
   test.describe('Metric Editing', () => {
     test('should open metric edit form', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForSelector('.metric-card', { timeout: 10000 });
       
       // Click edit button on first metric
@@ -267,13 +267,13 @@ test.describe('Metrics Management', () => {
     });
 
     test('should update metric details', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       
       // First create a metric to edit
       const timestamp = Date.now();
       const metricId = `METRIC-EDIT-TEST-${timestamp}`;
       
-      const createResponse = await authenticatedPage.request.post('http://localhost:3000/api/metrics', {
+      const createResponse = await authenticatedPage.request.post(buildApiUrl('metrics'), {
         data: {
           metric_id: metricId,
           name: `Edit Test Metric ${timestamp}`,
@@ -294,7 +294,7 @@ test.describe('Metrics Management', () => {
       expect(createResponse.ok()).toBeTruthy();
       
       // Reload page
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(1000);
       
       // Find and edit the metric
@@ -342,13 +342,13 @@ test.describe('Metrics Management', () => {
     });
 
     test('should preserve unchanged fields when editing', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       
       // Create a metric with specific values
       const timestamp = Date.now();
       const metricId = `METRIC-PRESERVE-${timestamp}`;
       
-      await authenticatedPage.request.post('http://localhost:3000/api/metrics', {
+      await authenticatedPage.request.post(buildApiUrl('metrics'), {
         data: {
           metric_id: metricId,
           name: `Preserve Test ${timestamp}`,
@@ -370,7 +370,7 @@ test.describe('Metrics Management', () => {
         }
       });
       
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(1000);
       
       // Find and edit
@@ -392,7 +392,7 @@ test.describe('Metrics Management', () => {
       await authenticatedPage.waitForTimeout(2000);
       
       // Fetch the metric via API to verify all fields
-      const response = await authenticatedPage.request.get(`http://localhost:3000/api/metrics/${metricId}`);
+      const response = await authenticatedPage.request.get(buildApiUrl(`metrics/${metricId}`));
       expect(response.ok()).toBeTruthy();
       
       const metric = await response.json();
@@ -410,7 +410,7 @@ test.describe('Metrics Management', () => {
       const timestamp = Date.now();
       const metricId = `METRIC-DELETE-${timestamp}`;
       
-      await authenticatedPage.request.post('http://localhost:3000/api/metrics', {
+      await authenticatedPage.request.post(buildApiUrl('metrics'), {
         data: {
           metric_id: metricId,
           name: `Delete Test ${timestamp}`,
@@ -423,7 +423,7 @@ test.describe('Metrics Management', () => {
         }
       });
       
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(1000);
       
       // Find the metric
@@ -456,7 +456,7 @@ test.describe('Metrics Management', () => {
       const timestamp = Date.now();
       const metricId = `METRIC-NODELETE-${timestamp}`;
       
-      await authenticatedPage.request.post('http://localhost:3000/api/metrics', {
+      await authenticatedPage.request.post(buildApiUrl('metrics'), {
         data: {
           metric_id: metricId,
           name: `No Delete Test ${timestamp}`,
@@ -469,7 +469,7 @@ test.describe('Metrics Management', () => {
         }
       });
       
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(1000);
       
       // Find the metric
@@ -502,7 +502,7 @@ test.describe('Metrics Management', () => {
       const timestamp = Date.now();
       const metricId = `METRIC-VERSION-${timestamp}`;
       
-      const createResponse = await authenticatedPage.request.post('http://localhost:3000/api/metrics', {
+      const createResponse = await authenticatedPage.request.post(buildApiUrl('metrics'), {
         data: {
           metric_id: metricId,
           name: `Version Test ${timestamp}`,
@@ -520,7 +520,7 @@ test.describe('Metrics Management', () => {
       const initialVersion = initialMetric.metadata?.version || '1.0.0';
       
       // Update the metric
-      const updateResponse = await authenticatedPage.request.put(`http://localhost:3000/api/metrics/${metricId}`, {
+      const updateResponse = await authenticatedPage.request.put(buildApiUrl(`metrics/${metricId}`), {
         data: {
           description: 'Updated description - version should increment'
         }
@@ -538,7 +538,7 @@ test.describe('Metrics Management', () => {
 
   test.describe('Import/Export Functionality', () => {
     test('should export metrics', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       
       // Look for export button
       const exportButton = authenticatedPage.locator('button:has-text("Export")');
@@ -555,7 +555,7 @@ test.describe('Metrics Management', () => {
         expect(download.suggestedFilename()).toMatch(/metrics.*\.(json|yaml)/);
       } else {
         // Export via API
-        const response = await authenticatedPage.request.get('http://localhost:3000/api/metrics');
+        const response = await authenticatedPage.request.get(buildApiUrl('metrics'));
         expect(response.ok()).toBeTruthy();
         
         const metrics = await response.json();
@@ -570,7 +570,7 @@ test.describe('Metrics Management', () => {
         name: 'Invalid Metric'
       };
       
-      const response = await authenticatedPage.request.post('http://localhost:3000/api/metrics', {
+      const response = await authenticatedPage.request.post(buildApiUrl('metrics'), {
         data: invalidMetric,
         failOnStatusCode: false
       });
@@ -582,7 +582,7 @@ test.describe('Metrics Management', () => {
 
   test.describe('Role-Based Access', () => {
     test('admin should be able to create metrics', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       
       // Verify Add New Metric button is visible
       const addButton = authenticatedPage.locator('button:has-text("Add New Metric")').first();
@@ -590,7 +590,7 @@ test.describe('Metrics Management', () => {
     });
 
     test('editor should be able to create metrics', async ({ editorPage }) => {
-      await editorPage.goto('http://localhost:3000');
+      await editorPage.goto(BASE_URL);
       
       // Verify Add New Metric button is visible for editors
       const addButton = editorPage.locator('button:has-text("Add New Metric")').first();
@@ -598,7 +598,7 @@ test.describe('Metrics Management', () => {
     });
 
     test('viewer should not be able to create metrics', async ({ viewerPage }) => {
-      await viewerPage.goto('http://localhost:3000');
+      await viewerPage.goto(BASE_URL);
       
       // Verify Add New Metric button is not visible for viewers
       const addButton = viewerPage.locator('button:has-text("Add New Metric")').first();
@@ -615,7 +615,7 @@ test.describe('Metrics Management', () => {
 
   test.describe('Metric Statistics', () => {
     test('should display total metrics count', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       
       // Check for statistics display
       const totalMetricsElement = authenticatedPage.locator('#totalMetrics');
@@ -626,7 +626,7 @@ test.describe('Metrics Management', () => {
     });
 
     test('should fetch statistics via API', async ({ authenticatedPage }) => {
-      const response = await authenticatedPage.request.get('http://localhost:3000/api/stats');
+      const response = await authenticatedPage.request.get(buildApiUrl('stats'));
       expect(response.ok()).toBeTruthy();
       
       const stats = await response.json();

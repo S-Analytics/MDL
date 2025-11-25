@@ -1,4 +1,4 @@
-import { expect, test } from '../helpers/fixtures';
+import { expect, test, BASE_URL, buildApiUrl } from '../helpers/fixtures';
 
 /**
  * E2E Tests for User Management (Admin Only)
@@ -16,7 +16,7 @@ import { expect, test } from '../helpers/fixtures';
 test.describe('User Management (Admin)', () => {
   test.describe('User List Display', () => {
     test('should display user management page for admin', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000/admin/users');
+      await authenticatedPage.goto(`${BASE_URL}/admin/users`);
       
       // Wait for page to load
       await authenticatedPage.waitForTimeout(2000);
@@ -32,7 +32,7 @@ test.describe('User Management (Admin)', () => {
     });
 
     test('should show create user button for admin', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000/admin/users');
+      await authenticatedPage.goto(`${BASE_URL}/admin/users`);
       await authenticatedPage.waitForTimeout(2000);
       
       // Check for create button (if user management page exists)
@@ -45,7 +45,7 @@ test.describe('User Management (Admin)', () => {
     });
 
     test('should display existing users in table', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000/admin/users');
+      await authenticatedPage.goto(`${BASE_URL}/admin/users`);
       await authenticatedPage.waitForTimeout(2000);
       
       // Look for user table
@@ -66,7 +66,7 @@ test.describe('User Management (Admin)', () => {
     });
 
     test('should display user roles with badges', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000/admin/users');
+      await authenticatedPage.goto(`${BASE_URL}/admin/users`);
       await authenticatedPage.waitForTimeout(2000);
       
       // Check for role badges
@@ -92,7 +92,7 @@ test.describe('User Management (Admin)', () => {
       const username = `viewer_${timestamp}`;
       const email = `viewer_${timestamp}@test.com`;
       
-      const response = await authenticatedPage.request.post('http://localhost:3000/api/auth/register', {
+      const response = await authenticatedPage.request.post(buildApiUrl('auth/register'), {
         data: {
           username,
           email,
@@ -113,7 +113,7 @@ test.describe('User Management (Admin)', () => {
       const username = `editor_${timestamp}`;
       const email = `editor_${timestamp}@test.com`;
       
-      const response = await authenticatedPage.request.post('http://localhost:3000/api/auth/register', {
+      const response = await authenticatedPage.request.post(buildApiUrl('auth/register'), {
         data: {
           username,
           email,
@@ -134,7 +134,7 @@ test.describe('User Management (Admin)', () => {
       const username = `admin_${timestamp}`;
       const email = `admin_${timestamp}@test.com`;
       
-      const response = await authenticatedPage.request.post('http://localhost:3000/api/auth/register', {
+      const response = await authenticatedPage.request.post(buildApiUrl('auth/register'), {
         data: {
           username,
           email,
@@ -155,7 +155,7 @@ test.describe('User Management (Admin)', () => {
       const username = `weak_${timestamp}`;
       const email = `weak_${timestamp}@test.com`;
       
-      const response = await authenticatedPage.request.post('http://localhost:3000/api/auth/register', {
+      const response = await authenticatedPage.request.post(buildApiUrl('auth/register'), {
         data: {
           username,
           email,
@@ -177,7 +177,7 @@ test.describe('User Management (Admin)', () => {
       const email2 = `user2_${timestamp}@test.com`;
       
       // Create first user
-      const response1 = await authenticatedPage.request.post('http://localhost:3000/api/auth/register', {
+      const response1 = await authenticatedPage.request.post(buildApiUrl('auth/register'), {
         data: {
           username,
           email: email1,
@@ -190,7 +190,7 @@ test.describe('User Management (Admin)', () => {
       expect(response1.ok()).toBeTruthy();
       
       // Try to create second user with same username
-      const response2 = await authenticatedPage.request.post('http://localhost:3000/api/auth/register', {
+      const response2 = await authenticatedPage.request.post(buildApiUrl('auth/register'), {
         data: {
           username, // Same username
           email: email2,
@@ -213,7 +213,7 @@ test.describe('User Management (Admin)', () => {
       const email = `duplicate_${timestamp}@test.com`;
       
       // Create first user
-      const response1 = await authenticatedPage.request.post('http://localhost:3000/api/auth/register', {
+      const response1 = await authenticatedPage.request.post(buildApiUrl('auth/register'), {
         data: {
           username: username1,
           email,
@@ -226,7 +226,7 @@ test.describe('User Management (Admin)', () => {
       expect(response1.ok()).toBeTruthy();
       
       // Try to create second user with same email
-      const response2 = await authenticatedPage.request.post('http://localhost:3000/api/auth/register', {
+      const response2 = await authenticatedPage.request.post(buildApiUrl('auth/register'), {
         data: {
           username: username2,
           email, // Same email
@@ -245,7 +245,7 @@ test.describe('User Management (Admin)', () => {
 
   test.describe('User Editing', () => {
     test('should retrieve user list', async ({ authenticatedPage }) => {
-      const response = await authenticatedPage.request.get('http://localhost:3000/api/auth/users');
+      const response = await authenticatedPage.request.get(buildApiUrl('auth/users'));
       
       expect(response.ok()).toBeTruthy();
       const result = await response.json();
@@ -255,14 +255,14 @@ test.describe('User Management (Admin)', () => {
 
     test('should get specific user by ID', async ({ authenticatedPage }) => {
       // First get list of users
-      const listResponse = await authenticatedPage.request.get('http://localhost:3000/api/auth/users');
+      const listResponse = await authenticatedPage.request.get(buildApiUrl('auth/users'));
       const listResult = await listResponse.json();
       
       if (listResult.users && listResult.users.length > 0) {
         const userId = listResult.users[0].user_id;
         
         // Get specific user
-        const userResponse = await authenticatedPage.request.get(`http://localhost:3000/api/auth/users/${userId}`);
+        const userResponse = await authenticatedPage.request.get(buildApiUrl(`auth/users/${userId}`));
         expect(userResponse.ok()).toBeTruthy();
         
         const userResult = await userResponse.json();
@@ -275,7 +275,7 @@ test.describe('User Management (Admin)', () => {
       const timestamp = Date.now();
       const username = `update_test_${timestamp}`;
       
-      const createResponse = await authenticatedPage.request.post('http://localhost:3000/api/auth/register', {
+      const createResponse = await authenticatedPage.request.post(buildApiUrl('auth/register'), {
         data: {
           username,
           email: `${username}@test.com`,
@@ -290,7 +290,7 @@ test.describe('User Management (Admin)', () => {
       const userId = createResult.user.user_id;
       
       // Update the user
-      const updateResponse = await authenticatedPage.request.put(`http://localhost:3000/api/auth/users/${userId}`, {
+      const updateResponse = await authenticatedPage.request.put(buildApiUrl(`auth/users/${userId}`), {
         data: {
           full_name: 'Updated Name'
         }
@@ -306,7 +306,7 @@ test.describe('User Management (Admin)', () => {
       const timestamp = Date.now();
       const username = `role_change_${timestamp}`;
       
-      const createResponse = await authenticatedPage.request.post('http://localhost:3000/api/auth/register', {
+      const createResponse = await authenticatedPage.request.post(buildApiUrl('auth/register'), {
         data: {
           username,
           email: `${username}@test.com`,
@@ -321,7 +321,7 @@ test.describe('User Management (Admin)', () => {
       const userId = createResult.user.user_id;
       
       // Change role to editor
-      const updateResponse = await authenticatedPage.request.put(`http://localhost:3000/api/auth/users/${userId}`, {
+      const updateResponse = await authenticatedPage.request.put(buildApiUrl(`auth/users/${userId}`), {
         data: {
           role: 'editor'
         }
@@ -337,7 +337,7 @@ test.describe('User Management (Admin)', () => {
       const timestamp = Date.now();
       const username = `status_test_${timestamp}`;
       
-      const createResponse = await authenticatedPage.request.post('http://localhost:3000/api/auth/register', {
+      const createResponse = await authenticatedPage.request.post(buildApiUrl('auth/register'), {
         data: {
           username,
           email: `${username}@test.com`,
@@ -352,7 +352,7 @@ test.describe('User Management (Admin)', () => {
       const userId = createResult.user.user_id;
       
       // Deactivate user
-      const updateResponse = await authenticatedPage.request.put(`http://localhost:3000/api/auth/users/${userId}`, {
+      const updateResponse = await authenticatedPage.request.put(buildApiUrl(`auth/users/${userId}`), {
         data: {
           status: 'inactive'
         }
@@ -370,7 +370,7 @@ test.describe('User Management (Admin)', () => {
       const timestamp = Date.now();
       const username = `delete_test_${timestamp}`;
       
-      const createResponse = await authenticatedPage.request.post('http://localhost:3000/api/auth/register', {
+      const createResponse = await authenticatedPage.request.post(buildApiUrl('auth/register'), {
         data: {
           username,
           email: `${username}@test.com`,
@@ -385,25 +385,25 @@ test.describe('User Management (Admin)', () => {
       const userId = createResult.user.user_id;
       
       // Delete the user
-      const deleteResponse = await authenticatedPage.request.delete(`http://localhost:3000/api/auth/users/${userId}`);
+      const deleteResponse = await authenticatedPage.request.delete(buildApiUrl(`auth/users/${userId}`));
       expect(deleteResponse.ok()).toBeTruthy();
       
       // Verify user is deleted
-      const getResponse = await authenticatedPage.request.get(`http://localhost:3000/api/auth/users/${userId}`);
+      const getResponse = await authenticatedPage.request.get(buildApiUrl(`auth/users/${userId}`));
       expect(getResponse.status()).toBe(404);
     });
 
     test('should return 404 for non-existent user deletion', async ({ authenticatedPage }) => {
       const fakeUserId = '00000000-0000-0000-0000-000000000000';
       
-      const deleteResponse = await authenticatedPage.request.delete(`http://localhost:3000/api/auth/users/${fakeUserId}`);
+      const deleteResponse = await authenticatedPage.request.delete(buildApiUrl(`auth/users/${fakeUserId}`));
       expect(deleteResponse.status()).toBe(404);
     });
   });
 
   test.describe('Role-Based Access Control', () => {
     test('editor should not access user management page', async ({ editorPage }) => {
-      await editorPage.goto('http://localhost:3000/admin/users');
+      await editorPage.goto(`${BASE_URL}/admin/users`);
       await editorPage.waitForTimeout(2000);
       
       // Should either see access denied or be redirected
@@ -415,7 +415,7 @@ test.describe('User Management (Admin)', () => {
     });
 
     test('viewer should not access user management page', async ({ viewerPage }) => {
-      await viewerPage.goto('http://localhost:3000/admin/users');
+      await viewerPage.goto(`${BASE_URL}/admin/users`);
       await viewerPage.waitForTimeout(2000);
       
       // Should either see access denied or be redirected
@@ -427,21 +427,21 @@ test.describe('User Management (Admin)', () => {
     });
 
     test('editor should not be able to list users via API', async ({ editorPage }) => {
-      const response = await editorPage.request.get('http://localhost:3000/api/auth/users');
+      const response = await editorPage.request.get(buildApiUrl('auth/users'));
       
       // Should return 403 Forbidden or 401 Unauthorized
       expect([401, 403]).toContain(response.status());
     });
 
     test('viewer should not be able to list users via API', async ({ viewerPage }) => {
-      const response = await viewerPage.request.get('http://localhost:3000/api/auth/users');
+      const response = await viewerPage.request.get(buildApiUrl('auth/users'));
       
       // Should return 403 Forbidden or 401 Unauthorized
       expect([401, 403]).toContain(response.status());
     });
 
     test('admin can list all users', async ({ authenticatedPage }) => {
-      const response = await authenticatedPage.request.get('http://localhost:3000/api/auth/users');
+      const response = await authenticatedPage.request.get(buildApiUrl('auth/users'));
       
       expect(response.ok()).toBeTruthy();
       const result = await response.json();
@@ -452,7 +452,7 @@ test.describe('User Management (Admin)', () => {
 
   test.describe('User Filtering and Pagination', () => {
     test('should filter users by role', async ({ authenticatedPage }) => {
-      const response = await authenticatedPage.request.get('http://localhost:3000/api/auth/users?role=admin');
+      const response = await authenticatedPage.request.get(buildApiUrl('auth/users?role=admin'));
       
       if (response.ok()) {
         const result = await response.json();
@@ -465,7 +465,7 @@ test.describe('User Management (Admin)', () => {
     });
 
     test('should filter users by status', async ({ authenticatedPage }) => {
-      const response = await authenticatedPage.request.get('http://localhost:3000/api/auth/users?status=active');
+      const response = await authenticatedPage.request.get(buildApiUrl('auth/users?status=active'));
       
       if (response.ok()) {
         const result = await response.json();
@@ -478,7 +478,7 @@ test.describe('User Management (Admin)', () => {
     });
 
     test('should paginate user list', async ({ authenticatedPage }) => {
-      const response = await authenticatedPage.request.get('http://localhost:3000/api/auth/users?limit=5&offset=0');
+      const response = await authenticatedPage.request.get(buildApiUrl('auth/users?limit=5&offset=0'));
       
       if (response.ok()) {
         const result = await response.json();
@@ -500,7 +500,7 @@ test.describe('User Management (Admin)', () => {
       const oldPassword = 'OldPassword123!';
       const newPassword = 'NewPassword123!';
       
-      const createResponse = await authenticatedPage.request.post('http://localhost:3000/api/auth/register', {
+      const createResponse = await authenticatedPage.request.post(buildApiUrl('auth/register'), {
         data: {
           username,
           email: `${username}@test.com`,
@@ -515,7 +515,7 @@ test.describe('User Management (Admin)', () => {
       const accessToken = createResult.tokens.access_token;
       
       // Change password using the user's token
-      const changeResponse = await authenticatedPage.request.post('http://localhost:3000/api/auth/change-password', {
+      const changeResponse = await authenticatedPage.request.post(buildApiUrl('auth/change-password'), {
         headers: {
           'Authorization': `Bearer ${accessToken}`
         },
@@ -528,7 +528,7 @@ test.describe('User Management (Admin)', () => {
       expect(changeResponse.ok()).toBeTruthy();
       
       // Try logging in with new password
-      const loginResponse = await authenticatedPage.request.post('http://localhost:3000/api/auth/login', {
+      const loginResponse = await authenticatedPage.request.post(buildApiUrl('auth/login'), {
         data: {
           username,
           password: newPassword
@@ -546,7 +546,7 @@ test.describe('User Management (Admin)', () => {
       const wrongOldPassword = 'WrongPassword123!';
       const newPassword = 'NewPassword123!';
       
-      const createResponse = await authenticatedPage.request.post('http://localhost:3000/api/auth/register', {
+      const createResponse = await authenticatedPage.request.post(buildApiUrl('auth/register'), {
         data: {
           username,
           email: `${username}@test.com`,
@@ -561,7 +561,7 @@ test.describe('User Management (Admin)', () => {
       const accessToken = createResult.tokens.access_token;
       
       // Try to change password with wrong old password
-      const changeResponse = await authenticatedPage.request.post('http://localhost:3000/api/auth/change-password', {
+      const changeResponse = await authenticatedPage.request.post(buildApiUrl('auth/change-password'), {
         headers: {
           'Authorization': `Bearer ${accessToken}`
         },
@@ -581,7 +581,7 @@ test.describe('User Management (Admin)', () => {
       const timestamp = Date.now();
       const username = `searchable_${timestamp}`;
       
-      await authenticatedPage.request.post('http://localhost:3000/api/auth/register', {
+      await authenticatedPage.request.post(buildApiUrl('auth/register'), {
         data: {
           username,
           email: `${username}@test.com`,
@@ -592,7 +592,7 @@ test.describe('User Management (Admin)', () => {
       });
       
       // Search for the user
-      const searchResponse = await authenticatedPage.request.get(`http://localhost:3000/api/auth/users?search=${username}`);
+      const searchResponse = await authenticatedPage.request.get(buildApiUrl(`auth/users?search=${username}`));
       
       if (searchResponse.ok()) {
         const result = await searchResponse.json();

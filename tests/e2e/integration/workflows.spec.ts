@@ -1,4 +1,4 @@
-import { expect, test } from '../helpers/fixtures';
+import { expect, test, BASE_URL, buildApiUrl } from '../helpers/fixtures';
 
 /**
  * E2E Tests for Integration Workflows
@@ -17,7 +17,7 @@ test.describe('Integration Workflows', () => {
       const timestamp = Date.now();
       
       // Step 1: Create a domain
-      await editorPage.goto('http://localhost:3000');
+      await editorPage.goto(BASE_URL);
       await editorPage.waitForTimeout(2000);
       
       const createDomainBtn = editorPage.locator('button:has-text("Create Domain")');
@@ -87,7 +87,7 @@ test.describe('Integration Workflows', () => {
     test('should link metric to domain and verify relationship', async ({ editorPage }) => {
       const timestamp = Date.now();
       
-      await editorPage.goto('http://localhost:3000');
+      await editorPage.goto(BASE_URL);
       await editorPage.waitForTimeout(2000);
       
       // Create domain via API if PostgreSQL is enabled
@@ -97,7 +97,7 @@ test.describe('Integration Workflows', () => {
       
       if (config) {
         // Create domain
-        const domainResponse = await editorPage.request.post('http://localhost:3000/api/postgres/domains', {
+        const domainResponse = await editorPage.request.post(buildApiUrl('postgres/domains'), {
           data: {
             name: `Domain ${timestamp}`,
             description: 'Test domain',
@@ -142,7 +142,7 @@ test.describe('Integration Workflows', () => {
     test('should delete domain and verify cascading effects', async ({ editorPage }) => {
       const timestamp = Date.now();
       
-      await editorPage.goto('http://localhost:3000');
+      await editorPage.goto(BASE_URL);
       await editorPage.waitForTimeout(2000);
       
       const config = await editorPage.evaluate(() => {
@@ -151,7 +151,7 @@ test.describe('Integration Workflows', () => {
       
       if (config) {
         // Create domain with metrics
-        const domainResponse = await editorPage.request.post('http://localhost:3000/api/postgres/domains', {
+        const domainResponse = await editorPage.request.post(buildApiUrl('postgres/domains'), {
           data: {
             name: `Cascade Test ${timestamp}`,
             description: 'Test cascading delete',
@@ -167,7 +167,7 @@ test.describe('Integration Workflows', () => {
           await editorPage.waitForTimeout(2000);
           
           // Delete domain
-          const deleteResponse = await editorPage.request.delete(`http://localhost:3000/api/postgres/domains/${domainId}`);
+          const deleteResponse = await editorPage.request.delete(buildApiUrl(`postgres/domains/${domainId}`));
           expect(deleteResponse.ok()).toBeTruthy();
           
           await editorPage.reload();
@@ -185,7 +185,7 @@ test.describe('Integration Workflows', () => {
     test('should maintain metric-domain relationship after updates', async ({ editorPage }) => {
       const timestamp = Date.now();
       
-      await editorPage.goto('http://localhost:3000');
+      await editorPage.goto(BASE_URL);
       await editorPage.waitForTimeout(2000);
       
       const config = await editorPage.evaluate(() => {
@@ -194,7 +194,7 @@ test.describe('Integration Workflows', () => {
       
       if (config) {
         // Create two domains
-        const domain1Response = await editorPage.request.post('http://localhost:3000/api/postgres/domains', {
+        const domain1Response = await editorPage.request.post(buildApiUrl('postgres/domains'), {
           data: {
             name: `Domain A ${timestamp}`,
             description: 'First domain',
@@ -202,7 +202,7 @@ test.describe('Integration Workflows', () => {
           }
         });
         
-        const domain2Response = await editorPage.request.post('http://localhost:3000/api/postgres/domains', {
+        const domain2Response = await editorPage.request.post(buildApiUrl('postgres/domains'), {
           data: {
             name: `Domain B ${timestamp}`,
             description: 'Second domain',
@@ -263,7 +263,7 @@ test.describe('Integration Workflows', () => {
       const timestamp = Date.now();
       const metricId = `shared_metric_${timestamp}`;
       
-      await editorPage.goto('http://localhost:3000');
+      await editorPage.goto(BASE_URL);
       await editorPage.waitForTimeout(2000);
       
       // Create a metric
@@ -344,7 +344,7 @@ test.describe('Integration Workflows', () => {
     test('should handle localStorage for objectives', async ({ editorPage }) => {
       const timestamp = Date.now();
       
-      await editorPage.goto('http://localhost:3000');
+      await editorPage.goto(BASE_URL);
       await editorPage.waitForTimeout(2000);
       
       // Create objective via localStorage
@@ -380,7 +380,7 @@ test.describe('Integration Workflows', () => {
     });
 
     test('should handle PostgreSQL for domains when enabled', async ({ editorPage }) => {
-      await editorPage.goto('http://localhost:3000');
+      await editorPage.goto(BASE_URL);
       await editorPage.waitForTimeout(2000);
       
       const config = await editorPage.evaluate(() => {
@@ -391,7 +391,7 @@ test.describe('Integration Workflows', () => {
         const timestamp = Date.now();
         
         // Create domain via PostgreSQL API
-        const response = await editorPage.request.post('http://localhost:3000/api/postgres/domains', {
+        const response = await editorPage.request.post(buildApiUrl('postgres/domains'), {
           data: {
             name: `PG Domain ${timestamp}`,
             description: 'Testing PostgreSQL storage',
@@ -411,14 +411,14 @@ test.describe('Integration Workflows', () => {
         await expect(editorPage.locator(`text=PG Domain ${timestamp}`)).toBeVisible();
         
         // Clean up
-        await editorPage.request.delete(`http://localhost:3000/api/postgres/domains/${result.domain.domain_id}`);
+        await editorPage.request.delete(buildApiUrl(`postgres/domains/${result.domain.domain_id}`));
       }
     });
 
     test('should handle metrics in localStorage', async ({ editorPage }) => {
       const timestamp = Date.now();
       
-      await editorPage.goto('http://localhost:3000');
+      await editorPage.goto(BASE_URL);
       await editorPage.waitForTimeout(2000);
       
       // Create metric via localStorage
@@ -475,7 +475,7 @@ test.describe('Integration Workflows', () => {
     test('should complete full reporting workflow', async ({ editorPage }) => {
       const timestamp = Date.now();
       
-      await editorPage.goto('http://localhost:3000');
+      await editorPage.goto(BASE_URL);
       await editorPage.waitForTimeout(2000);
       
       // Create domain
@@ -484,7 +484,7 @@ test.describe('Integration Workflows', () => {
       });
       
       if (config) {
-        await editorPage.request.post('http://localhost:3000/api/postgres/domains', {
+        await editorPage.request.post(buildApiUrl('postgres/domains'), {
           data: {
             name: `Reporting Domain ${timestamp}`,
             description: 'Domain for reporting test',
@@ -560,7 +560,7 @@ test.describe('Integration Workflows', () => {
     });
 
     test('should handle viewer read-only workflow', async ({ viewerPage }) => {
-      await viewerPage.goto('http://localhost:3000');
+      await viewerPage.goto(BASE_URL);
       await viewerPage.waitForTimeout(2000);
       
       // Viewer should see content but no create buttons
@@ -578,7 +578,7 @@ test.describe('Integration Workflows', () => {
     test('should handle editor create-and-edit workflow', async ({ editorPage }) => {
       const timestamp = Date.now();
       
-      await editorPage.goto('http://localhost:3000');
+      await editorPage.goto(BASE_URL);
       await editorPage.waitForTimeout(2000);
       
       // Editor should see create buttons
@@ -619,16 +619,16 @@ test.describe('Integration Workflows', () => {
 
   test.describe('Error Handling and Recovery', () => {
     test('should handle network errors gracefully', async ({ editorPage }) => {
-      await editorPage.goto('http://localhost:3000');
+      await editorPage.goto(BASE_URL);
       await editorPage.waitForTimeout(2000);
       
       // Simulate network error by requesting invalid endpoint
-      const response = await editorPage.request.get('http://localhost:3000/api/invalid-endpoint');
+      const response = await editorPage.request.get(buildApiUrl('invalid-endpoint'));
       expect(response.status()).toBe(404);
     });
 
     test('should recover from invalid data in localStorage', async ({ editorPage }) => {
-      await editorPage.goto('http://localhost:3000');
+      await editorPage.goto(BASE_URL);
       await editorPage.waitForTimeout(2000);
       
       // Insert invalid data
@@ -653,7 +653,7 @@ test.describe('Integration Workflows', () => {
       const timestamp = Date.now();
       const metricId = `concurrent_${timestamp}`;
       
-      await editorPage.goto('http://localhost:3000');
+      await editorPage.goto(BASE_URL);
       await editorPage.waitForTimeout(2000);
       
       // Create initial metric

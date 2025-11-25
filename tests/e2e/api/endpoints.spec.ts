@@ -1,4 +1,4 @@
-import { expect, test } from '../helpers/fixtures';
+import { expect, test, BASE_URL, buildApiUrl } from '../helpers/fixtures';
 
 /**
  * E2E Tests for API Endpoints
@@ -24,7 +24,7 @@ test.describe('API Endpoints', () => {
         role: 'viewer'
       };
       
-      const response = await authenticatedPage.request.post('http://localhost:3000/api/auth/register', {
+      const response = await authenticatedPage.request.post(buildApiUrl('auth/register'), {
         data: userData
       });
       
@@ -44,7 +44,7 @@ test.describe('API Endpoints', () => {
     test('POST /api/auth/register - should reject weak password', async ({ authenticatedPage }) => {
       const timestamp = Date.now();
       
-      const response = await authenticatedPage.request.post('http://localhost:3000/api/auth/register', {
+      const response = await authenticatedPage.request.post(buildApiUrl('auth/register'), {
         data: {
           username: `weak_${timestamp}`,
           email: `weak_${timestamp}@test.com`,
@@ -65,7 +65,7 @@ test.describe('API Endpoints', () => {
       const password = 'LoginTest123!';
       
       // Register user first
-      await page.request.post('http://localhost:3000/api/auth/register', {
+      await page.request.post(buildApiUrl('auth/register'), {
         data: {
           username,
           email: `${username}@test.com`,
@@ -76,7 +76,7 @@ test.describe('API Endpoints', () => {
       });
       
       // Login
-      const response = await page.request.post('http://localhost:3000/api/auth/login', {
+      const response = await page.request.post(buildApiUrl('auth/login'), {
         data: {
           username,
           password
@@ -92,7 +92,7 @@ test.describe('API Endpoints', () => {
     });
 
     test('POST /api/auth/login - should reject invalid password', async ({ page }) => {
-      const response = await page.request.post('http://localhost:3000/api/auth/login', {
+      const response = await page.request.post(buildApiUrl('auth/login'), {
         data: {
           username: 'nonexistent',
           password: 'wrongpassword'
@@ -109,7 +109,7 @@ test.describe('API Endpoints', () => {
       const username = `refresh_test_${timestamp}`;
       
       // Register and get tokens
-      const registerResponse = await page.request.post('http://localhost:3000/api/auth/register', {
+      const registerResponse = await page.request.post(buildApiUrl('auth/register'), {
         data: {
           username,
           email: `${username}@test.com`,
@@ -123,7 +123,7 @@ test.describe('API Endpoints', () => {
       const refreshToken = registerResult.tokens.refresh_token;
       
       // Refresh token
-      const response = await page.request.post('http://localhost:3000/api/auth/refresh', {
+      const response = await page.request.post(buildApiUrl('auth/refresh'), {
         data: {
           refresh_token: refreshToken
         }
@@ -138,7 +138,7 @@ test.describe('API Endpoints', () => {
     });
 
     test('POST /api/auth/refresh - should reject invalid refresh token', async ({ page }) => {
-      const response = await page.request.post('http://localhost:3000/api/auth/refresh', {
+      const response = await page.request.post(buildApiUrl('auth/refresh'), {
         data: {
           refresh_token: 'invalid-token-12345'
         }
@@ -152,7 +152,7 @@ test.describe('API Endpoints', () => {
 
   test.describe('User Management API', () => {
     test('GET /api/auth/users - should list all users (admin only)', async ({ authenticatedPage }) => {
-      const response = await authenticatedPage.request.get('http://localhost:3000/api/auth/users');
+      const response = await authenticatedPage.request.get(buildApiUrl('auth/users'));
       
       expect(response.ok()).toBeTruthy();
       const result = await response.json();
@@ -163,13 +163,13 @@ test.describe('API Endpoints', () => {
 
     test('GET /api/auth/users/:id - should get specific user', async ({ authenticatedPage }) => {
       // Get list first
-      const listResponse = await authenticatedPage.request.get('http://localhost:3000/api/auth/users');
+      const listResponse = await authenticatedPage.request.get(buildApiUrl('auth/users'));
       const listResult = await listResponse.json();
       
       if (listResult.users && listResult.users.length > 0) {
         const userId = listResult.users[0].user_id;
         
-        const response = await authenticatedPage.request.get(`http://localhost:3000/api/auth/users/${userId}`);
+        const response = await authenticatedPage.request.get(buildApiUrl(`auth/users/${userId}`));
         expect(response.ok()).toBeTruthy();
         
         const result = await response.json();
@@ -181,7 +181,7 @@ test.describe('API Endpoints', () => {
       const timestamp = Date.now();
       
       // Create user
-      const createResponse = await authenticatedPage.request.post('http://localhost:3000/api/auth/register', {
+      const createResponse = await authenticatedPage.request.post(buildApiUrl('auth/register'), {
         data: {
           username: `update_api_${timestamp}`,
           email: `update_api_${timestamp}@test.com`,
@@ -195,7 +195,7 @@ test.describe('API Endpoints', () => {
       const userId = createResult.user.user_id;
       
       // Update user
-      const response = await authenticatedPage.request.put(`http://localhost:3000/api/auth/users/${userId}`, {
+      const response = await authenticatedPage.request.put(buildApiUrl(`auth/users/${userId}`), {
         data: {
           full_name: 'Updated Name'
         }
@@ -210,7 +210,7 @@ test.describe('API Endpoints', () => {
       const timestamp = Date.now();
       
       // Create user
-      const createResponse = await authenticatedPage.request.post('http://localhost:3000/api/auth/register', {
+      const createResponse = await authenticatedPage.request.post(buildApiUrl('auth/register'), {
         data: {
           username: `delete_api_${timestamp}`,
           email: `delete_api_${timestamp}@test.com`,
@@ -224,16 +224,16 @@ test.describe('API Endpoints', () => {
       const userId = createResult.user.user_id;
       
       // Delete user
-      const response = await authenticatedPage.request.delete(`http://localhost:3000/api/auth/users/${userId}`);
+      const response = await authenticatedPage.request.delete(buildApiUrl(`auth/users/${userId}`));
       expect(response.ok()).toBeTruthy();
       
       // Verify deleted
-      const getResponse = await authenticatedPage.request.get(`http://localhost:3000/api/auth/users/${userId}`);
+      const getResponse = await authenticatedPage.request.get(buildApiUrl(`auth/users/${userId}`));
       expect(getResponse.status()).toBe(404);
     });
 
     test('GET /api/auth/users - should filter by role', async ({ authenticatedPage }) => {
-      const response = await authenticatedPage.request.get('http://localhost:3000/api/auth/users?role=admin');
+      const response = await authenticatedPage.request.get(buildApiUrl('auth/users?role=admin'));
       
       if (response.ok()) {
         const result = await response.json();
@@ -245,7 +245,7 @@ test.describe('API Endpoints', () => {
     });
 
     test('GET /api/auth/users - should filter by status', async ({ authenticatedPage }) => {
-      const response = await authenticatedPage.request.get('http://localhost:3000/api/auth/users?status=active');
+      const response = await authenticatedPage.request.get(buildApiUrl('auth/users?status=active'));
       
       if (response.ok()) {
         const result = await response.json();
@@ -257,7 +257,7 @@ test.describe('API Endpoints', () => {
     });
 
     test('GET /api/auth/users - should paginate results', async ({ authenticatedPage }) => {
-      const response = await authenticatedPage.request.get('http://localhost:3000/api/auth/users?limit=5&offset=0');
+      const response = await authenticatedPage.request.get(buildApiUrl('auth/users?limit=5&offset=0'));
       
       if (response.ok()) {
         const result = await response.json();
@@ -268,7 +268,7 @@ test.describe('API Endpoints', () => {
 
   test.describe('Domains API (PostgreSQL)', () => {
     test('GET /api/postgres/domains - should list all domains', async ({ authenticatedPage }) => {
-      const response = await authenticatedPage.request.get('http://localhost:3000/api/postgres/domains');
+      const response = await authenticatedPage.request.get(buildApiUrl('postgres/domains'));
       
       // May return 404 if PostgreSQL not configured
       if (response.ok()) {
@@ -280,7 +280,7 @@ test.describe('API Endpoints', () => {
     test('POST /api/postgres/domains - should create domain', async ({ editorPage }) => {
       const timestamp = Date.now();
       
-      const response = await editorPage.request.post('http://localhost:3000/api/postgres/domains', {
+      const response = await editorPage.request.post(buildApiUrl('postgres/domains'), {
         data: {
           name: `API Domain ${timestamp}`,
           description: 'Created via API',
@@ -294,7 +294,7 @@ test.describe('API Endpoints', () => {
         expect(result.domain.color).toBe('#3498db');
         
         // Clean up
-        await editorPage.request.delete(`http://localhost:3000/api/postgres/domains/${result.domain.domain_id}`);
+        await editorPage.request.delete(buildApiUrl(`postgres/domains/${result.domain.domain_id}`));
       }
     });
 
@@ -302,7 +302,7 @@ test.describe('API Endpoints', () => {
       const timestamp = Date.now();
       
       // Create domain
-      const createResponse = await editorPage.request.post('http://localhost:3000/api/postgres/domains', {
+      const createResponse = await editorPage.request.post(buildApiUrl('postgres/domains'), {
         data: {
           name: `Update Test ${timestamp}`,
           description: 'Original',
@@ -315,7 +315,7 @@ test.describe('API Endpoints', () => {
         const domainId = createResult.domain.domain_id;
         
         // Update domain
-        const updateResponse = await editorPage.request.put(`http://localhost:3000/api/postgres/domains/${domainId}`, {
+        const updateResponse = await editorPage.request.put(buildApiUrl(`postgres/domains/${domainId}`), {
           data: {
             description: 'Updated description'
           }
@@ -326,7 +326,7 @@ test.describe('API Endpoints', () => {
         expect(updateResult.domain.description).toBe('Updated description');
         
         // Clean up
-        await editorPage.request.delete(`http://localhost:3000/api/postgres/domains/${domainId}`);
+        await editorPage.request.delete(buildApiUrl(`postgres/domains/${domainId}`));
       }
     });
 
@@ -334,7 +334,7 @@ test.describe('API Endpoints', () => {
       const timestamp = Date.now();
       
       // Create domain
-      const createResponse = await editorPage.request.post('http://localhost:3000/api/postgres/domains', {
+      const createResponse = await editorPage.request.post(buildApiUrl('postgres/domains'), {
         data: {
           name: `Delete Test ${timestamp}`,
           description: 'To be deleted',
@@ -347,17 +347,17 @@ test.describe('API Endpoints', () => {
         const domainId = createResult.domain.domain_id;
         
         // Delete domain
-        const deleteResponse = await editorPage.request.delete(`http://localhost:3000/api/postgres/domains/${domainId}`);
+        const deleteResponse = await editorPage.request.delete(buildApiUrl(`postgres/domains/${domainId}`));
         expect(deleteResponse.ok()).toBeTruthy();
         
         // Verify deleted
-        const getResponse = await editorPage.request.get(`http://localhost:3000/api/postgres/domains/${domainId}`);
+        const getResponse = await editorPage.request.get(buildApiUrl(`postgres/domains/${domainId}`));
         expect(getResponse.status()).toBe(404);
       }
     });
 
     test('POST /api/postgres/domains - should validate required fields', async ({ editorPage }) => {
-      const response = await editorPage.request.post('http://localhost:3000/api/postgres/domains', {
+      const response = await editorPage.request.post(buildApiUrl('postgres/domains'), {
         data: {
           // Missing required 'name' field
           description: 'Invalid domain'
@@ -372,7 +372,7 @@ test.describe('API Endpoints', () => {
     test('POST /api/postgres/domains - should validate color format', async ({ editorPage }) => {
       const timestamp = Date.now();
       
-      const response = await editorPage.request.post('http://localhost:3000/api/postgres/domains', {
+      const response = await editorPage.request.post(buildApiUrl('postgres/domains'), {
         data: {
           name: `Invalid Color ${timestamp}`,
           description: 'Testing color validation',
@@ -390,7 +390,7 @@ test.describe('API Endpoints', () => {
     test('should handle metrics via localStorage', async ({ editorPage }) => {
       const timestamp = Date.now();
       
-      await editorPage.goto('http://localhost:3000');
+      await editorPage.goto(BASE_URL);
       await editorPage.waitForTimeout(1000);
       
       // Create metric
@@ -430,7 +430,7 @@ test.describe('API Endpoints', () => {
     test('should handle objectives via localStorage', async ({ editorPage }) => {
       const timestamp = Date.now();
       
-      await editorPage.goto('http://localhost:3000');
+      await editorPage.goto(BASE_URL);
       await editorPage.waitForTimeout(1000);
       
       // Create objective
@@ -471,17 +471,17 @@ test.describe('API Endpoints', () => {
 
   test.describe('Error Responses', () => {
     test('should return 404 for non-existent endpoints', async ({ authenticatedPage }) => {
-      const response = await authenticatedPage.request.get('http://localhost:3000/api/nonexistent');
+      const response = await authenticatedPage.request.get(buildApiUrl('nonexistent'));
       expect(response.status()).toBe(404);
     });
 
     test('should return 401 for unauthorized requests', async ({ page }) => {
-      const response = await page.request.get('http://localhost:3000/api/auth/users');
+      const response = await page.request.get(buildApiUrl('auth/users'));
       expect([401, 403]).toContain(response.status());
     });
 
     test('should return 400 for invalid request body', async ({ authenticatedPage }) => {
-      const response = await authenticatedPage.request.post('http://localhost:3000/api/auth/register', {
+      const response = await authenticatedPage.request.post(buildApiUrl('auth/register'), {
         data: {
           // Missing required fields
           username: 'incomplete'
@@ -493,12 +493,12 @@ test.describe('API Endpoints', () => {
 
     test('should return 404 for non-existent resource', async ({ authenticatedPage }) => {
       const fakeId = '00000000-0000-0000-0000-000000000000';
-      const response = await authenticatedPage.request.get(`http://localhost:3000/api/auth/users/${fakeId}`);
+      const response = await authenticatedPage.request.get(buildApiUrl(`auth/users/${fakeId}`));
       expect(response.status()).toBe(404);
     });
 
     test('should handle malformed JSON', async ({ page }) => {
-      const response = await page.request.post('http://localhost:3000/api/auth/login', {
+      const response = await page.request.post(buildApiUrl('auth/login'), {
         headers: {
           'Content-Type': 'application/json'
         },
@@ -511,7 +511,7 @@ test.describe('API Endpoints', () => {
 
   test.describe('Response Format Validation', () => {
     test('successful responses should have consistent format', async ({ authenticatedPage }) => {
-      const response = await authenticatedPage.request.get('http://localhost:3000/api/auth/users');
+      const response = await authenticatedPage.request.get(buildApiUrl('auth/users'));
       
       if (response.ok()) {
         const result = await response.json();
@@ -521,7 +521,7 @@ test.describe('API Endpoints', () => {
     });
 
     test('error responses should have consistent format', async ({ page }) => {
-      const response = await page.request.post('http://localhost:3000/api/auth/login', {
+      const response = await page.request.post(buildApiUrl('auth/login'), {
         data: {
           username: 'nonexistent',
           password: 'invalid'
@@ -535,7 +535,7 @@ test.describe('API Endpoints', () => {
     });
 
     test('should include proper content-type headers', async ({ authenticatedPage }) => {
-      const response = await authenticatedPage.request.get('http://localhost:3000/api/auth/users');
+      const response = await authenticatedPage.request.get(buildApiUrl('auth/users'));
       
       const contentType = response.headers()['content-type'];
       expect(contentType).toContain('application/json');
@@ -545,7 +545,7 @@ test.describe('API Endpoints', () => {
   test.describe('Rate Limiting and Performance', () => {
     test('should handle multiple concurrent requests', async ({ authenticatedPage }) => {
       const requests = Array.from({ length: 10 }, (_, i) => 
-        authenticatedPage.request.get('http://localhost:3000/api/auth/users')
+        authenticatedPage.request.get(buildApiUrl('auth/users'))
       );
       
       const responses = await Promise.all(requests);
@@ -560,7 +560,7 @@ test.describe('API Endpoints', () => {
 
     test('should respond within reasonable time', async ({ authenticatedPage }) => {
       const startTime = Date.now();
-      await authenticatedPage.request.get('http://localhost:3000/api/auth/users');
+      await authenticatedPage.request.get(buildApiUrl('auth/users'));
       const endTime = Date.now();
       
       const duration = endTime - startTime;

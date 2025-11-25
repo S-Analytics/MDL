@@ -1,4 +1,4 @@
-import { expect, test } from '../helpers/fixtures';
+import { expect, test, BASE_URL, buildApiUrl } from '../helpers/fixtures';
 
 /**
  * E2E Tests for Business Domains CRUD Operations
@@ -16,7 +16,7 @@ import { expect, test } from '../helpers/fixtures';
 test.describe('Business Domains Management', () => {
   test.describe('Domains Listing and Display', () => {
     test('should display business domains section', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       
       // Wait for page to load
       await authenticatedPage.waitForSelector('.section', { timeout: 10000 });
@@ -31,7 +31,7 @@ test.describe('Business Domains Management', () => {
     });
 
     test('should display domain cards with metrics count', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(1000);
       
       // Check if any domains exist
@@ -52,7 +52,7 @@ test.describe('Business Domains Management', () => {
     });
 
     test('should display domain colors', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(1000);
       
       // Check if domains have color styling
@@ -70,7 +70,7 @@ test.describe('Business Domains Management', () => {
     });
 
     test('should show domain statistics in header', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       
       // Check for total domains stat card
       const totalDomainsElement = authenticatedPage.locator('#totalDomains');
@@ -83,7 +83,7 @@ test.describe('Business Domains Management', () => {
 
   test.describe('Domain Creation', () => {
     test('should open domain creation form', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       
       // Click Add Domain button
       const addButton = authenticatedPage.locator('button:has-text("Add Domain")').first();
@@ -107,7 +107,7 @@ test.describe('Business Domains Management', () => {
     });
 
     test('should have color picker with default value', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       
       // Open form
       await authenticatedPage.locator('button:has-text("Add Domain")').first().click();
@@ -122,7 +122,7 @@ test.describe('Business Domains Management', () => {
     });
 
     test('should create a new domain with required fields', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       
       // Open form
       await authenticatedPage.locator('button:has-text("Add Domain")').first().click();
@@ -148,7 +148,7 @@ test.describe('Business Domains Management', () => {
       await authenticatedPage.waitForTimeout(2000);
       
       // Verify domain appears in the list
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(1000);
       
       const domainCard = authenticatedPage.locator(`.stat-card:has-text("Test Domain ${timestamp}")`);
@@ -156,7 +156,7 @@ test.describe('Business Domains Management', () => {
     });
 
     test('should create domain with all fields populated', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       
       // Open form
       await authenticatedPage.locator('button:has-text("Add Domain")').first().click();
@@ -180,7 +180,7 @@ test.describe('Business Domains Management', () => {
       await authenticatedPage.waitForTimeout(2000);
       
       // Verify domain exists
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(1000);
       
       const domainCard = authenticatedPage.locator(`.stat-card:has-text("Complete Domain ${timestamp}")`);
@@ -192,7 +192,7 @@ test.describe('Business Domains Management', () => {
     });
 
     test('should validate required fields', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       
       // Open form
       await authenticatedPage.locator('button:has-text("Add Domain")').first().click();
@@ -213,7 +213,7 @@ test.describe('Business Domains Management', () => {
     });
 
     test('should validate email format', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       
       // Open form
       await authenticatedPage.locator('button:has-text("Add Domain")').first().click();
@@ -241,7 +241,7 @@ test.describe('Business Domains Management', () => {
 
   test.describe('Domain Editing', () => {
     test('should open domain edit form', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(1000);
       
       // Check if any domains exist
@@ -272,7 +272,7 @@ test.describe('Business Domains Management', () => {
       const timestamp = Date.now();
       const domainId = `DOMAIN-EDIT-${timestamp}`;
       
-      const createResponse = await authenticatedPage.request.post('http://localhost:3000/api/postgres/domains', {
+      const createResponse = await authenticatedPage.request.post(buildApiUrl('postgres/domains'), {
         data: {
           dbConfig: {
             host: process.env.DB_HOST || 'localhost',
@@ -300,7 +300,7 @@ test.describe('Business Domains Management', () => {
         return;
       }
       
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(1000);
       
       // Find and edit the domain
@@ -324,7 +324,7 @@ test.describe('Business Domains Management', () => {
       await authenticatedPage.waitForTimeout(2000);
       
       // Verify updates
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(1000);
       
       const updatedCard = authenticatedPage.locator(`.stat-card:has-text("Edit Test ${timestamp}")`);
@@ -338,7 +338,7 @@ test.describe('Business Domains Management', () => {
       const timestamp = Date.now();
       const domainId = `DOMAIN-COLOR-${timestamp}`;
       
-      const createResponse = await authenticatedPage.request.post('http://localhost:3000/api/postgres/domains', {
+      const createResponse = await authenticatedPage.request.post(buildApiUrl('postgres/domains'), {
         data: {
           dbConfig: {
             host: process.env.DB_HOST || 'localhost',
@@ -363,7 +363,7 @@ test.describe('Business Domains Management', () => {
         return;
       }
       
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(1000);
       
       // Find domain
@@ -387,7 +387,7 @@ test.describe('Business Domains Management', () => {
       await authenticatedPage.waitForTimeout(2000);
       
       // Verify color changed
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(1000);
       
       const updatedCard = authenticatedPage.locator(`.stat-card:has-text("Color Test ${timestamp}")`);
@@ -399,7 +399,7 @@ test.describe('Business Domains Management', () => {
       const timestamp = Date.now();
       const domainId = `DOMAIN-TIERS-${timestamp}`;
       
-      const createResponse = await authenticatedPage.request.post('http://localhost:3000/api/postgres/domains', {
+      const createResponse = await authenticatedPage.request.post(buildApiUrl('postgres/domains'), {
         data: {
           dbConfig: {
             host: process.env.DB_HOST || 'localhost',
@@ -425,7 +425,7 @@ test.describe('Business Domains Management', () => {
         return;
       }
       
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(1000);
       
       // Find and edit
@@ -447,7 +447,7 @@ test.describe('Business Domains Management', () => {
       await authenticatedPage.waitForTimeout(2000);
       
       // Verify updates
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(1000);
       
       const updatedCard = authenticatedPage.locator(`.stat-card:has-text("Tiers Test ${timestamp}")`);
@@ -462,7 +462,7 @@ test.describe('Business Domains Management', () => {
       const timestamp = Date.now();
       const domainId = `DOMAIN-DELETE-${timestamp}`;
       
-      const createResponse = await authenticatedPage.request.post('http://localhost:3000/api/postgres/domains', {
+      const createResponse = await authenticatedPage.request.post(buildApiUrl('postgres/domains'), {
         data: {
           dbConfig: {
             host: process.env.DB_HOST || 'localhost',
@@ -486,7 +486,7 @@ test.describe('Business Domains Management', () => {
         return;
       }
       
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(1000);
       
       // Find the domain
@@ -504,7 +504,7 @@ test.describe('Business Domains Management', () => {
       await authenticatedPage.waitForTimeout(2000);
       
       // Verify domain is gone
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(1000);
       
       const deletedCard = authenticatedPage.locator(`.stat-card:has-text("Delete Test ${timestamp}")`);
@@ -515,7 +515,7 @@ test.describe('Business Domains Management', () => {
       const timestamp = Date.now();
       const domainId = `DOMAIN-NODELETE-${timestamp}`;
       
-      const createResponse = await authenticatedPage.request.post('http://localhost:3000/api/postgres/domains', {
+      const createResponse = await authenticatedPage.request.post(buildApiUrl('postgres/domains'), {
         data: {
           dbConfig: {
             host: process.env.DB_HOST || 'localhost',
@@ -539,7 +539,7 @@ test.describe('Business Domains Management', () => {
         return;
       }
       
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(1000);
       
       // Find the domain
@@ -556,7 +556,7 @@ test.describe('Business Domains Management', () => {
       await authenticatedPage.waitForTimeout(1000);
       
       // Verify domain still exists
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(1000);
       
       await expect(domainCard).toBeVisible();
@@ -565,7 +565,7 @@ test.describe('Business Domains Management', () => {
 
   test.describe('Domain-Metrics Relationship', () => {
     test('should show correct metrics count for domain', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(1000);
       
       // Get a domain card
@@ -586,7 +586,7 @@ test.describe('Business Domains Management', () => {
     });
 
     test('should update metrics count when metric is created with domain', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(1000);
       
       // Get initial counts
@@ -604,7 +604,7 @@ test.describe('Business Domains Management', () => {
       
       // Create a metric in this domain
       const timestamp = Date.now();
-      await authenticatedPage.request.post('http://localhost:3000/api/metrics', {
+      await authenticatedPage.request.post(buildApiUrl('metrics'), {
         data: {
           metric_id: `METRIC-DOMAIN-TEST-${timestamp}`,
           name: `Domain Metric ${timestamp}`,
@@ -618,7 +618,7 @@ test.describe('Business Domains Management', () => {
       });
       
       // Refresh and check count
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(1000);
       
       const updatedCard = authenticatedPage.locator(`.stat-card:has-text("${domainName}")`).first();
@@ -630,7 +630,7 @@ test.describe('Business Domains Management', () => {
 
   test.describe('Role-Based Access', () => {
     test('admin should be able to create domains', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       
       // Verify Add Domain button is visible
       const addButton = authenticatedPage.locator('button:has-text("Add Domain")').first();
@@ -638,7 +638,7 @@ test.describe('Business Domains Management', () => {
     });
 
     test('editor should be able to create domains', async ({ editorPage }) => {
-      await editorPage.goto('http://localhost:3000');
+      await editorPage.goto(BASE_URL);
       
       // Verify Add Domain button is visible for editors
       const addButton = editorPage.locator('button:has-text("Add Domain")').first();
@@ -646,7 +646,7 @@ test.describe('Business Domains Management', () => {
     });
 
     test('viewer should not be able to create domains', async ({ viewerPage }) => {
-      await viewerPage.goto('http://localhost:3000');
+      await viewerPage.goto(BASE_URL);
       
       // Verify Add Domain button is not visible for viewers
       const addButton = viewerPage.locator('button:has-text("Add Domain")').first();
@@ -662,7 +662,7 @@ test.describe('Business Domains Management', () => {
 
   test.describe('Visual Consistency', () => {
     test('domain colors should be consistent across views', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(1000);
       
       const domainCards = authenticatedPage.locator('.stat-card[style*="border-left"]');
@@ -689,7 +689,7 @@ test.describe('Business Domains Management', () => {
     });
 
     test('domain cards should have proper spacing and layout', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(1000);
       
       const domainCards = authenticatedPage.locator('.stat-card');

@@ -1,4 +1,4 @@
-import { expect, test } from '../helpers/fixtures';
+import { expect, test, BASE_URL, buildApiUrl } from '../helpers/fixtures';
 
 /**
  * E2E Tests for Settings and Configuration
@@ -14,7 +14,7 @@ import { expect, test } from '../helpers/fixtures';
 test.describe('Settings and Configuration', () => {
   test.describe('Settings Modal', () => {
     test('should open settings modal', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(2000);
       
       // Look for settings button (gear icon or "Settings" text)
@@ -33,7 +33,7 @@ test.describe('Settings and Configuration', () => {
     });
 
     test('should display configuration sections', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(2000);
       
       const settingsBtn = authenticatedPage.locator('button:has-text("Settings"), button[aria-label="Settings"]').first();
@@ -59,7 +59,7 @@ test.describe('Settings and Configuration', () => {
     });
 
     test('should close settings modal', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(2000);
       
       const settingsBtn = authenticatedPage.locator('button:has-text("Settings")').first();
@@ -86,7 +86,7 @@ test.describe('Settings and Configuration', () => {
 
   test.describe('Database Configuration', () => {
     test('should display database connection fields', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(2000);
       
       const settingsBtn = authenticatedPage.locator('button:has-text("Settings")').first();
@@ -112,7 +112,7 @@ test.describe('Settings and Configuration', () => {
     });
 
     test('should test database connection', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(2000);
       
       const settingsBtn = authenticatedPage.locator('button:has-text("Settings")').first();
@@ -143,7 +143,7 @@ test.describe('Settings and Configuration', () => {
     });
 
     test('should validate connection parameters', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(2000);
       
       const settingsBtn = authenticatedPage.locator('button:has-text("Settings")').first();
@@ -177,7 +177,7 @@ test.describe('Settings and Configuration', () => {
 
   test.describe('Storage Backend Configuration', () => {
     test('should display storage options', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(2000);
       
       const settingsBtn = authenticatedPage.locator('button:has-text("Settings")').first();
@@ -203,7 +203,7 @@ test.describe('Settings and Configuration', () => {
     });
 
     test('should show current storage backend', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(2000);
       
       // Check app config for storage backend
@@ -215,7 +215,7 @@ test.describe('Settings and Configuration', () => {
     });
 
     test('should persist storage configuration', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(2000);
       
       // Store current config
@@ -259,7 +259,7 @@ test.describe('Settings and Configuration', () => {
 
   test.describe('PostgreSQL Configuration', () => {
     test('should handle PostgreSQL connection settings', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(2000);
       
       const settingsBtn = authenticatedPage.locator('button:has-text("Settings")').first();
@@ -290,7 +290,7 @@ test.describe('Settings and Configuration', () => {
     });
 
     test('should validate PostgreSQL connection', async ({ authenticatedPage }) => {
-      const response = await authenticatedPage.request.get('http://localhost:3000/api/postgres/domains');
+      const response = await authenticatedPage.request.get(buildApiUrl('postgres/domains'));
       
       // Either succeeds (PostgreSQL configured) or returns 404/500 (not configured)
       const isConfigured = response.ok();
@@ -300,7 +300,7 @@ test.describe('Settings and Configuration', () => {
     });
 
     test('should handle PostgreSQL connection errors', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(2000);
       
       const settingsBtn = authenticatedPage.locator('button:has-text("Settings")').first();
@@ -331,7 +331,7 @@ test.describe('Settings and Configuration', () => {
 
   test.describe('System Preferences', () => {
     test('should display theme options', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(2000);
       
       const settingsBtn = authenticatedPage.locator('button:has-text("Settings")').first();
@@ -357,7 +357,7 @@ test.describe('Settings and Configuration', () => {
     });
 
     test('should display language preferences', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(2000);
       
       const settingsBtn = authenticatedPage.locator('button:has-text("Settings")').first();
@@ -381,7 +381,7 @@ test.describe('Settings and Configuration', () => {
     });
 
     test('should persist user preferences', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(2000);
       
       // Set a preference
@@ -407,7 +407,7 @@ test.describe('Settings and Configuration', () => {
 
   test.describe('Configuration Import/Export', () => {
     test('should export configuration', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(2000);
       
       const settingsBtn = authenticatedPage.locator('button:has-text("Settings")').first();
@@ -431,7 +431,7 @@ test.describe('Settings and Configuration', () => {
     });
 
     test('should display import option', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(2000);
       
       const settingsBtn = authenticatedPage.locator('button:has-text("Settings")').first();
@@ -452,7 +452,7 @@ test.describe('Settings and Configuration', () => {
 
   test.describe('Configuration Validation', () => {
     test('should validate database port number', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(2000);
       
       const settingsBtn = authenticatedPage.locator('button:has-text("Settings")').first();
@@ -482,7 +482,7 @@ test.describe('Settings and Configuration', () => {
     });
 
     test('should validate email format', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(2000);
       
       const settingsBtn = authenticatedPage.locator('button:has-text("Settings")').first();
@@ -506,7 +506,7 @@ test.describe('Settings and Configuration', () => {
     });
 
     test('should validate required fields', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(2000);
       
       const settingsBtn = authenticatedPage.locator('button:has-text("Settings")').first();
@@ -542,7 +542,7 @@ test.describe('Settings and Configuration', () => {
 
   test.describe('Real-time Configuration Updates', () => {
     test('should apply changes immediately', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(2000);
       
       const settingsBtn = authenticatedPage.locator('button:has-text("Settings")').first();
@@ -572,7 +572,7 @@ test.describe('Settings and Configuration', () => {
     });
 
     test('should require confirmation for destructive changes', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(2000);
       
       const settingsBtn = authenticatedPage.locator('button:has-text("Settings")').first();

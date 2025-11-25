@@ -1,4 +1,5 @@
 import { test as base, Page } from '@playwright/test';
+import { BASE_URL, buildApiUrl } from './config';
 
 /**
  * E2E Test Fixtures
@@ -30,7 +31,7 @@ async function createUserAndLogin(
   const uniqueEmail = `${username}_${timestamp}@test.com`;
 
   // Register the user via API
-  const response = await page.request.post('http://localhost:3000/api/auth/register', {
+  const response = await page.request.post(buildApiUrl('auth/register'), {
     data: {
       username: uniqueUsername,
       email: uniqueEmail,
@@ -54,7 +55,7 @@ async function createUserAndLogin(
   }
 
   // Set the tokens in localStorage
-  await page.goto('http://localhost:3000');
+  await page.goto(BASE_URL);
   await page.evaluate(({ token, refresh, userData }) => {
     localStorage.setItem('accessToken', token);
     if (refresh) localStorage.setItem('refreshToken', refresh);
@@ -62,7 +63,7 @@ async function createUserAndLogin(
   }, { token: accessToken, refresh: refreshToken, userData: user });
 
   // Navigate to home page to activate session
-  await page.goto('http://localhost:3000');
+  await page.goto(BASE_URL);
 }
 
 /**
@@ -73,14 +74,14 @@ async function loginWithCredentials(
   username: string,
   password: string
 ): Promise<void> {
-  await page.goto('http://localhost:3000/auth/login');
+  await page.goto(`${BASE_URL}/auth/login`);
   
   await page.fill('input[name="username"], input[id="username"]', username);
   await page.fill('input[name="password"], input[id="password"]', password);
   await page.click('button[type="submit"]');
   
   // Wait for navigation to complete
-  await page.waitForURL('http://localhost:3000/**', { timeout: 10000 });
+  await page.waitForURL(`${BASE_URL}/**`, { timeout: 10000 });
 }
 
 /**
@@ -95,7 +96,7 @@ async function isAuthenticated(page: Page): Promise<boolean> {
  * Helper function to logout
  */
 async function logout(page: Page): Promise<void> {
-  await page.goto('http://localhost:3000');
+  await page.goto(BASE_URL);
   await page.click('button:has-text("Logout")', { timeout: 5000 }).catch(() => {
     // Logout button might not be visible, clear storage directly
   });
@@ -146,4 +147,9 @@ export { expect } from '@playwright/test';
  * Export helper functions for direct use in tests
  */
 export { createUserAndLogin, isAuthenticated, loginWithCredentials, logout };
+
+/**
+ * Export config helpers for direct use in tests
+ */
+  export { API_URL, BASE_URL, buildApiUrl, buildUrl } from './config';
 

@@ -1,4 +1,4 @@
-import { expect, test } from '../helpers/fixtures';
+import { BASE_URL, buildApiUrl, expect, test } from '../helpers/fixtures';
 
 /**
  * E2E Tests: User Registration Flow
@@ -12,7 +12,7 @@ import { expect, test } from '../helpers/fixtures';
 
 test.describe('User Registration', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:3000/auth/register');
+    await page.goto(`${BASE_URL}/auth/register`);
   });
 
   test('should display registration page', async ({ page }) => {
@@ -56,7 +56,7 @@ test.describe('User Registration', () => {
     const timestamp = Date.now();
     const username = `existinguser_${timestamp}`;
     
-    await page.request.post('http://localhost:3000/api/auth/register', {
+    await page.request.post(buildApiUrl('auth/register'), {
       data: {
         username: username,
         email: `${username}@test.com`,
@@ -88,7 +88,7 @@ test.describe('User Registration', () => {
     const timestamp = Date.now();
     const email = `existing_${timestamp}@test.com`;
     
-    await page.request.post('http://localhost:3000/api/auth/register', {
+    await page.request.post(buildApiUrl('auth/register'), {
       data: {
         username: `user_${timestamp}`,
         email: email,

@@ -1,4 +1,4 @@
-import { expect, test } from '../helpers/fixtures';
+import { expect, test, BASE_URL, buildApiUrl } from '../helpers/fixtures';
 
 /**
  * E2E Tests for Objectives & Key Results (OKR) Operations
@@ -17,7 +17,7 @@ import { expect, test } from '../helpers/fixtures';
 test.describe('Objectives & Key Results Management', () => {
   test.describe('Objectives Listing and Display', () => {
     test('should display objectives section', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       
       // Wait for page to load
       await authenticatedPage.waitForSelector('.section', { timeout: 10000 });
@@ -32,7 +32,7 @@ test.describe('Objectives & Key Results Management', () => {
     });
 
     test('should display objective cards with key results count', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(1000);
       
       // Check if any objectives exist
@@ -52,7 +52,7 @@ test.describe('Objectives & Key Results Management', () => {
     });
 
     test('should show objectives statistics in header', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       
       // Check for total objectives stat card
       const totalObjectivesElement = authenticatedPage.locator('#totalObjectives');
@@ -65,7 +65,7 @@ test.describe('Objectives & Key Results Management', () => {
 
   test.describe('Objective Creation', () => {
     test('should open objective creation form', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       
       // Click Add Objective button
       const addButton = authenticatedPage.locator('button:has-text("Add Objective")').first();
@@ -98,7 +98,7 @@ test.describe('Objectives & Key Results Management', () => {
     });
 
     test('should have "Add Key Result" button', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       
       // Open form
       await authenticatedPage.locator('button:has-text("Add Objective")').first().click();
@@ -110,7 +110,7 @@ test.describe('Objectives & Key Results Management', () => {
     });
 
     test('should create objective with one key result', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       
       // Open form
       await authenticatedPage.locator('button:has-text("Add Objective")').first().click();
@@ -154,7 +154,7 @@ test.describe('Objectives & Key Results Management', () => {
       await authenticatedPage.waitForTimeout(2000);
       
       // Verify objective appears in the list
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(1000);
       
       const objectiveCard = authenticatedPage.locator(`#objectivesGrid .metric-card:has-text("Test Objective ${timestamp}")`);
@@ -162,7 +162,7 @@ test.describe('Objectives & Key Results Management', () => {
     });
 
     test('should create objective with multiple key results', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       
       // Open form
       await authenticatedPage.locator('button:has-text("Add Objective")').first().click();
@@ -230,7 +230,7 @@ test.describe('Objectives & Key Results Management', () => {
       await authenticatedPage.waitForTimeout(2000);
       
       // Verify objective exists
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(1000);
       
       const objectiveCard = authenticatedPage.locator(`#objectivesGrid .metric-card:has-text("Multi KR Objective ${timestamp}")`);
@@ -241,7 +241,7 @@ test.describe('Objectives & Key Results Management', () => {
     });
 
     test('should validate required fields', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       
       // Open form
       await authenticatedPage.locator('button:has-text("Add Objective")').first().click();
@@ -261,7 +261,7 @@ test.describe('Objectives & Key Results Management', () => {
     });
 
     test('should validate date range (end date after start date)', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       
       // Open form
       await authenticatedPage.locator('button:has-text("Add Objective")').first().click();
@@ -303,7 +303,7 @@ test.describe('Objectives & Key Results Management', () => {
 
   test.describe('Key Results Management', () => {
     test('should add multiple key results dynamically', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       
       // Open form
       await authenticatedPage.locator('button:has-text("Add Objective")').first().click();
@@ -329,7 +329,7 @@ test.describe('Objectives & Key Results Management', () => {
     });
 
     test('should remove key results', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       
       // Open form
       await authenticatedPage.locator('button:has-text("Add Objective")').first().click();
@@ -354,7 +354,7 @@ test.describe('Objectives & Key Results Management', () => {
     });
 
     test('should allow linking metrics to key results', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       
       // Open form
       await authenticatedPage.locator('button:has-text("Add Objective")').first().click();
@@ -374,7 +374,7 @@ test.describe('Objectives & Key Results Management', () => {
 
   test.describe('Objective Editing', () => {
     test('should open objective edit form', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(1000);
       
       // Check if any objectives exist
@@ -434,7 +434,7 @@ test.describe('Objectives & Key Results Management', () => {
       };
       
       // Save via localStorage (simulating creation)
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.evaluate((obj) => {
         const objectives = JSON.parse(localStorage.getItem('mdl_objectives') || '[]');
         objectives.push(obj);
@@ -442,7 +442,7 @@ test.describe('Objectives & Key Results Management', () => {
       }, objective);
       
       // Reload to show the objective
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(1000);
       
       // Find and edit the objective
@@ -467,7 +467,7 @@ test.describe('Objectives & Key Results Management', () => {
       await authenticatedPage.waitForTimeout(2000);
       
       // Verify updates
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(1000);
       
       const updatedCard = authenticatedPage.locator(`#objectivesGrid .metric-card:has-text("Edit Test ${timestamp}")`);
@@ -505,14 +505,14 @@ test.describe('Objectives & Key Results Management', () => {
         ]
       };
       
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.evaluate((obj) => {
         const objectives = JSON.parse(localStorage.getItem('mdl_objectives') || '[]');
         objectives.push(obj);
         localStorage.setItem('mdl_objectives', JSON.stringify(objectives));
       }, objective);
       
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(1000);
       
       // Find and edit
@@ -533,7 +533,7 @@ test.describe('Objectives & Key Results Management', () => {
       await authenticatedPage.waitForTimeout(2000);
       
       // Verify by re-editing and checking the value
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(1000);
       
       const updatedCard = authenticatedPage.locator(`#objectivesGrid .metric-card:has-text("KR Edit Test ${timestamp}")`);
@@ -565,14 +565,14 @@ test.describe('Objectives & Key Results Management', () => {
         key_results: []
       };
       
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.evaluate((obj) => {
         const objectives = JSON.parse(localStorage.getItem('mdl_objectives') || '[]');
         objectives.push(obj);
         localStorage.setItem('mdl_objectives', JSON.stringify(objectives));
       }, objective);
       
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(1000);
       
       // Find the objective
@@ -590,7 +590,7 @@ test.describe('Objectives & Key Results Management', () => {
       await authenticatedPage.waitForTimeout(2000);
       
       // Verify objective is gone
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(1000);
       
       const deletedCard = authenticatedPage.locator(`#objectivesGrid .metric-card:has-text("Delete Test ${timestamp}")`);
@@ -614,14 +614,14 @@ test.describe('Objectives & Key Results Management', () => {
         key_results: []
       };
       
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.evaluate((obj) => {
         const objectives = JSON.parse(localStorage.getItem('mdl_objectives') || '[]');
         objectives.push(obj);
         localStorage.setItem('mdl_objectives', JSON.stringify(objectives));
       }, objective);
       
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(1000);
       
       // Find the objective
@@ -638,7 +638,7 @@ test.describe('Objectives & Key Results Management', () => {
       await authenticatedPage.waitForTimeout(1000);
       
       // Verify objective still exists
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(1000);
       
       await expect(objectiveCard).toBeVisible();
@@ -647,7 +647,7 @@ test.describe('Objectives & Key Results Management', () => {
 
   test.describe('Progress and Status', () => {
     test('should display objective with status badge', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(1000);
       
       // Check if objectives exist
@@ -697,14 +697,14 @@ test.describe('Objectives & Key Results Management', () => {
         ]
       };
       
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.evaluate((obj) => {
         const objectives = JSON.parse(localStorage.getItem('mdl_objectives') || '[]');
         objectives.push(obj);
         localStorage.setItem('mdl_objectives', JSON.stringify(objectives));
       }, objective);
       
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(1000);
       
       // Find objective card
@@ -720,7 +720,7 @@ test.describe('Objectives & Key Results Management', () => {
 
   test.describe('Role-Based Access', () => {
     test('admin should be able to create objectives', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       
       // Verify Add Objective button is visible
       const addButton = authenticatedPage.locator('button:has-text("Add Objective")').first();
@@ -728,7 +728,7 @@ test.describe('Objectives & Key Results Management', () => {
     });
 
     test('editor should be able to create objectives', async ({ editorPage }) => {
-      await editorPage.goto('http://localhost:3000');
+      await editorPage.goto(BASE_URL);
       
       // Verify Add Objective button is visible for editors
       const addButton = editorPage.locator('button:has-text("Add Objective")').first();
@@ -736,7 +736,7 @@ test.describe('Objectives & Key Results Management', () => {
     });
 
     test('viewer should not be able to create objectives', async ({ viewerPage }) => {
-      await viewerPage.goto('http://localhost:3000');
+      await viewerPage.goto(BASE_URL);
       
       // Verify Add Objective button is not visible for viewers
       const addButton = viewerPage.locator('button:has-text("Add Objective")').first();
@@ -752,7 +752,7 @@ test.describe('Objectives & Key Results Management', () => {
 
   test.describe('Data Export', () => {
     test('should have download objective report button', async ({ authenticatedPage }) => {
-      await authenticatedPage.goto('http://localhost:3000');
+      await authenticatedPage.goto(BASE_URL);
       await authenticatedPage.waitForTimeout(1000);
       
       // Check if objectives exist
