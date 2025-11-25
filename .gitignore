@@ -43,6 +43,7 @@ jspm_packages/
 .mdl/
 playwright-report/
 test-results/
+test-results.json
 
 # Snowpack dependency directory (https://snowpack.dev/)
 web_modules/
