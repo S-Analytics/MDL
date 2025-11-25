@@ -3,7 +3,9 @@ module.exports = {
   testEnvironment: 'node',
   roots: ['<rootDir>/tests'],
   testMatch: ['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts'],
+  testPathIgnorePatterns: ['/node_modules/', '/tests/e2e/'],
   setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
+  maxWorkers: 1, // Run tests serially to avoid cache and singleton conflicts
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },

@@ -34,6 +34,7 @@ export async function createTestServer(options: TestServerOptions = {}): Promise
   // Set test environment
   process.env.NODE_ENV = 'test';
   process.env.AUTH_ENABLED = authEnabled ? 'true' : 'false';
+  process.env.ENABLE_CACHE = 'false'; // Disable caching in tests to avoid stale data
 
   // Create user store for auth testing
   let testUserStore = userStore;

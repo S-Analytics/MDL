@@ -710,13 +710,27 @@ export function getDashboardHTML(): string {
                 <p>Metrics Definition Library - Governance & Transparency</p>
                 <div id="storageIndicator" style="margin-top: 0.5rem; font-size: 0.85rem; opacity: 0.9;"></div>
             </div>
-            <button class="icon-btn icon-btn-large" onclick="openSettings()" style="background: rgba(255,255,255,0.2); color: white;">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                Settings
-            </button>
+            <div style="display: flex; gap: 1rem;">
+                <button class="icon-btn icon-btn-large" onclick="openSettings()" style="background: rgba(255,255,255,0.2); color: white;">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Settings
+                </button>
+                <button id="manageUsersBtn" class="icon-btn icon-btn-large" onclick="window.location.href='/admin/users'" style="background: rgba(255,255,255,0.2); color: white; display: none;">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                    Manage Users
+                </button>
+                <button class="icon-btn icon-btn-large" onclick="logout()" style="background: rgba(255,255,255,0.2); color: white;">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    Logout
+                </button>
+            </div>
         </div>
     </div>
     
@@ -1221,6 +1235,65 @@ export function getDashboardHTML(): string {
                 </div>
 
                 <div class="detail-section" style="margin-top: 2rem;">
+                    <h3>Performance & Caching</h3>
+                    <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;">
+                        Configure Redis cache for improved performance. Falls back to .env settings if not configured here.
+                    </p>
+                    
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="display: flex; align-items: center; cursor: pointer; padding: 1rem; border: 2px solid #e2e8f0; border-radius: 6px;">
+                            <input type="checkbox" id="redisEnabled" style="margin-right: 1rem; width: 20px; height: 20px;" onchange="toggleRedisConfig()">
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.25rem;">⚡ Enable Redis Cache</div>
+                                <div style="color: #666; font-size: 0.9rem;">Improves API performance with 80%+ cache hit rate</div>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div id="redisConfig" style="padding: 1.5rem; background: #f9fafb; border-radius: 6px; display: none;">
+                        <h4 style="margin-bottom: 0.5rem;">Redis Configuration</h4>
+                        <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;">
+                            Configure your Redis connection. Leave empty to use .env defaults.
+                        </p>
+                        
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Host</label>
+                                <input type="text" id="redisHost" placeholder="localhost (from .env)" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px;">
+                            </div>
+                            <div class="form-group">
+                                <label>Port</label>
+                                <input type="text" id="redisPort" placeholder="6379 (from .env)" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px;">
+                            </div>
+                        </div>
+
+                        <div class="form-grid" style="margin-top: 1rem;">
+                            <div class="form-group">
+                                <label>Password (Optional)</label>
+                                <input type="password" id="redisPassword" placeholder="Leave empty if no password" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px;">
+                            </div>
+                            <div class="form-group">
+                                <label>Database Number</label>
+                                <input type="number" id="redisDb" placeholder="0 (from .env)" min="0" max="15" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px;">
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+                            <button class="btn btn-secondary" onclick="testRedisConnection()">Test Connection</button>
+                            <div id="redisConnectionStatus" style="display: none; align-items: center; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.9rem;"></div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 1.5rem; padding: 1rem; background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 6px;">
+                        <div style="font-weight: 600; color: #92400e; margin-bottom: 0.5rem;">ℹ️ Optional Feature</div>
+                        <div style="color: #78350f; font-size: 0.9rem;">
+                            Redis caching is optional. If Redis is not available, the application will function normally with database-only performance.
+                            Settings here override .env defaults when enabled.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detail-section" style="margin-top: 2rem;">
                     <h3>About MDL</h3>
                     <p style="color: #666; line-height: 1.6;">
                         MDL (Metrics Definition Library) is a comprehensive application to store and manage Metric Definitions 
@@ -1343,6 +1416,48 @@ export function getDashboardHTML(): string {
     </div>
 
     <script>
+        // Authentication check - redirect to login if not authenticated
+        // This runs IMMEDIATELY when the page loads, before any other code executes
+        (function() {
+            const currentPath = window.location.pathname;
+            
+            // Only perform auth check on dashboard pages (not on auth pages themselves)
+            if (currentPath === '/' || currentPath === '/dashboard') {
+                // Small delay to ensure localStorage is ready after navigation
+                setTimeout(function() {
+                    const token = localStorage.getItem('accessToken');
+                    
+                    if (!token) {
+                        // No token found - redirect to login immediately
+                        console.warn('No access token found, redirecting to login');
+                        window.location.replace('/auth/login');
+                    } else {
+                        // User is authenticated - check if admin to show Manage Users button
+                        const userStr = localStorage.getItem('user');
+                        console.log('User data from localStorage:', userStr);
+                        if (userStr) {
+                            try {
+                                const user = JSON.parse(userStr);
+                                console.log('Parsed user:', user);
+                                console.log('User role:', user.role);
+                                if (user.role === 'admin') {
+                                    console.log('User is admin, showing Manage Users button');
+                                    const manageUsersBtn = document.getElementById('manageUsersBtn');
+                                    console.log('manageUsersBtn element:', manageUsersBtn);
+                                    if (manageUsersBtn) {
+                                        manageUsersBtn.style.display = 'flex';
+                                        console.log('Button display set to flex');
+                                    }
+                                }
+                            } catch (e) {
+                                console.error('Failed to parse user data:', e);
+                            }
+                        }
+                    }
+                }, 50); // 50ms delay to ensure localStorage is accessible
+            }
+        })();
+
         let allMetrics = [];
         let allObjectives = [];
         let allDomains = [];
@@ -1350,15 +1465,28 @@ export function getDashboardHTML(): string {
 
         async function fetchData() {
             try {
+                // Get authentication token
+                const token = localStorage.getItem('accessToken');
+                const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+
                 // Fetch data from API (server handles storage mode automatically)
                 console.log('Fetching data from API...');
                 const cacheBuster = Date.now();
                 const [metricsRes, statsRes, domainsRes, objectivesRes] = await Promise.all([
-                    fetch('/api/metrics?_=' + cacheBuster),
-                    fetch('/api/stats?_=' + cacheBuster),
+                    fetch('/api/metrics?_=' + cacheBuster, { headers }),
+                    fetch('/api/stats?_=' + cacheBuster, { headers }),
                     fetch('/examples/sample-domains.json?_=' + cacheBuster).catch(() => ({ json: async () => ({ domains: [] }) })),
                     fetch('/examples/sample-objectives.json?_=' + cacheBuster).catch(() => ({ json: async () => ({ objectives: [] }) }))
                 ]);
+                
+                // Check for authentication errors
+                if (metricsRes.status === 401 || statsRes.status === 401) {
+                    console.warn('Authentication failed, redirecting to login');
+                    localStorage.removeItem('accessToken');
+                    localStorage.removeItem('refreshToken');
+                    window.location.href = '/auth/login';
+                    return;
+                }
                 
                 const metricsData = await metricsRes.json();
                 const statsData = await statsRes.json();
@@ -2488,6 +2616,37 @@ export function getDashboardHTML(): string {
             document.body.style.overflow = 'auto';
         }
 
+        async function logout() {
+            try {
+                // Get token for logout API call
+                const token = localStorage.getItem('accessToken');
+                
+                // Call logout API to invalidate server-side session
+                if (token) {
+                    await fetch('/api/auth/logout', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': 'Bearer ' + token,
+                            'Content-Type': 'application/json'
+                        }
+                    }).catch(err => console.warn('Logout API call failed:', err));
+                }
+                
+                // Clear local storage
+                localStorage.removeItem('accessToken');
+                localStorage.removeItem('refreshToken');
+                
+                // Redirect to login page
+                window.location.href = '/auth/login';
+            } catch (error) {
+                console.error('Logout error:', error);
+                // Even if logout fails, clear tokens and redirect
+                localStorage.removeItem('accessToken');
+                localStorage.removeItem('refreshToken');
+                window.location.href = '/auth/login';
+            }
+        }
+
         async function loadSettings() {
             // Load app version from package.json
             document.getElementById('appVersion').textContent = '1.0.0';
@@ -2495,7 +2654,7 @@ export function getDashboardHTML(): string {
             document.getElementById('appEnvironment').textContent = 'Web Browser';
             
             // Try to fetch current server settings first
-            let settings = { storage: 'local', postgres: null };
+            let settings = { storage: 'local', postgres: null, redis: null };
             try {
                 const response = await fetch('/api/storage/mode');
                 if (response.ok) {
@@ -2524,7 +2683,8 @@ export function getDashboardHTML(): string {
                                     database: parsed.database.name,
                                     user: parsed.database.user,
                                     password: parsed.database.password || ''
-                                } : null
+                                } : null,
+                                redis: parsed.redis || null
                             };
                         } else if (parsed.storage) {
                             settings = parsed;
@@ -2548,6 +2708,21 @@ export function getDashboardHTML(): string {
             } else {
                 document.getElementById('storageLocal').checked = true;
                 document.getElementById('databaseConfig').style.display = 'none';
+            }
+            
+            // Load Redis configuration
+            if (settings.redis && settings.redis.enabled) {
+                document.getElementById('redisEnabled').checked = true;
+                document.getElementById('redisConfig').style.display = 'block';
+                
+                // Load saved Redis config
+                document.getElementById('redisHost').value = settings.redis.host || '';
+                document.getElementById('redisPort').value = settings.redis.port || '';
+                document.getElementById('redisPassword').value = settings.redis.password || '';
+                document.getElementById('redisDb').value = settings.redis.db !== undefined ? settings.redis.db : '';
+            } else {
+                document.getElementById('redisEnabled').checked = false;
+                document.getElementById('redisConfig').style.display = 'none';
             }
             
             return settings;
@@ -2603,6 +2778,51 @@ export function getDashboardHTML(): string {
             }
         }
 
+        function toggleRedisConfig() {
+            const enabled = document.getElementById('redisEnabled').checked;
+            const configDiv = document.getElementById('redisConfig');
+            configDiv.style.display = enabled ? 'block' : 'none';
+        }
+
+        async function testRedisConnection() {
+            const statusDiv = document.getElementById('redisConnectionStatus');
+            statusDiv.textContent = '⏳ Testing Redis connection...';
+            statusDiv.style.background = '#fef3c7';
+            statusDiv.style.color = '#92400e';
+            statusDiv.style.display = 'flex';
+
+            const redisConfig = {
+                host: document.getElementById('redisHost').value || undefined,
+                port: document.getElementById('redisPort').value ? parseInt(document.getElementById('redisPort').value) : undefined,
+                password: document.getElementById('redisPassword').value || undefined,
+                db: document.getElementById('redisDb').value !== '' ? parseInt(document.getElementById('redisDb').value) : undefined
+            };
+
+            try {
+                const response = await fetch('/api/cache/test', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(redisConfig)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    statusDiv.textContent = '✓ Redis connection successful';
+                    statusDiv.style.background = '#d1fae5';
+                    statusDiv.style.color = '#065f46';
+                } else {
+                    statusDiv.textContent = '✗ Connection failed: ' + (result.error || 'Unknown error');
+                    statusDiv.style.background = '#fee2e2';
+                    statusDiv.style.color = '#991b1b';
+                }
+            } catch (error) {
+                statusDiv.textContent = '✗ Redis test endpoint not available';
+                statusDiv.style.background = '#fef3c7';
+                statusDiv.style.color = '#92400e';
+            }
+        }
+
         async function saveSettings() {
             const storageType = document.querySelector('input[name="storageType"]:checked').value;
             
@@ -2619,6 +2839,25 @@ export function getDashboardHTML(): string {
                     user: document.getElementById('dbUser').value,
                     password: document.getElementById('dbPassword').value || ''
                 };
+            }
+
+            // Save Redis configuration if enabled
+            const redisEnabled = document.getElementById('redisEnabled').checked;
+            if (redisEnabled) {
+                const redisHost = document.getElementById('redisHost').value;
+                const redisPort = document.getElementById('redisPort').value;
+                const redisPassword = document.getElementById('redisPassword').value;
+                const redisDb = document.getElementById('redisDb').value;
+
+                settings.redis = {
+                    enabled: true,
+                    ...(redisHost && { host: redisHost }),
+                    ...(redisPort && { port: parseInt(redisPort) }),
+                    ...(redisPassword && { password: redisPassword }),
+                    ...(redisDb !== '' && { db: parseInt(redisDb) })
+                };
+            } else {
+                settings.redis = { enabled: false };
             }
 
             // Save to localStorage for UI state

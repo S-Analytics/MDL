@@ -1,18 +1,28 @@
+// Load environment variables FIRST (before any other imports)
 import dotenv from 'dotenv';
+dotenv.config();
+
+// Initialize tracing BEFORE any other imports to enable auto-instrumentation
+import { initializeTracing } from './tracing';
+const tracingSdk = initializeTracing();
+
 import express from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
 import { createServer } from './api';
 import { FileUserStore } from './auth/FileUserStore';
+import { PostgresUserStore } from './auth/PostgresUserStore';
+import type { CacheWarmer } from './cache/warmer';
+import { createCacheWarmer } from './cache/warmer';
 import { getDashboardHTML } from './dashboard';
+import { getChangePasswordPageHTML, getLoginPageHTML, getRegisterPageHTML } from './dashboard/authViews';
+import { getUserManagementPageHTML } from './dashboard/userManagementViews';
+import { BusinessMetricsCollector } from './metrics/BusinessMetricsCollector';
 import { errorHandlingMiddleware, notFoundMiddleware } from './middleware/logging';
 import { InMemoryMetricStore, PostgresMetricStore } from './storage';
 import { IMetricStore } from './storage/MetricStore';
 import { closeDatabasePool, DatabasePool, initializeDatabasePool, setupGracefulShutdown } from './utils/database';
 import { logger, logShutdown, logStartup } from './utils/logger';
-
-// Load environment variables
-dotenv.config();
 
 // Storage settings file path
 const SETTINGS_FILE = path.join(process.cwd(), '.mdl', 'settings.json');
@@ -38,6 +48,8 @@ const DEFAULT_STORAGE_PATH = process.env.PERSISTENCE_PATH || path.join(process.c
 // Initialize with temporary local store (will be replaced if postgres mode)
 let store: IMetricStore = new InMemoryMetricStore(DEFAULT_STORAGE_PATH);
 let dbPool: DatabasePool | null = null;
+let cacheWarmer: CacheWarmer | null = null;
+let businessMetricsCollector: BusinessMetricsCollector | null = null;
 
 // Log storage mode
 if (STORAGE_MODE === 'postgres' || STORAGE_MODE === 'postgresql') {
@@ -47,16 +59,26 @@ if (STORAGE_MODE === 'postgres' || STORAGE_MODE === 'postgresql') {
 }
 
 // Initialize authentication if enabled
-let userStore: FileUserStore | undefined;
+let userStore: FileUserStore | PostgresUserStore | undefined;
 const authEnabled = process.env.AUTH_ENABLED === 'true';
+const authStorageMode = process.env.AUTH_STORAGE_MODE || 'file'; // 'file' or 'database'
 
 async function initializeAuth() {
   if (authEnabled) {
-    const authFilePath = process.env.AUTH_FILE_PATH || path.join(process.cwd(), 'data', 'users.json');
-    userStore = new FileUserStore(authFilePath);
-    await userStore.initialize();
-    
-    logger.info({ path: authFilePath }, 'Authentication initialized (File storage)');
+    if (authStorageMode === 'database' && dbPool) {
+      // Use PostgreSQL for auth storage with the same dbPool
+      userStore = new PostgresUserStore(dbPool);
+      await userStore.initialize();
+      
+      logger.info({ mode: 'database' }, 'Authentication initialized (PostgreSQL storage)');
+    } else {
+      // Use file-based auth storage
+      const authFilePath = process.env.AUTH_FILE_PATH || path.join(process.cwd(), 'data', 'users.json');
+      userStore = new FileUserStore(authFilePath);
+      await userStore.initialize();
+      
+      logger.info({ path: authFilePath, mode: 'file' }, 'Authentication initialized (File storage)');
+    }
     
     // Create default admin user in development
     if (process.env.NODE_ENV === 'development' || process.env.DEV_CREATE_DEFAULT_USER === 'true') {
@@ -125,10 +147,18 @@ async function startServer() {
     userStore,
   });
 
+  // Initialize cache warmer
+  if (process.env.ENABLE_CACHE === 'true') {
+    cacheWarmer = createCacheWarmer(store);
+    logger.info('Cache warmer initialized');
+  }
+
   // Serve static files from examples directory
   app.use('/examples', express.static(path.join(process.cwd(), 'examples')));
 
-  // Add dashboard route
+  // Add dashboard routes
+  // When AUTH_ENABLED=true, the dashboard HTML contains client-side JavaScript
+  // that checks localStorage for an access token and redirects to /auth/login if not found
   app.get('/', (req, res) => {
     res.send(getDashboardHTML());
   });
@@ -142,6 +172,27 @@ async function startServer() {
     });
     res.send(getDashboardHTML());
   });
+
+  // Authentication pages (if auth is enabled)
+  if (authEnabled) {
+    app.get('/auth/login', (req, res) => {
+      res.send(getLoginPageHTML());
+    });
+
+    app.get('/auth/register', (req, res) => {
+      res.send(getRegisterPageHTML());
+    });
+
+    app.get('/auth/change-password', (req, res) => {
+      res.send(getChangePasswordPageHTML());
+    });
+
+    app.get('/admin/users', (req, res) => {
+      res.send(getUserManagementPageHTML());
+    });
+
+    logger.info('Auth pages enabled: /auth/login, /auth/register, /auth/change-password, /admin/users');
+  }
 
   // 404 handler (must be after all routes)
   app.use(notFoundMiddleware);
@@ -178,6 +229,29 @@ async function startServer() {
       logger.info(`💚 Health: http://${HOST}:${PORT}/health`);
       logger.info('');
       
+      // Start cache warming (non-blocking)
+      if (cacheWarmer) {
+        cacheWarmer.start().then(() => {
+          const warmerStatus = cacheWarmer!.getStatus();
+          if (warmerStatus.enabled) {
+            logger.info('🔥 Cache warming: completed initial run');
+            if (warmerStatus.scheduledInterval) {
+              logger.info(`   Scheduled interval: ${warmerStatus.scheduledInterval} minutes`);
+            }
+          }
+        }).catch(error => {
+          logger.error({ error }, 'Cache warming startup failed');
+        });
+        logger.info('🔥 Cache warming: starting...');
+      }
+      
+      // Start business metrics collection
+      businessMetricsCollector = new BusinessMetricsCollector(() => store, 60000); // Collect every 60 seconds
+      businessMetricsCollector.start();
+      logger.info('📊 Business metrics collector: started (60s interval)');
+      
+      logger.info('');
+      
       // Show storage configuration
       if (dbPool) {
         const dbConfig = {
@@ -211,6 +285,33 @@ startServer().catch((error) => {
 
 // Setup graceful shutdown handlers
 setupGracefulShutdown();
+
+// Enhanced shutdown to include cache warmer and metrics collector
+process.on('SIGTERM', () => {
+  if (cacheWarmer) {
+    cacheWarmer.stop();
+    logger.info('Cache warmer stopped');
+  }
+  if (businessMetricsCollector) {
+    businessMetricsCollector.stop();
+    logger.info('Business metrics collector stopped');
+  }
+});
+
+process.on('SIGINT', () => {
+  if (cacheWarmer) {
+    cacheWarmer.stop();
+    logger.info('Cache warmer stopped');
+  }
+  if (businessMetricsCollector) {
+    businessMetricsCollector.stop();
+    logger.info('Business metrics collector stopped');
+  }
+  if (cacheWarmer) {
+    cacheWarmer.stop();
+    logger.info('Cache warmer stopped');
+  }
+});
 
 // Handle uncaught errors
 process.on('uncaughtException', (error: Error) => {
