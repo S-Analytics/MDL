@@ -78,7 +78,7 @@
       "version": "1.0.0",
       "status": "active",
       "created_at": "2025-01-01T00:00:00Z",
-      "updated_at": "2025-11-19T02:50:14.402Z"
+      "updated_at": "2025-01-01T00:00:00Z"
     },
     "dimensions": [
       {
@@ -171,35 +171,6 @@
           "language": "sql",
           "query": "SELECT DATE(event_time) as date, COUNT(CASE WHEN status = 'success' THEN 1 END) / COUNT(*) as success_rate FROM events_logins WHERE event_time >= CURRENT_DATE - INTERVAL 30 DAY GROUP BY DATE(event_time)"
         }
-      ],
-      "version": "1.0.3",
-      "last_updated": "2025-11-19T02:50:14.402Z",
-      "last_updated_by": "dashboard_user",
-      "change_history": [
-        {
-          "version": "1.0.1",
-          "timestamp": "2025-11-19T02:49:54.511Z",
-          "changed_by": "dashboard_user",
-          "change_type": "patch",
-          "changes_summary": "Updated ",
-          "fields_changed": []
-        },
-        {
-          "version": "1.0.2",
-          "timestamp": "2025-11-19T02:50:05.217Z",
-          "changed_by": "dashboard_user",
-          "change_type": "patch",
-          "changes_summary": "Updated ",
-          "fields_changed": []
-        },
-        {
-          "version": "1.0.3",
-          "timestamp": "2025-11-19T02:50:14.402Z",
-          "changed_by": "dashboard_user",
-          "change_type": "patch",
-          "changes_summary": "Updated ",
-          "fields_changed": []
-        }
       ]
     }
   },
@@ -216,8 +187,7 @@
       "performance",
       "api",
       "latency",
-      "slo",
-      "test"
+      "slo"
     ],
     "alignment": {
       "strategic_pillar": "Platform Reliability",
@@ -288,7 +258,7 @@
       "version": "1.0.0",
       "status": "active",
       "created_at": "2025-01-01T00:00:00Z",
-      "updated_at": "2025-11-15T04:17:38.611Z"
+      "updated_at": "2025-01-01T00:00:00Z"
     },
     "dimensions": [
       {
@@ -1822,6 +1792,175 @@
     },
     "metadata": {
       "notes": "Focus on meaningful tests rather than just hitting coverage percentages.",
+      "example_queries": []
+    }
+  },
+  {
+    "metric_id": "METRIC-BUG-ESCAPE-RATE",
+    "name": "Bug Escape Rate",
+    "short_name": "bug_escape_rate",
+    "description": "Number of bugs found in production per release, indicating test effectiveness.",
+    "category": "Engineering",
+    "tier": "Tier-2",
+    "business_domain": "Engineering",
+    "metric_type": "lagging",
+    "tags": [
+      "quality",
+      "bugs",
+      "testing",
+      "reliability"
+    ],
+    "alignment": {
+      "strategic_pillar": "Engineering Excellence",
+      "primary_objective_ids": [
+        "OBJ-004"
+      ],
+      "related_okr_ids": [
+        "OBJ-004:KR-003"
+      ],
+      "why_it_matters": "Lower escape rates indicate better testing and reduce customer impact."
+    },
+    "definition": {
+      "formula": "COUNT(production_bugs) / COUNT(releases)",
+      "formula_detail": "Average number of bugs discovered in production per release.",
+      "numerator": {
+        "event_name": "production_bug_reported",
+        "filters": []
+      },
+      "denominator": {
+        "event_name": "release_deployed",
+        "filters": []
+      },
+      "unit": "bugs_per_release",
+      "expected_direction": "decrease",
+      "example_calculation": {
+        "production_bugs": 40,
+        "releases": 10,
+        "result": 4
+      }
+    },
+    "data": {
+      "primary_sources": [
+        {
+          "system": "issue_tracker",
+          "table_or_stream": "bugs",
+          "connection_id": "jira"
+        }
+      ],
+      "secondary_sources": [
+        {
+          "system": "ci_cd_platform",
+          "table_or_stream": "releases",
+          "connection_id": "cicd_db"
+        }
+      ],
+      "data_freshness": "daily",
+      "update_frequency": "daily",
+      "time_grain": [
+        "release",
+        "week",
+        "month"
+      ],
+      "data_retention": "indefinite"
+    },
+    "governance": {
+      "data_classification": "internal",
+      "pii_involved": false,
+      "regulatory_constraints": [],
+      "owner_team": "Engineering Leadership",
+      "technical_owner": "engineering_leadership",
+      "business_owner": "VP Engineering",
+      "version": "1.0.0",
+      "status": "active",
+      "created_at": "2025-01-01T00:00:00Z",
+      "updated_at": "2025-01-01T00:00:00Z"
+    },
+    "dimensions": [
+      {
+        "name": "severity",
+        "allowed_values": [
+          "critical",
+          "high",
+          "medium",
+          "low"
+        ],
+        "required": true
+      },
+      {
+        "name": "service",
+        "allowed_values": [],
+        "required": true
+      },
+      {
+        "name": "root_cause",
+        "allowed_values": [
+          "code",
+          "config",
+          "infrastructure",
+          "data"
+        ],
+        "required": false
+      }
+    ],
+    "targets_and_alerts": {
+      "target_value": 5,
+      "warning_threshold": 8,
+      "critical_threshold": 12,
+      "comparison_baseline": "previous_month",
+      "alert_rules": [
+        {
+          "rule_id": "ALERT-BUG-001",
+          "condition": "value > critical_threshold",
+          "severity": "warning",
+          "notify_channels": [
+            "slack:#engineering"
+          ],
+          "evaluation_window": "monthly"
+        }
+      ]
+    },
+    "visualization": {
+      "default_chart_type": "bar",
+      "default_time_range": "last_12_weeks",
+      "dashboard_locations": [
+        {
+          "tool": "Jira",
+          "url": "https://jira.example.com/dashboard/quality-metrics"
+        }
+      ],
+      "drilldowns": [
+        "severity",
+        "service",
+        "root_cause"
+      ]
+    },
+    "relationships": {
+      "upstream_metric_ids": [
+        "METRIC-CODE-COVERAGE"
+      ],
+      "downstream_metric_ids": [
+        "METRIC-CUSTOMER-CHURN-RATE"
+      ],
+      "tradeoffs": [
+        "More thorough testing reduces escape rate but may slow delivery velocity."
+      ]
+    },
+    "operational_usage": {
+      "decision_use_cases": [
+        "Evaluate testing effectiveness",
+        "Identify quality trends by service or team",
+        "Guide investment in test automation"
+      ],
+      "review_cadence": "weekly",
+      "linked_playbooks": [
+        {
+          "name": "Bug Triage Process",
+          "url": "https://docs.example.com/bug-triage"
+        }
+      ]
+    },
+    "metadata": {
+      "notes": "Track by severity to focus on critical and high severity bugs separately.",
       "example_queries": []
     }
   }

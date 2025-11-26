@@ -1854,16 +1854,21 @@ export function getDashboardHTML(): string {
 
             grid.innerHTML = allDomains.map(domain => {
                 const metricsInDomain = allMetrics.filter(m => m.business_domain === domain.name);
+                const tierFocus = Array.isArray(domain.tier_focus) ? domain.tier_focus : [];
+                const keyAreas = Array.isArray(domain.key_areas) ? domain.key_areas : [];
+                const metadata = domain.tier_focus && typeof domain.tier_focus === 'object' && !Array.isArray(domain.tier_focus) ? domain.tier_focus : {};
+                
                 return \`
-                    <div class="stat-card" style="border-left: 4px solid \${domain.color || '#667eea'}; position: relative;">
-                        <h3 style="color: \${domain.color || '#667eea'};">\${domain.name}</h3>
+                    <div class="stat-card" style="border-left: 4px solid \${domain.color || metadata.color || '#667eea'}; position: relative;">
+                        <h3 style="color: \${domain.color || metadata.color || '#667eea'};">\${domain.name}</h3>
                         <div class="value">\${metricsInDomain.length}</div>
                         <p style="font-size: 0.9rem; color: #666; margin-top: 0.5rem;">\${domain.description}</p>
                         <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #e2e8f0; font-size: 0.85rem;">
                             <div style="margin-bottom: 0.25rem;"><strong>Owner:</strong> \${domain.owner_team}</div>
-                            <div style="margin-bottom: 0.25rem;"><strong>Tiers:</strong> \${domain.tier_focus.join(', ')}</div>
-                            <div style="margin-bottom: 0.25rem;"><strong>Email:</strong> \${domain.contact_email}</div>
-                            <div><strong>Areas:</strong> \${domain.key_areas.slice(0, 3).join(', ')}\${domain.key_areas.length > 3 ? '...' : ''}</div>
+                            \${tierFocus.length > 0 ? \`<div style="margin-bottom: 0.25rem;"><strong>Tiers:</strong> \${tierFocus.join(', ')}</div>\` : ''}
+                            \${metadata.priority ? \`<div style="margin-bottom: 0.25rem;"><strong>Priority:</strong> \${metadata.priority}</div>\` : ''}
+                            \${domain.contact_email ? \`<div style="margin-bottom: 0.25rem;"><strong>Email:</strong> \${domain.contact_email}</div>\` : ''}
+                            \${keyAreas.length > 0 ? \`<div><strong>Areas:</strong> \${keyAreas.slice(0, 3).join(', ')}\${keyAreas.length > 3 ? '...' : ''}</div>\` : ''}
                         </div>
                         <div style="display: flex; gap: 0.5rem; margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid #e2e8f0; justify-content: flex-end;">
                             <button class="icon-btn primary" onclick="event.stopPropagation(); openEditDomainForm('\${domain.domain_id}')">
@@ -3781,13 +3786,20 @@ export function getDashboardHTML(): string {
                     return;
                 }
 
-                // Use universal import API
-                const dbConfig = getStorageType() === 'database' ? getDatabaseConfig() : null;
-                
+                // Use universal import API - server will handle storage type
+                const token = localStorage.getItem('accessToken');
+                if (!token) {
+                    showToast('Authentication required. Please log in.', 'error');
+                    return;
+                }
+
                 const response = await fetch('/api/import', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ data, dbConfig })
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ data })
                 });
 
                 const result = await response.json();
@@ -4211,12 +4223,20 @@ export function getDashboardHTML(): string {
             try {
                 let response;
                 const settings = loadSettings();
+                const token = localStorage.getItem('accessToken');
+                if (!token) {
+                    showToast('Authentication required. Please log in.', 'error');
+                    return;
+                }
                 
                 // Route to PostgreSQL if enabled
                 if (settings.storage === 'postgresql' && settings.postgres) {
                     response = await fetch('/api/postgres/metrics/save', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + token
+                        },
                         body: JSON.stringify({
                             dbConfig: {
                                 host: settings.postgres.host,
@@ -4234,13 +4254,19 @@ export function getDashboardHTML(): string {
                     if (isEditMode) {
                         response = await fetch(\`/api/metrics/\${editingMetricId}\`, {
                             method: 'PUT',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: { 
+                                'Content-Type': 'application/json',
+                                'Authorization': 'Bearer ' + token
+                            },
                             body: JSON.stringify(metricData)
                         });
                     } else {
                         response = await fetch('/api/metrics', {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: { 
+                                'Content-Type': 'application/json',
+                                'Authorization': 'Bearer ' + token
+                            },
                             body: JSON.stringify(metricData)
                         });
                     }
@@ -4268,13 +4294,21 @@ export function getDashboardHTML(): string {
 
             try {
                 const settings = loadSettings();
+                const token = localStorage.getItem('accessToken');
+                if (!token) {
+                    showToast('Authentication required. Please log in.', 'error');
+                    return;
+                }
                 let response;
                 
                 // Route to PostgreSQL if enabled
                 if (settings.storage === 'postgresql' && settings.postgres) {
                     response = await fetch('/api/postgres/metrics/delete', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + token
+                        },
                         body: JSON.stringify({
                             dbConfig: {
                                 host: settings.postgres.host,
@@ -4289,7 +4323,10 @@ export function getDashboardHTML(): string {
                 } else {
                     // Local file storage
                     response = await fetch(\`/api/metrics/\${metricId}\`, {
-                        method: 'DELETE'
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': 'Bearer ' + token
+                        }
                     });
                 }
 
