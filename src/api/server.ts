@@ -272,6 +272,46 @@ export function createServer(storeOrGetter: IMetricStore | (() => IMetricStore),
     }
   });
 
+  // Get all domains
+  app.get('/api/domains', optionalAuthenticate, async (req: Request, res: Response) => {
+    try {
+      const domainsPath = path.join(process.cwd(), '.mdl', 'domains.json');
+      let domains: any[] = [];
+      
+      try {
+        const existingData = await fsPromises.readFile(domainsPath, 'utf-8');
+        domains = JSON.parse(existingData);
+      } catch (error) {
+        // File doesn't exist or is empty, return empty array
+        domains = [];
+      }
+      
+      res.json({ success: true, data: domains });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Get all objectives
+  app.get('/api/objectives', optionalAuthenticate, async (req: Request, res: Response) => {
+    try {
+      const objectivesPath = path.join(process.cwd(), '.mdl', 'objectives.json');
+      let objectives: any[] = [];
+      
+      try {
+        const existingData = await fsPromises.readFile(objectivesPath, 'utf-8');
+        objectives = JSON.parse(existingData);
+      } catch (error) {
+        // File doesn't exist or is empty, return empty array
+        objectives = [];
+      }
+      
+      res.json({ success: true, data: objectives });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
   // Get metrics from PostgreSQL
   app.post('/api/postgres/metrics', requireEditor, async (req: Request, res: Response) => {
     try {
