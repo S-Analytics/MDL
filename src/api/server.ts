@@ -2,6 +2,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import express, { Request, Response } from 'express';
 import * as fs from 'fs';
+import { promises as fsPromises } from 'fs';
 import * as yaml from 'js-yaml';
 import * as path from 'path';
 import { Client } from 'pg';
@@ -882,60 +883,98 @@ export function createServer(storeOrGetter: IMetricStore | (() => IMetricStore),
       const store = getStore();
       for (const metric of result.metrics) {
         try {
-          await store.create(metric as unknown as MetricDefinitionInput);
-          imported.metrics++;
+          // Check if metric already exists by id
+          const exists = await store.exists(metric.metric_id);
+          
+          if (exists) {
+            // Update existing metric
+            await store.update(metric.metric_id, metric);
+            imported.metrics++;
+          } else {
+            // For new metrics with full definition, add directly to storage
+            // This bypasses the create() method which is designed for simple inputs
+            const storeInternal = store as any;
+            if (storeInternal.metrics) {
+              // File-based store - add to metrics Map
+              storeInternal.metrics.set(metric.metric_id, metric);
+              if (storeInternal.persistencePath) {
+                await storeInternal.persistToFile();
+              }
+              imported.metrics++;
+            } else {
+              // PostgreSQL store - use create but it should handle full definitions
+              await store.create(metric as unknown as MetricDefinitionInput);
+              imported.metrics++;
+            }
+          }
         } catch (error: any) {
           imported.errors.push(`Metric ${metric.metric_id}: ${error.message}`);
         }
       }
 
-      // Import domains (requires PostgreSQL)
+      // Import domains
       if (result.domains.length > 0) {
-        if (!dbConfig) {
-          imported.errors.push(`${result.domains.length} domain(s) require database configuration`);
-        } else {
-          const { PostgresDomainStore } = await import('../storage/PostgresDomainStore');
-          const domainStore = new PostgresDomainStore(dbConfig);
-          for (const domain of result.domains) {
-            try {
-              // Check if domain exists, then create or update
-              const existingDomains = await domainStore.findAll();
-              const exists = existingDomains.some(d => d.domain_id === domain.domain_id);
-              if (exists) {
-                await domainStore.update(domain);
-              } else {
-                await domainStore.create(domain);
-              }
-              imported.domains++;
-            } catch (error: any) {
-              imported.errors.push(`Domain ${domain.domain_id}: ${error.message}`);
-            }
+        // Domains stored in local file for now (future: support PostgreSQL)
+        const domainsPath = path.join(process.cwd(), '.mdl', 'domains.json');
+        try {
+          let domains: any[] = [];
+          try {
+            const existingData = await fsPromises.readFile(domainsPath, 'utf-8');
+            domains = JSON.parse(existingData);
+          } catch {
+            // File doesn't exist, start with empty array
           }
+
+          for (const domain of result.domains) {
+            const existingIndex = domains.findIndex(d => d.domain_id === domain.domain_id);
+            if (existingIndex >= 0) {
+              // Update existing
+              domains[existingIndex] = domain;
+            } else {
+              // Add new
+              domains.push(domain);
+            }
+            imported.domains++;
+          }
+
+          // Save domains file
+          await fsPromises.mkdir(path.dirname(domainsPath), { recursive: true });
+          await fsPromises.writeFile(domainsPath, JSON.stringify(domains, null, 2), 'utf-8');
+        } catch (error: any) {
+          imported.errors.push(`Domains import error: ${error.message}`);
         }
       }
 
-      // Import objectives (requires PostgreSQL)
+      // Import objectives
       if (result.objectives.length > 0) {
-        if (!dbConfig) {
-          imported.errors.push(`${result.objectives.length} objective(s) require database configuration`);
-        } else {
-          const { PostgresObjectiveStore } = await import('../storage/PostgresObjectiveStore');
-          const objectiveStore = new PostgresObjectiveStore(dbConfig);
-          for (const objective of result.objectives) {
-            try {
-              // Check if objective exists, then create or update
-              const existingObjectives = await objectiveStore.findAll();
-              const exists = existingObjectives.some(o => o.objective_id === objective.objective_id);
-              if (exists) {
-                await objectiveStore.update(objective);
-              } else {
-                await objectiveStore.create(objective);
-              }
-              imported.objectives++;
-            } catch (error: any) {
-              imported.errors.push(`Objective ${objective.objective_id}: ${error.message}`);
-            }
+        // Objectives stored in local file for now (future: support PostgreSQL)
+        const objectivesPath = path.join(process.cwd(), '.mdl', 'objectives.json');
+        try {
+          let objectives: any[] = [];
+          try {
+            const existingData = await fsPromises.readFile(objectivesPath, 'utf-8');
+            objectives = JSON.parse(existingData);
+          } catch {
+            // File doesn't exist, start with empty array
           }
+
+          for (const objective of result.objectives) {
+            const existingIndex = objectives.findIndex(o => o.objective_id === objective.objective_id);
+            if (existingIndex >= 0) {
+              // Update existing
+              objectives[existingIndex] = objective;
+            } else {
+              // Add new
+              objectives.push(objective);
+            }
+            imported.objectives++;
+          }
+
+          // Save objectives file
+          await fsPromises.mkdir(path.dirname(objectivesPath), { recursive: true });
+          await fsPromises.writeFile(objectivesPath, JSON.stringify(objectives, null, 2), 'utf-8');
+        } catch (error: any) {
+          imported.errors.push(`Objectives import error: ${error.message}`);
         }
       }
 

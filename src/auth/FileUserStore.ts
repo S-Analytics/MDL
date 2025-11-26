@@ -53,6 +53,11 @@ export class FileUserStore implements IUserStore {
       const fileData = await fs.readFile(this.filePath, 'utf-8');
       this.data = JSON.parse(fileData);
       
+      // Ensure all arrays exist (for backwards compatibility)
+      this.data.users = this.data.users || [];
+      this.data.refreshTokens = this.data.refreshTokens || [];
+      this.data.apiKeys = this.data.apiKeys || [];
+      
       // Convert date strings to Date objects
       this.data.users = this.data.users.map((user) => ({
         ...user,

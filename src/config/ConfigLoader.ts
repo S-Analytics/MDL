@@ -208,21 +208,30 @@ export class ConfigLoader {
     // Validate and convert key results
     const keyResults = Array.isArray(data.key_results) ? data.key_results : [];
     const convertedKRs = keyResults.map((kr: any, index: number) => {
-      const krRequired = ['kr_id', 'description', 'metric_id'];
+      const krRequired = ['kr_id', 'description'];
       const krMissing = krRequired.filter(field => !kr[field]);
       if (krMissing.length > 0) {
         throw new Error(`Key result at index ${index} is missing required fields: ${krMissing.join(', ')}`);
       }
+      
+      // Accept both metric_id (singular) and metric_ids (plural array)
+      let metricIds: string[] = [];
+      if (kr.metric_ids && Array.isArray(kr.metric_ids)) {
+        metricIds = kr.metric_ids;
+      } else if (kr.metric_id) {
+        metricIds = [kr.metric_id];
+      }
+      
       return {
         kr_id: kr.kr_id,
-        name: kr.description,
+        name: kr.name || kr.description,
         description: kr.description,
         target_value: kr.target_value || 0,
         baseline_value: kr.baseline_value || kr.current_value || 0,
         unit: kr.unit || '',
-        direction: kr.expected_direction === 'decrease' ? 'decrease' as const : 'increase' as const,
+        direction: kr.direction || (kr.expected_direction === 'decrease' ? 'decrease' as const : 'increase' as const),
         current_value: kr.current_value || null,
-        metric_ids: kr.metric_id ? [kr.metric_id] : []
+        metric_ids: metricIds
       };
     });
 

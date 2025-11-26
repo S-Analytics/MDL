@@ -174,6 +174,101 @@ cp .mdl/metrics.json.backup-2025-11-18T12-30-00-000Z .mdl/metrics.json
 
 **⚠️ WARNING:** While backups are created, this operation clears all local storage data. Make sure you have the backups or can recreate the data.
 
+### clean-users.js
+
+Cleans the local `data/users.json` file by removing test users and cleaning up unused/expired tokens.
+
+**Usage:**
+```bash
+# Dry run (preview changes without modifying file)
+node scripts/clean-users.js --dry-run
+
+# Create backup and clean
+node scripts/clean-users.js --backup
+
+# Both dry run and backup
+node scripts/clean-users.js --dry-run --backup
+
+# Clean without backup (not recommended)
+node scripts/clean-users.js
+```
+
+**Options:**
+- `--dry-run` - Preview changes without modifying the file
+- `--backup` - Create a timestamped backup in `data/backups/` before cleaning
+
+**What it removes:**
+1. **Test users** - Users matching test patterns:
+   - Usernames starting with: `testuser_`, `testadmin_`, `testeditor_`, `testviewer_`, `e2euser_`
+   - Pattern-based test users: `existinguser_*`, `user_[digits]`, `newuser_*`, etc.
+   - Emails ending in `@test.com` or `test[digits]@example.com`
+
+2. **Expired tokens** - Refresh tokens with `expires_at` in the past
+
+3. **Revoked tokens** - Refresh tokens with `revoked: true`
+
+4. **Orphaned tokens** - Tokens belonging to users that no longer exist
+
+**What it keeps:**
+- Production users (admin, editor, viewer with real names/emails)
+- Valid, active refresh tokens for remaining users
+- All user metadata and authentication data
+
+**Safety Features:**
+- Dry run mode to preview changes
+- Optional timestamped backups in `data/backups/`
+- Detailed summary showing what will be removed
+- User count by role after cleanup
+
+**Output:**
+The script provides a detailed summary including:
+- Count of test users identified
+- Breakdown of removed tokens (expired, revoked, orphaned)
+- Remaining users by role
+- Before/after statistics
+
+**Example Output:**
+```
+=== MDL User Data Cleanup Utility ===
+
+Reading data/users.json...
+
+Original counts:
+  Users: 250
+  Refresh Tokens: 1500
+
+Test users identified: 235
+  - testuser_92919 (test92919@example.com)
+  - testadmin_1764024709236 (testadmin_1764024709236@test.com)
+  ... and 233 more
+
+=== Cleanup Summary ===
+
+Users:
+  Removed: 235
+  Remaining: 15
+
+Refresh Tokens:
+  Expired: 450
+  Revoked: 120
+  Orphaned: 850
+  Total Removed: 1420
+  Remaining: 80
+
+Remaining users by role:
+  admin: 5
+  editor: 4
+  viewer: 6
+```
+
+**Best Practices:**
+1. Always run with `--dry-run` first to preview changes
+2. Use `--backup` option for safety
+3. Run after test suites to clean up test data
+4. Run periodically to prevent token accumulation
+
+**⚠️ WARNING:** Without `--backup`, there is no automatic undo. Test data will be permanently removed.
+
 ### load-sample-metrics.js
 
 Loads the comprehensive sample metrics from `examples/sample-metrics.json` into the file-based metrics store (`.mdl/metrics.json`).

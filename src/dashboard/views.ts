@@ -3781,13 +3781,20 @@ export function getDashboardHTML(): string {
                     return;
                 }
 
-                // Use universal import API
-                const dbConfig = getStorageType() === 'database' ? getDatabaseConfig() : null;
-                
+                // Use universal import API - server will handle storage type
+                const token = localStorage.getItem('accessToken');
+                if (!token) {
+                    showToast('Authentication required. Please log in.', 'error');
+                    return;
+                }
+
                 const response = await fetch('/api/import', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ data, dbConfig })
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ data })
                 });
 
                 const result = await response.json();
@@ -4211,12 +4218,20 @@ export function getDashboardHTML(): string {
             try {
                 let response;
                 const settings = loadSettings();
+                const token = localStorage.getItem('accessToken');
+                if (!token) {
+                    showToast('Authentication required. Please log in.', 'error');
+                    return;
+                }
                 
                 // Route to PostgreSQL if enabled
                 if (settings.storage === 'postgresql' && settings.postgres) {
                     response = await fetch('/api/postgres/metrics/save', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + token
+                        },
                         body: JSON.stringify({
                             dbConfig: {
                                 host: settings.postgres.host,
@@ -4234,13 +4249,19 @@ export function getDashboardHTML(): string {
                     if (isEditMode) {
                         response = await fetch(\`/api/metrics/\${editingMetricId}\`, {
                             method: 'PUT',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: { 
+                                'Content-Type': 'application/json',
+                                'Authorization': 'Bearer ' + token
+                            },
                             body: JSON.stringify(metricData)
                         });
                     } else {
                         response = await fetch('/api/metrics', {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: { 
+                                'Content-Type': 'application/json',
+                                'Authorization': 'Bearer ' + token
+                            },
                             body: JSON.stringify(metricData)
                         });
                     }
@@ -4268,13 +4289,21 @@ export function getDashboardHTML(): string {
 
             try {
                 const settings = loadSettings();
+                const token = localStorage.getItem('accessToken');
+                if (!token) {
+                    showToast('Authentication required. Please log in.', 'error');
+                    return;
+                }
                 let response;
                 
                 // Route to PostgreSQL if enabled
                 if (settings.storage === 'postgresql' && settings.postgres) {
                     response = await fetch('/api/postgres/metrics/delete', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + token
+                        },
                         body: JSON.stringify({
                             dbConfig: {
                                 host: settings.postgres.host,
@@ -4289,7 +4318,10 @@ export function getDashboardHTML(): string {
                 } else {
                     // Local file storage
                     response = await fetch(\`/api/metrics/\${metricId}\`, {
-                        method: 'DELETE'
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': 'Bearer ' + token
+                        }
                     });
                 }
 
