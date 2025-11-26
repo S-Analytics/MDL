@@ -1,264 +1,312 @@
-# Phase 3: Minor Improvements & Nice-to-Have Features - Implementation Plan
+# Phase 3: Minor Improvements & Nice-to-Have Features
 
-**Duration:** 8 weeks  
-**Priority:** P3 - Low priority enhancements  
-**Prerequisites:** Phase 1 & Phase 2 must be completed  
-**Last Updated:** November 19, 2025
+**Duration:** 8 weeks (DEFERRED)  
+**Priority:** P3-P4 - Low priority enhancements  
+**Prerequisites:** Phase 1, 2, & Phase 3 Essential completed  
+**Last Updated:** November 25, 2025
+
+---
+
+## 🚨 IMPORTANT NOTE 🚨
+
+**Phase 3 has been split into two parts:**
+
+1. **[PHASE_3_ESSENTIAL.md](./PHASE_3_ESSENTIAL.md)** - **WORK ON THIS FIRST**
+   - Test Coverage Completion (65% → 85%)
+   - Backup & Disaster Recovery
+   - Rate Limiting & Security
+   - Operational Documentation
+   - **Duration:** 4-5 weeks
+   - **Priority:** P1-P2 (Essential for production)
+
+2. **PHASE_3_MINOR.md** (This File) - **DEFERRED TO PHASE 4+**
+   - Feature flags, bulk operations, advanced filtering
+   - Excel export, visualization dashboard
+   - Accessibility enhancements
+   - Code refactoring
+   - **Duration:** 8 weeks
+   - **Priority:** P3-P4 (Nice-to-have, not essential)
+
+**👉 Go to [PHASE_3_ESSENTIAL.md](./PHASE_3_ESSENTIAL.md) for the essential tasks.**
 
 ---
 
 ## Overview
 
-This phase focuses on enhancements that improve user experience, developer productivity, and operational efficiency. While not critical for production launch, these improvements add significant value to the system.
+This document contains **non-essential** enhancements that improve user experience, developer productivity, and operational efficiency. While valuable, **these are not required for production launch**.
 
-**Goals:**
-- Improve configuration management
-- Enhance user experience
-- Add data export capabilities
-- Improve documentation
-- Reduce technical debt
-- Add accessibility features
-- Implement backup strategies
+**Goals (Deferred):**
+- Feature flags for gradual rollouts
+- Bulk operations for efficiency
+- Advanced filtering and search
+- Data export enhancements (Excel)
+- Visualization dashboards
+- Code quality improvements
+- Accessibility enhancements
 
----
-
-## Task 1: Configuration Management Improvements (Week 1-2)
-
-### 1.1: Environment-Based Configuration
-
-**Duration:** 3-4 days
-
-**Steps:**
-1. Create environment-specific configs:
-```typescript
-// src/config/environments/development.ts
-export const developmentConfig = {
-  server: {
-    port: 3000,
-    host: 'localhost',
-    corsOrigins: ['http://localhost:*']
-  },
-  database: {
-    host: 'localhost',
-    port: 5432,
-    database: 'mdl_dev',
-    pool: {
-      min: 2,
-      max: 10
-    }
-  },
-  cache: {
-    enabled: true,
-    ttl: 300,
-    redis: {
-      host: 'localhost',
-      port: 6379,
-      db: 0
-    }
-  },
-  logging: {
-    level: 'debug',
-    console: true,
-    file: false
-  },
-  features: {
-    authentication: true,
-    rateLimit: false,
-    metrics: true
-  }
-};
-
-// src/config/environments/production.ts
-export const productionConfig = {
-  server: {
-    port: parseInt(process.env.PORT || '3000'),
-    host: '0.0.0.0',
-    corsOrigins: process.env.CORS_ORIGINS?.split(',') || []
-  },
-  database: {
-    host: process.env.DB_HOST,
-    port: parseInt(process.env.DB_PORT || '5432'),
-    database: process.env.DB_NAME,
-    ssl: true,
-    pool: {
-      min: 5,
-      max: 20
-    }
-  },
-  cache: {
-    enabled: true,
-    ttl: 3600,
-    redis: {
-      host: process.env.REDIS_HOST,
-      port: parseInt(process.env.REDIS_PORT || '6379'),
-      password: process.env.REDIS_PASSWORD,
-      tls: true
-    }
-  },
-  logging: {
-    level: 'info',
-    console: false,
-    file: true
-  },
-  features: {
-    authentication: true,
-    rateLimit: true,
-    metrics: true
-  }
-};
-
-// src/config/index.ts
-import { developmentConfig } from './environments/development';
-import { productionConfig } from './environments/production';
-import { testConfig } from './environments/test';
-
-const configs = {
-  development: developmentConfig,
-  production: productionConfig,
-  test: testConfig
-};
-
-const env = process.env.NODE_ENV || 'development';
-
-export const config = configs[env];
-export { developmentConfig, productionConfig, testConfig };
-```
-
-2. Add configuration validation:
-```typescript
-// src/config/validation.ts
-import Joi from 'joi';
-
-const configSchema = Joi.object({
-  server: Joi.object({
-    port: Joi.number().port().required(),
-    host: Joi.string().required(),
-    corsOrigins: Joi.array().items(Joi.string())
-  }).required(),
-  database: Joi.object({
-    host: Joi.string().required(),
-    port: Joi.number().port().required(),
-    database: Joi.string().required(),
-    username: Joi.string().required(),
-    password: Joi.string().required(),
-    ssl: Joi.boolean(),
-    pool: Joi.object({
-      min: Joi.number().min(0),
-      max: Joi.number().min(1)
-    })
-  }).required(),
-  cache: Joi.object({
-    enabled: Joi.boolean().required(),
-    ttl: Joi.number().min(0),
-    redis: Joi.when('enabled', {
-      is: true,
-      then: Joi.object({
-        host: Joi.string().required(),
-        port: Joi.number().port().required(),
-        password: Joi.string().allow(''),
-        db: Joi.number().min(0)
-      }).required()
-    })
-  }),
-  logging: Joi.object({
-    level: Joi.string().valid('error', 'warn', 'info', 'debug').required(),
-    console: Joi.boolean(),
-    file: Joi.boolean()
-  }).required(),
-  features: Joi.object({
-    authentication: Joi.boolean(),
-    rateLimit: Joi.boolean(),
-    metrics: Joi.boolean()
-  })
-});
-
-export function validateConfig(config: any): void {
-  const { error } = configSchema.validate(config, { abortEarly: false });
-  if (error) {
-    throw new Error(`Configuration validation failed: ${error.message}`);
-  }
-}
-```
-
-**Acceptance Criteria:**
-- [ ] Environment-specific configs created
-- [ ] Configuration validation implemented
-- [ ] All configs documented
-- [ ] Configuration loading tested
+**Current Status:** All tasks in this file are **DEFERRED** until Phase 3 Essential is complete and production is stable.
 
 ---
 
-### 1.2: Feature Flags
+## Deferred Tasks Summary
 
-**Duration:** 2-3 days
+### Configuration Management
+- Environment-based configuration files
+- Feature flags system
+- Configuration hot-reload
+
+### UX Enhancements
+- Bulk operations (bulk create/update/delete)
+- Advanced filtering and search
+- Saved queries
+- Metric comparison views
+
+### Data Export
+- Excel export with formatting
+- Enhanced CSV options
+- Custom column selection
+- Multiple export formats
+
+### Visualization
+- Chart.js integration
+- Analytics dashboard
+- Category distribution charts
+- Trend analysis
+
+### Documentation
+- Architecture diagrams (Mermaid/PlantUML)
+- Enhanced deployment guide
+- API integration examples
+- Video tutorials
+
+### Code Quality
+- Code refactoring
+- Type safety improvements
+- Remove technical debt
+- Enable TypeScript strict mode
+
+### Accessibility
+- ARIA attributes
+- Keyboard navigation
+- Screen reader support
+- WCAG 2.1 AA compliance
+
+---
+
+## When to Resume Phase 3 Minor
+
+Resume these tasks only after:
+
+1. ✅ Phase 3 Essential is **100% complete**
+2. ✅ Application is **deployed to production**
+3. ✅ Production has been **stable for 2-4 weeks**
+4. ✅ No critical bugs or issues
+5. ✅ User feedback collected and prioritized
+
+---
+
+## Original Phase 3 Content (Archived)
+
+The original detailed task breakdown is preserved below for future reference. **Do not start these tasks until Phase 3 Essential is complete.**
+
+---
+
+## Task 1: Complete Test Coverage to Thresholds (Week 1-2)
+
+**Status:** 🔴 **CRITICAL** - Currently at 65%, need 85%/80%  
+**Current Coverage:** 65.36% statements, 55.37% branches, 65.53% lines, 65.38% functions  
+**Target Coverage:** 85% statements/lines/functions, 80% branches  
+**Gap:** ~20 percentage points across all metrics
+
+### 1.1: Fix FileUserStore Tests (31 failing tests)
+
+**Duration:** 1 day  
+**Priority:** P0 - Blocking
+
+**Issue:** All 31 tests in tests/auth/FileUserStore.test.ts fail due to logger mock not providing implementation.
 
 **Steps:**
-1. Implement feature flag system:
+1. Fix logger mock in FileUserStore.test.ts:
 ```typescript
-// src/features/FeatureFlags.ts
-export class FeatureFlags {
-  private flags: Map<string, boolean> = new Map();
-  
-  constructor() {
-    this.loadFlags();
+jest.mock('../../src/utils/logger', () => ({
+  logger: {
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
   }
-  
-  private loadFlags(): void {
-    // Load from environment variables
-    this.flags.set('bulk_operations', process.env.FEATURE_BULK_OPERATIONS === 'true');
-    this.flags.set('advanced_filtering', process.env.FEATURE_ADVANCED_FILTERING === 'true');
-    this.flags.set('export_excel', process.env.FEATURE_EXPORT_EXCEL === 'true');
-    this.flags.set('visualization', process.env.FEATURE_VISUALIZATION === 'true');
-    this.flags.set('ai_suggestions', process.env.FEATURE_AI_SUGGESTIONS === 'true');
-  }
-  
-  isEnabled(feature: string): boolean {
-    return this.flags.get(feature) || false;
-  }
-  
-  enable(feature: string): void {
-    this.flags.set(feature, true);
-  }
-  
-  disable(feature: string): void {
-    this.flags.set(feature, false);
-  }
-  
-  getAll(): Record<string, boolean> {
-    return Object.fromEntries(this.flags);
-  }
-}
-
-export const featureFlags = new FeatureFlags();
+}));
 ```
 
-2. Use in routes:
+2. Run tests to verify all pass:
+```bash
+npm test -- tests/auth/FileUserStore.test.ts
+```
+
+3. Measure coverage improvement:
+```bash
+npm run test:coverage
+```
+
+**Expected Impact:** +2-3% overall coverage, FileUserStore.ts from 38% to 80%+
+
+**Acceptance Criteria:**
+- [ ] All 31 FileUserStore tests passing
+- [ ] FileUserStore.ts coverage > 80%
+- [ ] Overall coverage increased by 2-3 percentage points
+
+---
+
+### 1.2: Create Tests for Low Coverage Files
+
+**Duration:** 5-7 days  
+**Priority:** P0 - Critical for thresholds
+
+**Target Files:**
+1. **src/cache/CacheService.ts** (12.41% coverage)
+   - Complex Redis mocking required
+   - Focus on critical paths: get, set, invalidate
+   - May require integration tests vs unit tests
+   
+2. **src/api/routes/v1/stats.ts** (22% coverage - estimated)
+   - Stats endpoint testing
+   - Mock Express req/res
+   - Test aggregation logic
+   
+3. **src/middleware/cache.ts** (64.28% coverage)
+   - Cache middleware testing
+   - Cache hit/miss scenarios
+   - ETags and conditional requests
+   
+4. **src/middleware/compression.ts** (70.83% coverage)
+   - Compression middleware
+   - Different content types
+   - Threshold testing
+   
+5. **src/middleware/performance.ts** (70.68% coverage)
+   - Performance monitoring middleware
+   - Metrics collection
+   - Slow request detection
+
+**Implementation Steps:**
+
+1. **Create tests/api/routes/stats.test.ts** (1 day)
+   - Test GET /api/v1/stats endpoints
+   - Mock database queries
+   - Verify response formats
+   - Expected: +1-2% overall coverage
+
+2. **Create tests/middleware/cache.test.ts** (1 day)
+   - Test cache middleware behavior
+   - Cache key generation
+   - TTL handling
+   - Cache invalidation
+   - Expected: +0.5-1% overall coverage
+
+3. **Create tests/middleware/compression.test.ts** (0.5 day)
+   - Test compression middleware
+   - Content-Type filtering
+   - Threshold behavior
+   - Expected: +0.3-0.5% overall coverage
+
+4. **Create tests/middleware/performance.test.ts** (0.5 day)
+   - Test performance monitoring
+   - Metrics collection
+   - Slow query detection
+   - Expected: +0.3-0.5% overall coverage
+
+5. **Evaluate CacheService approach** (2 days)
+   - Option A: Complex Redis mocking for unit tests
+   - Option B: Integration tests with real Redis
+   - Option C: Partial coverage of critical paths only
+   - Implement chosen approach
+   - Expected: +1-2% overall coverage if unit tests, more if integration
+
+6. **Incremental coverage verification** (throughout)
+   - Run `npm run test:coverage` after each test file
+   - Track progress toward 85%/80% thresholds
+   - Adjust approach if needed
+
+**Acceptance Criteria:**
+- [ ] tests/api/routes/stats.test.ts created and passing
+- [ ] tests/middleware/cache.test.ts created and passing
+- [ ] tests/middleware/compression.test.ts created and passing
+- [ ] tests/middleware/performance.test.ts created and passing
+- [ ] CacheService approach decided and implemented
+- [ ] **Overall coverage ≥ 85% statements, 80% branches, 85% lines, 85% functions**
+- [ ] All tests passing (no failing tests)
+- [ ] Coverage report documented
+
+---
+
+### 1.3: Address Technical Debt in Tests
+
+**Duration:** 1-2 days  
+**Priority:** P1 - Quality
+
+**Issues:**
+- AsyncLocalStorage warning in tests (detected open handles)
+- Some tests have loose assertions that should be stricter
+- Mock setup could be more reusable
+
+**Steps:**
+
+1. Fix async handle leak:
 ```typescript
-// src/api/routes/bulk.ts
-app.post('/api/v1/metrics/bulk', authenticate, async (req, res) => {
-  if (!featureFlags.isEnabled('bulk_operations')) {
-    return res.status(403).json({
-      error: 'Bulk operations feature is not enabled'
-    });
-  }
-  
-  // ... bulk operation logic
+// tests/setup.ts
+afterAll(async () => {
+  // Properly cleanup async operations
+  await new Promise(resolve => setTimeout(resolve, 500));
 });
 ```
 
+2. Create shared mock utilities:
+```typescript
+// tests/helpers/mocks.ts
+export const createMockLogger = () => ({
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn(),
+  debug: jest.fn(),
+});
+
+export const createMockRequest = (overrides = {}) => ({
+  body: {},
+  params: {},
+  query: {},
+  headers: {},
+  ...overrides,
+});
+
+export const createMockResponse = () => {
+  const res: any = {
+    status: jest.fn().mockReturnThis(),
+    json: jest.fn().mockReturnThis(),
+    send: jest.fn().mockReturnThis(),
+    setHeader: jest.fn().mockReturnThis(),
+  };
+  return res;
+};
+```
+
+3. Refactor tests to use shared mocks
+
 **Acceptance Criteria:**
-- [ ] Feature flag system implemented
-- [ ] Feature flags configurable via environment
-- [ ] Feature flag API endpoint
-- [ ] Documentation updated
+- [ ] No async handle warnings when running tests
+- [ ] Shared mock utilities created
+- [ ] At least 5 test files refactored to use shared mocks
+- [ ] Test execution time not significantly increased
 
 ---
 
 ## Task 2: Backup & Disaster Recovery (Week 2-3)
 
-### 2.1: Database Backup Strategy
+**Status:** ❌ **NOT STARTED** - Critical operational requirement  
+**Priority:** P1 - High (Required for production)
 
-**Duration:** 3-4 days
+### 2.1: Database Backup Script
+
+**Duration:** 2 days
 
 **Steps:**
 1. Create backup script:
@@ -371,7 +419,7 @@ echo "Database restored successfully from $BACKUP_FILE"
 
 ### 2.2: File Storage Backup
 
-**Duration:** 2 days
+**Duration:** 1 day
 
 **Steps:**
 ```bash
@@ -409,14 +457,71 @@ echo "File backup completed"
 
 ---
 
-## Task 3: UX Enhancements (Week 3-4)
+### 2.3: Backup Documentation
 
-### 3.1: Bulk Operations
+**Duration:** 1 day
 
-**Duration:** 4-5 days
+Create comprehensive backup documentation:
+
+```markdown
+# docs/operations/BACKUP_RECOVERY.md
+
+## Backup Strategy
+
+### Database Backups
+- **Frequency:** Daily at 2 AM UTC
+- **Retention:** 30 days
+- **Location:** Local + S3 (if configured)
+- **Script:** `scripts/backup-database.sh`
+
+### File Backups
+- **Frequency:** Daily at 3 AM UTC
+- **Retention:** 30 days
+- **Location:** Local + S3 (if configured)
+- **Script:** `scripts/backup-files.sh`
+
+## Recovery Procedures
+
+### Database Restore
+```bash
+# List available backups
+ls -lh /var/backups/mdl/
+
+# Restore from specific backup
+./scripts/restore-database.sh /var/backups/mdl/mdl_backup_20251125_020000.sql.gz
+```
+
+### File Restore
+```bash
+# Extract files from backup
+tar -xzf /var/backups/mdl-files/mdl_files_20251125_030000.tar.gz -C /
+```
+
+## Testing Backups
+- **Schedule:** Monthly restore test
+- **Process:** Restore to test environment and verify data integrity
+```
+
+**Acceptance Criteria:**
+- [ ] Backup documentation created
+- [ ] Recovery procedures documented
+- [ ] Test schedule documented
+- [ ] Runbook added to docs/operations/
+
+---
+
+## Task 3: Rate Limiting & Security (Week 3)
+
+**Status:** ⚠️ **PARTIAL** - Basic auth exists, rate limiting needed  
+**Priority:** P1 - High (Production security requirement)
+
+### 3.1: Implement Rate Limiting
+
+**Duration:** 2 days
 
 **Steps:**
-1. Bulk import API:
+
+1. Install dependencies:
 ```typescript
 // src/api/routes/bulk.ts
 import { Router } from 'express';

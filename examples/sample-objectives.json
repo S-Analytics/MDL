@@ -2,195 +2,189 @@
   "objectives": [
     {
       "objective_id": "OBJ-001",
-      "name": "Improve Customer Experience",
-      "description": "Enhance overall customer satisfaction and engagement across all digital touchpoints",
-      "timeframe": {
-        "start": "2025-01-01",
-        "end": "2025-12-31"
-      },
-      "owner_team": "product_team",
+      "title": "Improve Digital Customer Experience",
+      "description": "Enhance user satisfaction and reduce friction in digital interactions through improved UX and reliability",
+      "start_date": "2025-01-01T00:00:00Z",
+      "end_date": "2025-12-31T23:59:59Z",
+      "owner": "product_team",
       "status": "active",
-      "strategic_pillar": "Customer Experience",
-      "priority": "high",
+      "business_priority": "P0",
+      "strategic_theme": "Customer-Centric Growth",
+      "business_domain": "DOMAIN-001",
+      "metric_ids": ["METRIC-LOGIN-SUCCESS-RATE", "METRIC-CSAT"],
       "key_results": [
         {
-          "kr_id": "OBJ-001:KR-001",
-          "name": "Increase Customer Satisfaction Score",
-          "description": "Achieve a CSAT score of 4.5 or higher",
-          "target_value": 4.5,
-          "baseline_value": 4.0,
+          "kr_id": "KR-001-1",
+          "description": "Increase login success rate from 95% to 98%",
+          "target_value": 98.0,
+          "current_value": 96.2,
+          "unit": "%",
+          "metric_id": "METRIC-LOGIN-SUCCESS-RATE",
+          "status": "on_track",
+          "progress_percentage": 55.0
+        },
+        {
+          "kr_id": "KR-001-2",
+          "description": "Improve customer satisfaction score to 8.5+",
+          "target_value": 8.5,
+          "current_value": 8.1,
           "unit": "score",
-          "direction": "increase",
-          "current_value": 4.2,
-          "metric_ids": ["METRIC-CSAT"]
-        },
-        {
-          "kr_id": "OBJ-001:KR-002",
-          "name": "Improve Login Success Rate",
-          "description": "Achieve 99% login success rate",
-          "target_value": 99,
-          "baseline_value": 95,
-          "unit": "percentage",
-          "direction": "increase",
-          "current_value": 97,
-          "metric_ids": ["METRIC-LOGIN-SUCCESS-RATE"]
-        },
-        {
-          "kr_id": "OBJ-001:KR-003",
-          "name": "Reduce Customer Churn",
-          "description": "Decrease monthly churn rate to below 2%",
-          "target_value": 2,
-          "baseline_value": 3.5,
-          "unit": "percentage",
-          "direction": "decrease",
-          "current_value": 2.8,
-          "metric_ids": ["METRIC-CUSTOMER-CHURN-RATE"]
+          "metric_id": "METRIC-CSAT",
+          "status": "on_track",
+          "progress_percentage": 42.9
         }
-      ]
+      ],
+      "metadata": {
+        "created_at": "2025-01-01T00:00:00Z",
+        "created_by": "admin"
+      }
     },
     {
       "objective_id": "OBJ-002",
-      "name": "Accelerate Platform Performance",
-      "description": "Improve system reliability, performance, and deployment frequency",
-      "timeframe": {
-        "start": "2025-01-01",
-        "end": "2025-06-30"
-      },
-      "owner_team": "sre_team",
+      "title": "Achieve Platform Reliability Excellence",
+      "description": "Deliver world-class platform reliability and performance to support customer success and business growth",
+      "start_date": "2025-01-01T00:00:00Z",
+      "end_date": "2025-12-31T23:59:59Z",
+      "owner": "sre_team",
       "status": "active",
-      "strategic_pillar": "Technical Excellence",
-      "priority": "high",
+      "business_priority": "P0",
+      "strategic_theme": "Operational Excellence",
+      "business_domain": "DOMAIN-002",
+      "metric_ids": ["METRIC-SYSTEM-UPTIME", "METRIC-API-RESPONSE-TIME-P95", "METRIC-DEPLOYMENT-FREQUENCY"],
       "key_results": [
         {
-          "kr_id": "OBJ-002:KR-001",
-          "name": "Reduce API Response Time",
-          "description": "Achieve P95 API response time under 200ms",
-          "target_value": 200,
-          "baseline_value": 350,
-          "unit": "milliseconds",
-          "direction": "decrease",
-          "current_value": 280,
-          "metric_ids": ["METRIC-API-RESPONSE-TIME-P95"]
+          "kr_id": "KR-002-1",
+          "description": "Maintain 99.95% system uptime",
+          "target_value": 99.95,
+          "current_value": 99.92,
+          "unit": "%",
+          "metric_id": "METRIC-SYSTEM-UPTIME",
+          "status": "on_track",
+          "progress_percentage": 40.0
         },
         {
-          "kr_id": "OBJ-002:KR-002",
-          "name": "Increase Deployment Frequency",
-          "description": "Deploy to production at least 20 times per week",
-          "target_value": 20,
-          "baseline_value": 8,
+          "kr_id": "KR-002-2",
+          "description": "Keep API P95 response time under 200ms",
+          "target_value": 200.0,
+          "current_value": 215.0,
+          "unit": "ms",
+          "metric_id": "METRIC-API-RESPONSE-TIME-P95",
+          "status": "at_risk",
+          "progress_percentage": 70.0
+        },
+        {
+          "kr_id": "KR-002-3",
+          "description": "Increase deployment frequency to 50+ per week",
+          "target_value": 50.0,
+          "current_value": 42.0,
           "unit": "deployments",
-          "direction": "increase",
-          "current_value": 15,
-          "metric_ids": ["METRIC-DEPLOYMENT-FREQUENCY"]
-        },
-        {
-          "kr_id": "OBJ-002:KR-003",
-          "name": "Achieve 99.9% Uptime",
-          "description": "Maintain system availability at 99.9% or higher",
-          "target_value": 99.9,
-          "baseline_value": 99.5,
-          "unit": "percentage",
-          "direction": "increase",
-          "current_value": 99.7,
-          "metric_ids": ["METRIC-SYSTEM-UPTIME"]
+          "metric_id": "METRIC-DEPLOYMENT-FREQUENCY",
+          "status": "on_track",
+          "progress_percentage": 60.0
         }
-      ]
+      ],
+      "metadata": {
+        "created_at": "2025-01-01T00:00:00Z",
+        "created_by": "admin"
+      }
     },
     {
       "objective_id": "OBJ-003",
-      "name": "Drive Revenue Growth",
-      "description": "Accelerate revenue growth and improve customer lifetime value",
-      "timeframe": {
-        "start": "2025-01-01",
-        "end": "2025-12-31"
-      },
-      "owner_team": "finance_analytics",
+      "title": "Drive Sustainable Revenue Growth",
+      "description": "Accelerate revenue growth through improved conversion and expansion while maintaining healthy unit economics",
+      "start_date": "2025-01-01T00:00:00Z",
+      "end_date": "2025-12-31T23:59:59Z",
+      "owner": "revenue_ops",
       "status": "active",
-      "strategic_pillar": "Revenue Growth",
-      "priority": "high",
+      "business_priority": "P0",
+      "strategic_theme": "Revenue Growth",
+      "business_domain": "DOMAIN-003",
+      "metric_ids": ["METRIC-REVENUE-ARR", "METRIC-TRIAL-CONVERSION-RATE", "METRIC-CUSTOMER-LTV"],
       "key_results": [
         {
-          "kr_id": "OBJ-003:KR-001",
-          "name": "Grow Annual Recurring Revenue",
-          "description": "Achieve $50M in ARR by end of year",
-          "target_value": 50000000,
-          "baseline_value": 35000000,
-          "unit": "USD",
-          "direction": "increase",
-          "current_value": 42000000,
-          "metric_ids": ["METRIC-REVENUE-ARR"]
+          "kr_id": "KR-003-1",
+          "description": "Grow ARR from $10M to $15M",
+          "target_value": 15000000.0,
+          "current_value": 12500000.0,
+          "unit": "$",
+          "metric_id": "METRIC-REVENUE-ARR",
+          "status": "on_track",
+          "progress_percentage": 50.0
         },
         {
-          "kr_id": "OBJ-003:KR-002",
-          "name": "Increase Customer LTV",
-          "description": "Improve average customer lifetime value to $100k",
-          "target_value": 100000,
-          "baseline_value": 75000,
-          "unit": "USD",
-          "direction": "increase",
-          "current_value": 85000,
-          "metric_ids": ["METRIC-CUSTOMER-LTV"]
+          "kr_id": "KR-003-2",
+          "description": "Increase trial-to-paid conversion from 15% to 20%",
+          "target_value": 20.0,
+          "current_value": 17.5,
+          "unit": "%",
+          "metric_id": "METRIC-TRIAL-CONVERSION-RATE",
+          "status": "on_track",
+          "progress_percentage": 50.0
         },
         {
-          "kr_id": "OBJ-003:KR-003",
-          "name": "Improve Conversion Rate",
-          "description": "Increase trial to paid conversion rate to 25%",
-          "target_value": 25,
-          "baseline_value": 18,
-          "unit": "percentage",
-          "direction": "increase",
-          "current_value": 21,
-          "metric_ids": ["METRIC-TRIAL-CONVERSION-RATE"]
+          "kr_id": "KR-003-3",
+          "description": "Improve customer LTV from $50K to $65K",
+          "target_value": 65000.0,
+          "current_value": 55000.0,
+          "unit": "$",
+          "metric_id": "METRIC-CUSTOMER-LTV",
+          "status": "on_track",
+          "progress_percentage": 33.3
         }
-      ]
+      ],
+      "metadata": {
+        "created_at": "2025-01-01T00:00:00Z",
+        "created_by": "admin"
+      }
     },
     {
       "objective_id": "OBJ-004",
-      "name": "Build Engineering Velocity",
-      "description": "Increase development speed and code quality",
-      "timeframe": {
-        "start": "2025-01-01",
-        "end": "2025-12-31"
-      },
-      "owner_team": "engineering_leadership",
+      "title": "Enhance Engineering Velocity",
+      "description": "Improve development speed and code quality through better processes and tooling",
+      "start_date": "2025-01-01T00:00:00Z",
+      "end_date": "2025-06-30T23:59:59Z",
+      "owner": "engineering_leadership",
       "status": "active",
-      "strategic_pillar": "Engineering Excellence",
-      "priority": "medium",
+      "business_priority": "P1",
+      "strategic_theme": "Engineering Excellence",
+      "business_domain": "DOMAIN-006",
+      "metric_ids": ["METRIC-PR-CYCLE-TIME", "METRIC-CODE-COVERAGE", "METRIC-BUG-ESCAPE-RATE"],
       "key_results": [
         {
-          "kr_id": "OBJ-004:KR-001",
-          "name": "Reduce Cycle Time",
-          "description": "Reduce average PR cycle time to under 24 hours",
-          "target_value": 24,
-          "baseline_value": 48,
-          "unit": "hours",
-          "direction": "decrease",
-          "current_value": 36,
-          "metric_ids": ["METRIC-PR-CYCLE-TIME"]
+          "kr_id": "KR-004-1",
+          "description": "Reduce PR cycle time from 3 days to 1 day",
+          "target_value": 1.0,
+          "current_value": 2.0,
+          "unit": "days",
+          "metric_id": "METRIC-PR-CYCLE-TIME",
+          "status": "on_track",
+          "progress_percentage": 50.0
         },
         {
-          "kr_id": "OBJ-004:KR-002",
-          "name": "Improve Code Coverage",
-          "description": "Achieve 80% code coverage across all services",
-          "target_value": 80,
-          "baseline_value": 65,
-          "unit": "percentage",
-          "direction": "increase",
-          "current_value": 72,
-          "metric_ids": ["METRIC-CODE-COVERAGE"]
+          "kr_id": "KR-004-2",
+          "description": "Achieve 85% code coverage across all services",
+          "target_value": 85.0,
+          "current_value": 78.0,
+          "unit": "%",
+          "metric_id": "METRIC-CODE-COVERAGE",
+          "status": "on_track",
+          "progress_percentage": 53.3
         },
         {
-          "kr_id": "OBJ-004:KR-003",
-          "name": "Reduce Bug Escape Rate",
-          "description": "Reduce production bugs to less than 5 per release",
-          "target_value": 5,
-          "baseline_value": 12,
-          "unit": "bugs",
-          "direction": "decrease",
-          "current_value": 8,
-          "metric_ids": ["METRIC-BUG-ESCAPE-RATE"]
+          "kr_id": "KR-004-3",
+          "description": "Reduce bug escape rate from 5% to 2%",
+          "target_value": 2.0,
+          "current_value": 3.5,
+          "unit": "%",
+          "metric_id": "METRIC-BUG-ESCAPE-RATE",
+          "status": "on_track",
+          "progress_percentage": 50.0
         }
-      ]
+      ],
+      "metadata": {
+        "created_at": "2025-01-01T00:00:00Z",
+        "created_by": "admin"
+      }
     }
   ]
 }
