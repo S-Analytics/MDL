@@ -78,7 +78,7 @@
       "version": "1.0.0",
       "status": "active",
       "created_at": "2025-01-01T00:00:00Z",
-      "updated_at": "2025-11-25T21:54:17.689Z"
+      "updated_at": "2025-01-01T00:00:00Z"
     },
     "dimensions": [
       {
@@ -171,59 +171,6 @@
           "language": "sql",
           "query": "SELECT DATE(event_time) as date, COUNT(CASE WHEN status = 'success' THEN 1 END) / COUNT(*) as success_rate FROM events_logins WHERE event_time >= CURRENT_DATE - INTERVAL 30 DAY GROUP BY DATE(event_time)"
         }
-      ],
-      "version": "1.0.6",
-      "last_updated": "2025-11-25T21:54:17.689Z",
-      "last_updated_by": "dashboard_user",
-      "change_history": [
-        {
-          "version": "1.0.1",
-          "timestamp": "2025-11-19T02:49:54.511Z",
-          "changed_by": "dashboard_user",
-          "change_type": "patch",
-          "changes_summary": "Updated ",
-          "fields_changed": []
-        },
-        {
-          "version": "1.0.2",
-          "timestamp": "2025-11-19T02:50:05.217Z",
-          "changed_by": "dashboard_user",
-          "change_type": "patch",
-          "changes_summary": "Updated ",
-          "fields_changed": []
-        },
-        {
-          "version": "1.0.3",
-          "timestamp": "2025-11-19T02:50:14.402Z",
-          "changed_by": "dashboard_user",
-          "change_type": "patch",
-          "changes_summary": "Updated ",
-          "fields_changed": []
-        },
-        {
-          "version": "1.0.4",
-          "timestamp": "2025-11-25T21:28:37.258Z",
-          "changed_by": "dashboard_user",
-          "change_type": "patch",
-          "changes_summary": "Updated ",
-          "fields_changed": []
-        },
-        {
-          "version": "1.0.5",
-          "timestamp": "2025-11-25T21:30:14.896Z",
-          "changed_by": "dashboard_user",
-          "change_type": "patch",
-          "changes_summary": "Updated ",
-          "fields_changed": []
-        },
-        {
-          "version": "1.0.6",
-          "timestamp": "2025-11-25T21:54:17.689Z",
-          "changed_by": "dashboard_user",
-          "change_type": "patch",
-          "changes_summary": "Updated ",
-          "fields_changed": []
-        }
       ]
     }
   },
@@ -311,7 +258,7 @@
       "version": "1.0.0",
       "status": "active",
       "created_at": "2025-01-01T00:00:00Z",
-      "updated_at": "2025-11-25T21:54:17.692Z"
+      "updated_at": "2025-01-01T00:00:00Z"
     },
     "dimensions": [
       {
@@ -415,37 +362,6 @@
           "language": "promql",
           "query": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))"
         }
-      ],
-      "version": "1.0.3",
-      "last_updated": "2025-11-25T21:54:17.692Z",
-      "last_updated_by": "dashboard_user",
-      "change_history": [
-        {
-          "version": "1.0.1",
-          "timestamp": "2025-11-25T21:28:37.261Z",
-          "changed_by": "dashboard_user",
-          "change_type": "patch",
-          "changes_summary": "Updated tags",
-          "fields_changed": [
-            "tags"
-          ]
-        },
-        {
-          "version": "1.0.2",
-          "timestamp": "2025-11-25T21:30:14.899Z",
-          "changed_by": "dashboard_user",
-          "change_type": "patch",
-          "changes_summary": "Updated ",
-          "fields_changed": []
-        },
-        {
-          "version": "1.0.3",
-          "timestamp": "2025-11-25T21:54:17.692Z",
-          "changed_by": "dashboard_user",
-          "change_type": "patch",
-          "changes_summary": "Updated ",
-          "fields_changed": []
-        }
       ]
     }
   },
@@ -533,7 +449,7 @@
       "version": "1.0.0",
       "status": "active",
       "created_at": "2025-01-01T00:00:00Z",
-      "updated_at": "2025-11-25T21:54:17.693Z"
+      "updated_at": "2025-01-01T00:00:00Z"
     },
     "dimensions": [
       {
@@ -634,35 +550,6 @@
           "language": "sql",
           "query": "SELECT SUM(mrr * 12) as arr FROM subscriptions WHERE status = 'active' AND as_of_date = CURRENT_DATE"
         }
-      ],
-      "version": "1.0.3",
-      "last_updated": "2025-11-25T21:54:17.693Z",
-      "last_updated_by": "dashboard_user",
-      "change_history": [
-        {
-          "version": "1.0.1",
-          "timestamp": "2025-11-25T21:28:37.262Z",
-          "changed_by": "dashboard_user",
-          "change_type": "patch",
-          "changes_summary": "Updated ",
-          "fields_changed": []
-        },
-        {
-          "version": "1.0.2",
-          "timestamp": "2025-11-25T21:30:14.901Z",
-          "changed_by": "dashboard_user",
-          "change_type": "patch",
-          "changes_summary": "Updated ",
-          "fields_changed": []
-        },
-        {
-          "version": "1.0.3",
-          "timestamp": "2025-11-25T21:54:17.693Z",
-          "changed_by": "dashboard_user",
-          "change_type": "patch",
-          "changes_summary": "Updated ",
-          "fields_changed": []
-        }
       ]
     }
   },
@@ -739,7 +626,7 @@
       "version": "1.0.0",
       "status": "active",
       "created_at": "2025-01-01T00:00:00Z",
-      "updated_at": "2025-11-25T21:54:17.694Z"
+      "updated_at": "2025-01-01T00:00:00Z"
     },
     "dimensions": [
       {
@@ -839,35 +726,6 @@
           "language": "sql",
           "query": "SELECT DATE_TRUNC('month', churn_date) as month, COUNT(DISTINCT customer_id) / LAG(COUNT(DISTINCT customer_id)) OVER (ORDER BY month) as churn_rate FROM subscriptions WHERE churn_date IS NOT NULL GROUP BY month"
         }
-      ],
-      "version": "1.0.3",
-      "last_updated": "2025-11-25T21:54:17.694Z",
-      "last_updated_by": "dashboard_user",
-      "change_history": [
-        {
-          "version": "1.0.1",
-          "timestamp": "2025-11-25T21:28:37.264Z",
-          "changed_by": "dashboard_user",
-          "change_type": "patch",
-          "changes_summary": "Updated ",
-          "fields_changed": []
-        },
-        {
-          "version": "1.0.2",
-          "timestamp": "2025-11-25T21:30:14.903Z",
-          "changed_by": "dashboard_user",
-          "change_type": "patch",
-          "changes_summary": "Updated ",
-          "fields_changed": []
-        },
-        {
-          "version": "1.0.3",
-          "timestamp": "2025-11-25T21:54:17.694Z",
-          "changed_by": "dashboard_user",
-          "change_type": "patch",
-          "changes_summary": "Updated ",
-          "fields_changed": []
-        }
       ]
     }
   },
@@ -951,7 +809,7 @@
       "version": "1.0.0",
       "status": "active",
       "created_at": "2025-01-01T00:00:00Z",
-      "updated_at": "2025-11-25T21:54:17.694Z"
+      "updated_at": "2025-01-01T00:00:00Z"
     },
     "dimensions": [
       {
@@ -1024,35 +882,6 @@
         {
           "language": "sql",
           "query": "SELECT DATE(deployment_time) as date, COUNT(*) as deployments FROM deployments WHERE environment = 'production' AND status = 'success' GROUP BY date"
-        }
-      ],
-      "version": "1.0.3",
-      "last_updated": "2025-11-25T21:54:17.694Z",
-      "last_updated_by": "dashboard_user",
-      "change_history": [
-        {
-          "version": "1.0.1",
-          "timestamp": "2025-11-25T21:28:37.269Z",
-          "changed_by": "dashboard_user",
-          "change_type": "patch",
-          "changes_summary": "Updated ",
-          "fields_changed": []
-        },
-        {
-          "version": "1.0.2",
-          "timestamp": "2025-11-25T21:30:14.903Z",
-          "changed_by": "dashboard_user",
-          "change_type": "patch",
-          "changes_summary": "Updated ",
-          "fields_changed": []
-        },
-        {
-          "version": "1.0.3",
-          "timestamp": "2025-11-25T21:54:17.694Z",
-          "changed_by": "dashboard_user",
-          "change_type": "patch",
-          "changes_summary": "Updated ",
-          "fields_changed": []
         }
       ]
     }
@@ -1129,7 +958,7 @@
       "version": "1.0.0",
       "status": "active",
       "created_at": "2025-01-01T00:00:00Z",
-      "updated_at": "2025-11-25T21:54:17.695Z"
+      "updated_at": "2025-01-01T00:00:00Z"
     },
     "dimensions": [
       {
@@ -1202,36 +1031,7 @@
     },
     "metadata": {
       "notes": "CSAT is collected immediately after key interactions (purchase, support, etc.).",
-      "example_queries": [],
-      "version": "1.0.3",
-      "last_updated": "2025-11-25T21:54:17.695Z",
-      "last_updated_by": "dashboard_user",
-      "change_history": [
-        {
-          "version": "1.0.1",
-          "timestamp": "2025-11-25T21:28:37.274Z",
-          "changed_by": "dashboard_user",
-          "change_type": "patch",
-          "changes_summary": "Updated ",
-          "fields_changed": []
-        },
-        {
-          "version": "1.0.2",
-          "timestamp": "2025-11-25T21:30:14.907Z",
-          "changed_by": "dashboard_user",
-          "change_type": "patch",
-          "changes_summary": "Updated ",
-          "fields_changed": []
-        },
-        {
-          "version": "1.0.3",
-          "timestamp": "2025-11-25T21:54:17.695Z",
-          "changed_by": "dashboard_user",
-          "change_type": "patch",
-          "changes_summary": "Updated ",
-          "fields_changed": []
-        }
-      ]
+      "example_queries": []
     }
   },
   {
@@ -1315,7 +1115,7 @@
       "version": "1.0.0",
       "status": "active",
       "created_at": "2025-01-01T00:00:00Z",
-      "updated_at": "2025-11-25T21:54:17.696Z"
+      "updated_at": "2025-01-01T00:00:00Z"
     },
     "dimensions": [
       {
@@ -1391,36 +1191,7 @@
     },
     "metadata": {
       "notes": "This is a key SLI for our 99.9% uptime SLO commitment.",
-      "example_queries": [],
-      "version": "1.0.3",
-      "last_updated": "2025-11-25T21:54:17.696Z",
-      "last_updated_by": "dashboard_user",
-      "change_history": [
-        {
-          "version": "1.0.1",
-          "timestamp": "2025-11-25T21:28:37.276Z",
-          "changed_by": "dashboard_user",
-          "change_type": "patch",
-          "changes_summary": "Updated ",
-          "fields_changed": []
-        },
-        {
-          "version": "1.0.2",
-          "timestamp": "2025-11-25T21:30:14.908Z",
-          "changed_by": "dashboard_user",
-          "change_type": "patch",
-          "changes_summary": "Updated ",
-          "fields_changed": []
-        },
-        {
-          "version": "1.0.3",
-          "timestamp": "2025-11-25T21:54:17.696Z",
-          "changed_by": "dashboard_user",
-          "change_type": "patch",
-          "changes_summary": "Updated ",
-          "fields_changed": []
-        }
-      ]
+      "example_queries": []
     }
   },
   {
@@ -1503,7 +1274,7 @@
       "version": "1.0.0",
       "status": "active",
       "created_at": "2025-01-01T00:00:00Z",
-      "updated_at": "2025-11-25T21:54:17.697Z"
+      "updated_at": "2025-01-01T00:00:00Z"
     },
     "dimensions": [
       {
@@ -1570,36 +1341,7 @@
     },
     "metadata": {
       "notes": "LTV should be compared with CAC to ensure sustainable unit economics.",
-      "example_queries": [],
-      "version": "1.0.3",
-      "last_updated": "2025-11-25T21:54:17.697Z",
-      "last_updated_by": "dashboard_user",
-      "change_history": [
-        {
-          "version": "1.0.1",
-          "timestamp": "2025-11-25T21:28:37.278Z",
-          "changed_by": "dashboard_user",
-          "change_type": "patch",
-          "changes_summary": "Updated ",
-          "fields_changed": []
-        },
-        {
-          "version": "1.0.2",
-          "timestamp": "2025-11-25T21:30:14.909Z",
-          "changed_by": "dashboard_user",
-          "change_type": "patch",
-          "changes_summary": "Updated ",
-          "fields_changed": []
-        },
-        {
-          "version": "1.0.3",
-          "timestamp": "2025-11-25T21:54:17.697Z",
-          "changed_by": "dashboard_user",
-          "change_type": "patch",
-          "changes_summary": "Updated ",
-          "fields_changed": []
-        }
-      ]
+      "example_queries": []
     }
   },
   {
@@ -1680,7 +1422,7 @@
       "version": "1.0.0",
       "status": "active",
       "created_at": "2025-01-01T00:00:00Z",
-      "updated_at": "2025-11-25T21:54:17.700Z"
+      "updated_at": "2025-01-01T00:00:00Z"
     },
     "dimensions": [
       {
@@ -1755,36 +1497,7 @@
     },
     "metadata": {
       "notes": "Track cohort-based conversion rates to understand time-to-convert patterns.",
-      "example_queries": [],
-      "version": "1.0.3",
-      "last_updated": "2025-11-25T21:54:17.700Z",
-      "last_updated_by": "dashboard_user",
-      "change_history": [
-        {
-          "version": "1.0.1",
-          "timestamp": "2025-11-25T21:28:37.281Z",
-          "changed_by": "dashboard_user",
-          "change_type": "patch",
-          "changes_summary": "Updated ",
-          "fields_changed": []
-        },
-        {
-          "version": "1.0.2",
-          "timestamp": "2025-11-25T21:30:14.911Z",
-          "changed_by": "dashboard_user",
-          "change_type": "patch",
-          "changes_summary": "Updated ",
-          "fields_changed": []
-        },
-        {
-          "version": "1.0.3",
-          "timestamp": "2025-11-25T21:54:17.700Z",
-          "changed_by": "dashboard_user",
-          "change_type": "patch",
-          "changes_summary": "Updated ",
-          "fields_changed": []
-        }
-      ]
+      "example_queries": []
     }
   },
   {
@@ -1859,7 +1572,7 @@
       "version": "1.0.0",
       "status": "active",
       "created_at": "2025-01-01T00:00:00Z",
-      "updated_at": "2025-11-25T21:54:17.701Z"
+      "updated_at": "2025-01-01T00:00:00Z"
     },
     "dimensions": [
       {
@@ -1924,36 +1637,7 @@
     },
     "metadata": {
       "notes": "Smaller PRs typically have faster cycle times. Track PR size separately.",
-      "example_queries": [],
-      "version": "1.0.3",
-      "last_updated": "2025-11-25T21:54:17.701Z",
-      "last_updated_by": "dashboard_user",
-      "change_history": [
-        {
-          "version": "1.0.1",
-          "timestamp": "2025-11-25T21:28:37.282Z",
-          "changed_by": "dashboard_user",
-          "change_type": "patch",
-          "changes_summary": "Updated ",
-          "fields_changed": []
-        },
-        {
-          "version": "1.0.2",
-          "timestamp": "2025-11-25T21:30:14.912Z",
-          "changed_by": "dashboard_user",
-          "change_type": "patch",
-          "changes_summary": "Updated ",
-          "fields_changed": []
-        },
-        {
-          "version": "1.0.3",
-          "timestamp": "2025-11-25T21:54:17.701Z",
-          "changed_by": "dashboard_user",
-          "change_type": "patch",
-          "changes_summary": "Updated ",
-          "fields_changed": []
-        }
-      ]
+      "example_queries": []
     }
   },
   {
@@ -2034,7 +1718,7 @@
       "version": "1.0.0",
       "status": "active",
       "created_at": "2025-01-01T00:00:00Z",
-      "updated_at": "2025-11-25T21:54:17.703Z"
+      "updated_at": "2025-01-01T00:00:00Z"
     },
     "dimensions": [
       {
@@ -2108,36 +1792,7 @@
     },
     "metadata": {
       "notes": "Focus on meaningful tests rather than just hitting coverage percentages.",
-      "example_queries": [],
-      "version": "1.0.3",
-      "last_updated": "2025-11-25T21:54:17.703Z",
-      "last_updated_by": "dashboard_user",
-      "change_history": [
-        {
-          "version": "1.0.1",
-          "timestamp": "2025-11-25T21:28:37.292Z",
-          "changed_by": "dashboard_user",
-          "change_type": "patch",
-          "changes_summary": "Updated ",
-          "fields_changed": []
-        },
-        {
-          "version": "1.0.2",
-          "timestamp": "2025-11-25T21:30:14.913Z",
-          "changed_by": "dashboard_user",
-          "change_type": "patch",
-          "changes_summary": "Updated ",
-          "fields_changed": []
-        },
-        {
-          "version": "1.0.3",
-          "timestamp": "2025-11-25T21:54:17.703Z",
-          "changed_by": "dashboard_user",
-          "change_type": "patch",
-          "changes_summary": "Updated ",
-          "fields_changed": []
-        }
-      ]
+      "example_queries": []
     }
   },
   {
@@ -2218,7 +1873,7 @@
       "version": "1.0.0",
       "status": "active",
       "created_at": "2025-01-01T00:00:00Z",
-      "updated_at": "2025-11-25T21:54:17.705Z"
+      "updated_at": "2025-01-01T00:00:00Z"
     },
     "dimensions": [
       {
@@ -2306,20 +1961,7 @@
     },
     "metadata": {
       "notes": "Track by severity to focus on critical and high severity bugs separately.",
-      "example_queries": [],
-      "version": "1.0.1",
-      "last_updated": "2025-11-25T21:54:17.705Z",
-      "last_updated_by": "dashboard_user",
-      "change_history": [
-        {
-          "version": "1.0.1",
-          "timestamp": "2025-11-25T21:54:17.705Z",
-          "changed_by": "dashboard_user",
-          "change_type": "patch",
-          "changes_summary": "Updated ",
-          "fields_changed": []
-        }
-      ]
+      "example_queries": []
     }
   }
 ]

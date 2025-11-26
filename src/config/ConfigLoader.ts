@@ -186,11 +186,11 @@ export class ConfigLoader {
       domain_id: data.id,
       name: data.name,
       description: data.description || '',
-      owner_team: data.owner || '',
-      contact_email: data.owner || '',
-      tier_focus: data.metadata || {},
-      key_areas: Array.isArray(data.objectives) ? data.objectives : [],
-      color: data.metadata?.color || undefined
+      owner_team: data.owner || data.owner_team || '',
+      contact_email: data.owner || data.contact_email || '',
+      tier_focus: data.metadata || data.tier_focus || {},
+      key_areas: Array.isArray(data.objectives) ? data.objectives : (Array.isArray(data.key_areas) ? data.key_areas : []),
+      color: data.metadata?.color || data.color || undefined
     };
   }
 

@@ -11,7 +11,7 @@
       "created_at": "2025-11-19T21:08:52.842Z",
       "updated_at": "2025-11-19T21:08:52.842Z",
       "metadata": {},
-      "last_login_at": "2025-11-25T21:54:17.594Z"
+      "last_login_at": "2025-11-26T04:03:49.115Z"
     },
     {
       "user_id": "a2fa40a3-ef18-4708-accd-fb433d3af075",
@@ -24,7 +24,7 @@
       "created_at": "2025-11-24T20:57:19.019Z",
       "updated_at": "2025-11-24T20:57:19.019Z",
       "metadata": {},
-      "last_login_at": "2025-11-25T21:24:49.320Z"
+      "last_login_at": "2025-11-26T03:52:37.391Z"
     }
   ],
   "refreshTokens": [
@@ -202,6 +202,54 @@
       "token_hash": "ba43675f0f4b52a90042384b73544ed4fab611003338e07af912fea25794a08d",
       "expires_at": "2025-12-02T21:54:17.605Z",
       "created_at": "2025-11-25T21:54:17.605Z",
+      "revoked": false
+    },
+    {
+      "token_id": "1b4b054e-0551-4db1-875a-1f2cad20204c",
+      "user_id": "a2fa40a3-ef18-4708-accd-fb433d3af075",
+      "token_hash": "87667e3282bc729862409207d98bddf4993fd22946988cc4b8e15ae3bfd53157",
+      "expires_at": "2025-12-03T03:52:37.393Z",
+      "created_at": "2025-11-26T03:52:37.393Z",
+      "revoked": false
+    },
+    {
+      "token_id": "1f71d888-de42-43b8-acd2-ea5d25d1af02",
+      "user_id": "9a6d9542-39af-4b48-8a06-4053b6752b83",
+      "token_hash": "6672989bdd4e2e00198bcd6bea0749406d11c0b96e5ef9d4586390d06f28c533",
+      "expires_at": "2025-12-03T04:01:12.201Z",
+      "created_at": "2025-11-26T04:01:12.201Z",
+      "revoked": false
+    },
+    {
+      "token_id": "d95a3185-75c9-4074-a03a-4cb6c6aca136",
+      "user_id": "9a6d9542-39af-4b48-8a06-4053b6752b83",
+      "token_hash": "85a08d1084a3e50b9094fe1abd1390f01aff7fcbb06ce68e92ad78333eaab714",
+      "expires_at": "2025-12-03T04:01:49.352Z",
+      "created_at": "2025-11-26T04:01:49.352Z",
+      "revoked": false
+    },
+    {
+      "token_id": "ff97762a-82fa-427e-af2e-1e9b7b9088a9",
+      "user_id": "9a6d9542-39af-4b48-8a06-4053b6752b83",
+      "token_hash": "cf53d0a2f281778f2011dceb393949cb5904c4d57be536cc8c593f73ada65d32",
+      "expires_at": "2025-12-03T04:01:57.176Z",
+      "created_at": "2025-11-26T04:01:57.176Z",
+      "revoked": false
+    },
+    {
+      "token_id": "e4dcd118-40f1-4afd-9ef5-0ab74b18ae4a",
+      "user_id": "9a6d9542-39af-4b48-8a06-4053b6752b83",
+      "token_hash": "f84b95a0ef68276e64dd87b8883ebbc308e5c781fe09e7cb59d245bb1eb10582",
+      "expires_at": "2025-12-03T04:03:38.416Z",
+      "created_at": "2025-11-26T04:03:38.416Z",
+      "revoked": false
+    },
+    {
+      "token_id": "8e46dbb0-f423-4e58-ab7e-906283698d8f",
+      "user_id": "9a6d9542-39af-4b48-8a06-4053b6752b83",
+      "token_hash": "2f686c094960f824586c92af75e8de8eaa6151b49dc24c66cbc94f601c19bed2",
+      "expires_at": "2025-12-03T04:03:49.116Z",
+      "created_at": "2025-11-26T04:03:49.116Z",
       "revoked": false
     }
   ],
