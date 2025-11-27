@@ -2587,7 +2587,11 @@ export function getDashboardHTML(): string {
             document.getElementById('dom_owner_team').value = domain.owner_team;
             document.getElementById('dom_contact_email').value = domain.contact_email;
             document.getElementById('dom_color').value = domain.color || '#667eea';
-            document.getElementById('dom_tier_focus').value = (domain.tier_focus || []).join(', ');
+            // Handle tier_focus - can be array (old format) or object (new format with metadata)
+            const tierFocusValue = Array.isArray(domain.tier_focus) 
+                ? domain.tier_focus.join(', ')
+                : '';
+            document.getElementById('dom_tier_focus').value = tierFocusValue;
             document.getElementById('dom_description').value = domain.description;
             document.getElementById('dom_key_areas').value = (domain.key_areas || []).join(', ');
 
