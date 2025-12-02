@@ -1475,8 +1475,8 @@ export function getDashboardHTML(): string {
                 const [metricsRes, statsRes, domainsRes, objectivesRes] = await Promise.all([
                     fetch('/api/metrics?_=' + cacheBuster, { headers }),
                     fetch('/api/stats?_=' + cacheBuster, { headers }),
-                    fetch('/examples/sample-domains.json?_=' + cacheBuster).catch(() => ({ json: async () => ({ domains: [] }) })),
-                    fetch('/examples/sample-objectives.json?_=' + cacheBuster).catch(() => ({ json: async () => ({ objectives: [] }) }))
+                    fetch('/api/domains?_=' + cacheBuster, { headers }),
+                    fetch('/api/objectives?_=' + cacheBuster, { headers })
                 ]);
                 
                 // Check for authentication errors
@@ -1495,14 +1495,8 @@ export function getDashboardHTML(): string {
                 
                 allMetrics = metricsData.data || [];
                 stats = statsData.data || {};
-                
-                // Load domains from localStorage first, then fall back to sample data
-                const storedDomains = await loadDomainsFromStorage();
-                allDomains = storedDomains || domainsData.domains || [];
-                
-                // Load objectives from localStorage first, then fall back to sample data
-                const storedObjectives = await loadObjectivesFromStorage();
-                allObjectives = storedObjectives || objectivesData.objectives || [];
+                allDomains = domainsData.data || [];
+                allObjectives = objectivesData.data || [];
                 
                 // Update objectives count
                 stats.objectives = allObjectives.length;
@@ -2593,7 +2587,11 @@ export function getDashboardHTML(): string {
             document.getElementById('dom_owner_team').value = domain.owner_team;
             document.getElementById('dom_contact_email').value = domain.contact_email;
             document.getElementById('dom_color').value = domain.color || '#667eea';
-            document.getElementById('dom_tier_focus').value = (domain.tier_focus || []).join(', ');
+            // Handle tier_focus - can be array (old format) or object (new format with metadata)
+            const tierFocusValue = Array.isArray(domain.tier_focus) 
+                ? domain.tier_focus.join(', ')
+                : '';
+            document.getElementById('dom_tier_focus').value = tierFocusValue;
             document.getElementById('dom_description').value = domain.description;
             document.getElementById('dom_key_areas').value = (domain.key_areas || []).join(', ');
 
@@ -3251,7 +3249,21 @@ export function getDashboardHTML(): string {
                     console.log('Using PostgreSQL - domains are saved individually');
                     return true;
                 } else {
-                    localStorage.setItem('mdl_domains', JSON.stringify(allDomains));
+                    // Save to local storage via API
+                    const token = localStorage.getItem('accessToken');
+                    const response = await fetch('/api/domains/save', {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + token
+                        },
+                        body: JSON.stringify({ domains: allDomains })
+                    });
+
+                    const result = await response.json();
+                    if (!response.ok || !result.success) {
+                        throw new Error(result.error || 'Failed to save domains');
+                    }
                     return true;
                 }
             } catch (error) {
@@ -3318,17 +3330,22 @@ export function getDashboardHTML(): string {
                     // Refresh data from database
                     await fetchData();
                 } else {
-                    // Delete from localStorage
-                    const index = allDomains.findIndex(d => d.domain_id === domainId);
-                    if (index !== -1) {
-                        allDomains.splice(index, 1);
-                        await saveDomainsToStorage();
-                        renderDomains();
-                        updateStats();
-                    } else {
-                        showToast('Domain not found', 'error');
-                        return;
+                    // Delete from local storage via API
+                    const token = localStorage.getItem('accessToken');
+                    const response = await fetch('/api/domains/' + domainId, {
+                        method: 'DELETE',
+                        headers: { 
+                            'Authorization': 'Bearer ' + token
+                        }
+                    });
+
+                    const result = await response.json();
+                    if (!response.ok || !result.success) {
+                        throw new Error(result.error || 'Failed to delete domain');
                     }
+
+                    // Refresh data from API
+                    await fetchData();
                 }
                 
                 showToast('Domain deleted successfully!', 'success');
@@ -3642,9 +3659,22 @@ export function getDashboardHTML(): string {
         });
 
         async function saveObjectivesToStorage() {
-            // Save to localStorage for now (in a real app, this would be an API call)
             try {
-                localStorage.setItem('mdl_objectives', JSON.stringify(allObjectives));
+                // Save to local storage via API
+                const token = localStorage.getItem('accessToken');
+                const response = await fetch('/api/objectives/save', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ objectives: allObjectives })
+                });
+
+                const result = await response.json();
+                if (!response.ok || !result.success) {
+                    throw new Error(result.error || 'Failed to save objectives');
+                }
                 return true;
             } catch (error) {
                 console.error('Error saving objectives:', error);
@@ -3701,17 +3731,22 @@ export function getDashboardHTML(): string {
                     // Refresh data from database
                     await fetchData();
                 } else {
-                    // Delete from localStorage
-                    const index = allObjectives.findIndex(o => o.objective_id === objectiveId);
-                    if (index !== -1) {
-                        allObjectives.splice(index, 1);
-                        await saveObjectivesToStorage();
-                        renderObjectives(allObjectives);
-                        updateStats();
-                    } else {
-                        showToast('Objective not found', 'error');
-                        return;
+                    // Delete from local storage via API
+                    const token = localStorage.getItem('accessToken');
+                    const response = await fetch('/api/objectives/' + objectiveId, {
+                        method: 'DELETE',
+                        headers: { 
+                            'Authorization': 'Bearer ' + token
+                        }
+                    });
+
+                    const result = await response.json();
+                    if (!response.ok || !result.success) {
+                        throw new Error(result.error || 'Failed to delete objective');
                     }
+
+                    // Refresh data from API
+                    await fetchData();
                 }
                 
                 showToast('Objective deleted successfully!', 'success');

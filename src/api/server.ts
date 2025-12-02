@@ -272,6 +272,211 @@ export function createServer(storeOrGetter: IMetricStore | (() => IMetricStore),
     }
   });
 
+  // Get all domains
+  app.get('/api/domains', optionalAuthenticate, async (req: Request, res: Response) => {
+    try {
+      let domains: any[] = [];
+      
+      // Check storage settings
+      const settingsPath = path.join(process.cwd(), '.mdl', 'settings.json');
+      let storageMode = 'local';
+      let pgConfig: any = null;
+      
+      try {
+        const settingsData = await fsPromises.readFile(settingsPath, 'utf-8');
+        const settings = JSON.parse(settingsData);
+        storageMode = settings.storage || 'local';
+        pgConfig = settings.postgres;
+      } catch (error) {
+        // Settings file doesn't exist, use local
+      }
+      
+      if ((storageMode === 'postgres' || storageMode === 'postgresql') && pgConfig?.host) {
+        // Use PostgreSQL
+        const { PostgresDomainStore } = require('../storage/PostgresDomainStore');
+        const pgStore = new PostgresDomainStore({
+          host: pgConfig.host,
+          port: pgConfig.port || 5432,
+          database: pgConfig.database,
+          user: pgConfig.user,
+          password: pgConfig.password || ''
+        });
+        
+        try {
+          domains = await pgStore.findAll();
+          await pgStore.close();
+        } catch (error: any) {
+          logger.error({ error: error?.message || error }, 'Failed to fetch domains from PostgreSQL');
+          // Fall back to local file
+          const domainsPath = path.join(process.cwd(), '.mdl', 'domains.json');
+          try {
+            const existingData = await fsPromises.readFile(domainsPath, 'utf-8');
+            domains = JSON.parse(existingData);
+          } catch {
+            domains = [];
+          }
+        }
+      } else {
+        // Use local file
+        const domainsPath = path.join(process.cwd(), '.mdl', 'domains.json');
+        try {
+          const existingData = await fsPromises.readFile(domainsPath, 'utf-8');
+          domains = JSON.parse(existingData);
+        } catch (error) {
+          domains = [];
+        }
+      }
+      
+      res.json({ success: true, data: domains });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Get all objectives
+  app.get('/api/objectives', optionalAuthenticate, async (req: Request, res: Response) => {
+    try {
+      let objectives: any[] = [];
+      
+      // Check storage settings
+      const settingsPath = path.join(process.cwd(), '.mdl', 'settings.json');
+      let storageMode = 'local';
+      let pgConfig: any = null;
+      
+      try {
+        const settingsData = await fsPromises.readFile(settingsPath, 'utf-8');
+        const settings = JSON.parse(settingsData);
+        storageMode = settings.storage || 'local';
+        pgConfig = settings.postgres;
+      } catch (error) {
+        // Settings file doesn't exist, use local
+      }
+      
+      if ((storageMode === 'postgres' || storageMode === 'postgresql') && pgConfig?.host) {
+        // Use PostgreSQL (objectives store doesn't exist yet, fall back to local)
+        // TODO: Implement PostgresObjectiveStore
+        const objectivesPath = path.join(process.cwd(), '.mdl', 'objectives.json');
+        try {
+          const existingData = await fsPromises.readFile(objectivesPath, 'utf-8');
+          objectives = JSON.parse(existingData);
+        } catch (error) {
+          objectives = [];
+        }
+      } else {
+        // Use local file
+        const objectivesPath = path.join(process.cwd(), '.mdl', 'objectives.json');
+        try {
+          const existingData = await fsPromises.readFile(objectivesPath, 'utf-8');
+          objectives = JSON.parse(existingData);
+        } catch (error) {
+          objectives = [];
+        }
+      }
+      
+      res.json({ success: true, data: objectives });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Save domains to local storage
+  app.post('/api/domains/save', requireEditor, async (req: Request, res: Response) => {
+    try {
+      const { domains } = req.body;
+      
+      if (!Array.isArray(domains)) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'domains must be an array' 
+        });
+      }
+      
+      const domainsPath = path.join(process.cwd(), '.mdl', 'domains.json');
+      await fsPromises.writeFile(domainsPath, JSON.stringify(domains, null, 2), 'utf-8');
+      
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Delete domain from local storage
+  app.delete('/api/domains/:domainId', requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { domainId } = req.params;
+      const domainsPath = path.join(process.cwd(), '.mdl', 'domains.json');
+      
+      let domains: any[] = [];
+      try {
+        const existingData = await fsPromises.readFile(domainsPath, 'utf-8');
+        domains = JSON.parse(existingData);
+      } catch (error) {
+        return res.status(404).json({ success: false, error: 'Domains file not found' });
+      }
+      
+      const index = domains.findIndex(d => d.domain_id === domainId);
+      if (index === -1) {
+        return res.status(404).json({ success: false, error: 'Domain not found' });
+      }
+      
+      domains.splice(index, 1);
+      await fsPromises.writeFile(domainsPath, JSON.stringify(domains, null, 2), 'utf-8');
+      
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Save objectives to local storage
+  app.post('/api/objectives/save', requireEditor, async (req: Request, res: Response) => {
+    try {
+      const { objectives } = req.body;
+      
+      if (!Array.isArray(objectives)) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'objectives must be an array' 
+        });
+      }
+      
+      const objectivesPath = path.join(process.cwd(), '.mdl', 'objectives.json');
+      await fsPromises.writeFile(objectivesPath, JSON.stringify(objectives, null, 2), 'utf-8');
+      
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Delete objective from local storage
+  app.delete('/api/objectives/:objectiveId', requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { objectiveId } = req.params;
+      const objectivesPath = path.join(process.cwd(), '.mdl', 'objectives.json');
+      
+      let objectives: any[] = [];
+      try {
+        const existingData = await fsPromises.readFile(objectivesPath, 'utf-8');
+        objectives = JSON.parse(existingData);
+      } catch (error) {
+        return res.status(404).json({ success: false, error: 'Objectives file not found' });
+      }
+      
+      const index = objectives.findIndex(o => o.objective_id === objectiveId);
+      if (index === -1) {
+        return res.status(404).json({ success: false, error: 'Objective not found' });
+      }
+      
+      objectives.splice(index, 1);
+      await fsPromises.writeFile(objectivesPath, JSON.stringify(objectives, null, 2), 'utf-8');
+      
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
   // Get metrics from PostgreSQL
   app.post('/api/postgres/metrics', requireEditor, async (req: Request, res: Response) => {
     try {
@@ -914,32 +1119,72 @@ export function createServer(storeOrGetter: IMetricStore | (() => IMetricStore),
 
       // Import domains
       if (result.domains.length > 0) {
-        // Domains stored in local file for now (future: support PostgreSQL)
-        const domainsPath = path.join(process.cwd(), '.mdl', 'domains.json');
         try {
-          let domains: any[] = [];
+          // Check storage settings
+          const settingsPath = path.join(process.cwd(), '.mdl', 'settings.json');
+          let storageMode = 'local';
+          let pgConfig: any = null;
+          
           try {
-            const existingData = await fsPromises.readFile(domainsPath, 'utf-8');
-            domains = JSON.parse(existingData);
-          } catch {
-            // File doesn't exist, start with empty array
+            const settingsData = await fsPromises.readFile(settingsPath, 'utf-8');
+            const settings = JSON.parse(settingsData);
+            storageMode = settings.storage || 'local';
+            pgConfig = settings.postgres;
+          } catch (error) {
+            // Settings file doesn't exist, use local
           }
 
-          for (const domain of result.domains) {
-            const existingIndex = domains.findIndex(d => d.domain_id === domain.domain_id);
-            if (existingIndex >= 0) {
-              // Update existing
-              domains[existingIndex] = domain;
-            } else {
-              // Add new
-              domains.push(domain);
+          if ((storageMode === 'postgres' || storageMode === 'postgresql') && pgConfig?.host) {
+            // Use PostgreSQL
+            const { PostgresDomainStore } = require('../storage/PostgresDomainStore');
+            const pgStore = new PostgresDomainStore({
+              host: pgConfig.host,
+              port: pgConfig.port || 5432,
+              database: pgConfig.database,
+              user: pgConfig.user,
+              password: pgConfig.password || ''
+            });
+
+            for (const domain of result.domains) {
+              try {
+                const existing = await pgStore.findById(domain.domain_id);
+                if (existing) {
+                  await pgStore.update(domain.domain_id, domain);
+                } else {
+                  await pgStore.create(domain);
+                }
+                imported.domains++;
+              } catch (error: any) {
+                imported.errors.push(`Domain ${domain.domain_id}: ${error.message}`);
+              }
             }
-            imported.domains++;
-          }
+          } else {
+            // Use local file storage
+            const domainsPath = path.join(process.cwd(), '.mdl', 'domains.json');
+            let domains: any[] = [];
+            try {
+              const existingData = await fsPromises.readFile(domainsPath, 'utf-8');
+              domains = JSON.parse(existingData);
+            } catch {
+              // File doesn't exist, start with empty array
+            }
 
-          // Save domains file
-          await fsPromises.mkdir(path.dirname(domainsPath), { recursive: true });
-          await fsPromises.writeFile(domainsPath, JSON.stringify(domains, null, 2), 'utf-8');
+            for (const domain of result.domains) {
+              const existingIndex = domains.findIndex(d => d.domain_id === domain.domain_id);
+              if (existingIndex >= 0) {
+                // Update existing
+                domains[existingIndex] = domain;
+              } else {
+                // Add new
+                domains.push(domain);
+              }
+              imported.domains++;
+            }
+
+            // Save domains file
+            await fsPromises.mkdir(path.dirname(domainsPath), { recursive: true });
+            await fsPromises.writeFile(domainsPath, JSON.stringify(domains, null, 2), 'utf-8');
+          }
         } catch (error: any) {
           imported.errors.push(`Domains import error: ${error.message}`);
         }
@@ -947,32 +1192,72 @@ export function createServer(storeOrGetter: IMetricStore | (() => IMetricStore),
 
       // Import objectives
       if (result.objectives.length > 0) {
-        // Objectives stored in local file for now (future: support PostgreSQL)
-        const objectivesPath = path.join(process.cwd(), '.mdl', 'objectives.json');
         try {
-          let objectives: any[] = [];
+          // Check storage settings
+          const settingsPath = path.join(process.cwd(), '.mdl', 'settings.json');
+          let storageMode = 'local';
+          let pgConfig: any = null;
+          
           try {
-            const existingData = await fsPromises.readFile(objectivesPath, 'utf-8');
-            objectives = JSON.parse(existingData);
-          } catch {
-            // File doesn't exist, start with empty array
+            const settingsData = await fsPromises.readFile(settingsPath, 'utf-8');
+            const settings = JSON.parse(settingsData);
+            storageMode = settings.storage || 'local';
+            pgConfig = settings.postgres;
+          } catch (error) {
+            // Settings file doesn't exist, use local
           }
 
-          for (const objective of result.objectives) {
-            const existingIndex = objectives.findIndex(o => o.objective_id === objective.objective_id);
-            if (existingIndex >= 0) {
-              // Update existing
-              objectives[existingIndex] = objective;
-            } else {
-              // Add new
-              objectives.push(objective);
+          if ((storageMode === 'postgres' || storageMode === 'postgresql') && pgConfig?.host) {
+            // Use PostgreSQL
+            const { PostgresObjectiveStore } = require('../storage/PostgresObjectiveStore');
+            const pgStore = new PostgresObjectiveStore({
+              host: pgConfig.host,
+              port: pgConfig.port || 5432,
+              database: pgConfig.database,
+              user: pgConfig.user,
+              password: pgConfig.password || ''
+            });
+
+            for (const objective of result.objectives) {
+              try {
+                const existing = await pgStore.findById(objective.objective_id);
+                if (existing) {
+                  await pgStore.update(objective.objective_id, objective);
+                } else {
+                  await pgStore.create(objective);
+                }
+                imported.objectives++;
+              } catch (error: any) {
+                imported.errors.push(`Objective ${objective.objective_id}: ${error.message}`);
+              }
             }
-            imported.objectives++;
-          }
+          } else {
+            // Use local file storage
+            const objectivesPath = path.join(process.cwd(), '.mdl', 'objectives.json');
+            let objectives: any[] = [];
+            try {
+              const existingData = await fsPromises.readFile(objectivesPath, 'utf-8');
+              objectives = JSON.parse(existingData);
+            } catch {
+              // File doesn't exist, start with empty array
+            }
 
-          // Save objectives file
-          await fsPromises.mkdir(path.dirname(objectivesPath), { recursive: true });
-          await fsPromises.writeFile(objectivesPath, JSON.stringify(objectives, null, 2), 'utf-8');
+            for (const objective of result.objectives) {
+              const existingIndex = objectives.findIndex(o => o.objective_id === objective.objective_id);
+              if (existingIndex >= 0) {
+                // Update existing
+                objectives[existingIndex] = objective;
+              } else {
+                // Add new
+                objectives.push(objective);
+              }
+              imported.objectives++;
+            }
+
+            // Save objectives file
+            await fsPromises.mkdir(path.dirname(objectivesPath), { recursive: true });
+            await fsPromises.writeFile(objectivesPath, JSON.stringify(objectives, null, 2), 'utf-8');
+          }
         } catch (error: any) {
           imported.errors.push(`Objectives import error: ${error.message}`);
         }
