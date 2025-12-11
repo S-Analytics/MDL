@@ -417,4 +417,134 @@ describe('Logger Utils', () => {
       expect(typeof logger.child).toBe('function');
     });
   });
+
+  describe('logger configuration paths', () => {
+    it('should handle production JSON output path', () => {
+      // Save original NODE_ENV
+      const originalEnv = process.env.NODE_ENV;
+      const originalLogPretty = process.env.LOG_PRETTY;
+      
+      // Set production environment
+      process.env.NODE_ENV = 'production';
+      process.env.LOG_PRETTY = 'false';
+      
+      // Re-import logger to trigger production path
+      jest.resetModules();
+      const { logger: prodLogger } = require('../../src/utils/logger');
+      
+      expect(prodLogger).toBeDefined();
+      expect(prodLogger.info).toBeDefined();
+      
+      // Restore environment
+      process.env.NODE_ENV = originalEnv;
+      if (originalLogPretty !== undefined) {
+        process.env.LOG_PRETTY = originalLogPretty;
+      } else {
+        delete process.env.LOG_PRETTY;
+      }
+      jest.resetModules();
+    });
+  });
+
+  describe('logger serializers', () => {
+    it('should serialize request objects', () => {
+      const mockReq = {
+        id: 'req-123',
+        method: 'GET',
+        url: '/api/test',
+        query: { page: '1' },
+        params: { id: '456' },
+        headers: {
+          'x-forwarded-for': '192.168.1.1',
+          'user-agent': 'Test Agent',
+        },
+        socket: { remoteAddress: '127.0.0.1' },
+      };
+
+      // Get the pino mock first
+      const pino = require('pino');
+      const initialCallCount = pino.mock.calls.length;
+      
+      // Re-import logger to get fresh instance with the mock still active
+      jest.resetModules();
+      
+      // Re-mock pino after reset
+      jest.mock('pino', () => {
+        const mockLogger = {
+          info: jest.fn(),
+          error: jest.fn(),
+          warn: jest.fn(),
+          debug: jest.fn(),
+          trace: jest.fn(),
+          fatal: jest.fn(),
+          child: jest.fn().mockReturnThis(),
+        };
+        const pinoMock = jest.fn(() => mockLogger);
+        Object.assign(pinoMock, {
+          stdSerializers: {
+            err: (err: Error) => ({
+              type: err.constructor.name,
+              message: err.message,
+              stack: err.stack,
+            }),
+            req: jest.fn(),
+            res: jest.fn(),
+          },
+        });
+        return pinoMock;
+      });
+      
+      const pinoAfterReset = require('pino');
+      const loggerModule = require('../../src/utils/logger');
+      
+      // Check that pino was called with serializers
+      expect(pinoAfterReset.mock.calls.length).toBeGreaterThan(0);
+      const pinoConfig = pinoAfterReset.mock.calls[pinoAfterReset.mock.calls.length - 1][0];
+      expect(pinoConfig.serializers).toBeDefined();
+      expect(pinoConfig.serializers.req).toBeDefined();
+      expect(pinoConfig.serializers.res).toBeDefined();
+      expect(pinoConfig.serializers.err).toBeDefined();
+      
+      // Test req serializer
+      if (typeof pinoConfig.serializers.req === 'function') {
+        const serialized = pinoConfig.serializers.req(mockReq);
+        expect(serialized).toHaveProperty('id', 'req-123');
+        expect(serialized).toHaveProperty('method', 'GET');
+        expect(serialized).toHaveProperty('url', '/api/test');
+        expect(serialized).toHaveProperty('query', { page: '1' });
+        expect(serialized).toHaveProperty('remoteAddress', '192.168.1.1');
+        expect(serialized).toHaveProperty('userAgent', 'Test Agent');
+      }
+    });
+
+    it('should serialize response objects', () => {
+      const mockRes = {
+        statusCode: 200,
+        headers: { 'content-type': 'application/json' },
+      };
+
+      jest.resetModules();
+      const pino = require('pino');
+      require('../../src/utils/logger');
+      
+      const pinoConfig = pino.mock.calls[pino.mock.calls.length - 1][0];
+      
+      // Test res serializer
+      if (typeof pinoConfig.serializers.res === 'function') {
+        const serialized = pinoConfig.serializers.res(mockRes);
+        expect(serialized).toHaveProperty('statusCode', 200);
+      }
+    });
+
+    it('should use pino standard error serializer', () => {
+      jest.resetModules();
+      const pino = require('pino');
+      require('../../src/utils/logger');
+      
+      const pinoConfig = pino.mock.calls[pino.mock.calls.length - 1][0];
+      
+      // Test that err serializer is pino.stdSerializers.err
+      expect(pinoConfig.serializers.err).toBe(pino.stdSerializers.err);
+    });
+  });
 });

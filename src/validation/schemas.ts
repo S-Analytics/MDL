@@ -434,6 +434,10 @@ export const registerSchema = Joi.object({
     .default('viewer'),
 });
 
+export const adminCreateUserSchema = registerSchema.keys({
+  status: Joi.string().valid('active', 'inactive', 'suspended').default('active'),
+});
+
 export const refreshTokenSchema = Joi.object({
   refresh_token: Joi.string().required(),
 });

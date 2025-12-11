@@ -4,7 +4,14 @@ import { ApiKey, RefreshToken, User, UserCreateInput, UserRole, UserStatus, User
 import { ConflictError, NotFoundError } from '../../src/utils/errors';
 
 jest.mock('node:fs/promises');
-jest.mock('../../src/utils/logger');
+jest.mock('../../src/utils/logger', () => ({
+  logger: {
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
+  }
+}));
 
 describe('FileUserStore', () => {
   let store: FileUserStore;
@@ -20,7 +27,8 @@ describe('FileUserStore', () => {
       apiKeys: [],
     };
     
-    (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify(mockData));
+    // Use a function so it reads the current mockData value each time
+    (fs.readFile as jest.Mock).mockImplementation(() => Promise.resolve(JSON.stringify(mockData)));
     (fs.writeFile as jest.Mock).mockResolvedValue(undefined);
     (fs.mkdir as jest.Mock).mockResolvedValue(undefined);
     
@@ -707,6 +715,152 @@ describe('FileUserStore', () => {
       
       expect(foundToken).not.toBeNull();
       expect(foundKey).not.toBeNull();
+    });
+  });
+
+  describe('list with filters', () => {
+    beforeEach(async () => {
+      mockData.users = [
+        {
+          user_id: '1',
+          username: 'admin',
+          email: 'admin@example.com',
+          password_hash: 'hash1',
+          full_name: 'Admin User',
+          role: UserRole.ADMIN,
+          status: UserStatus.ACTIVE,
+          created_at: new Date('2024-01-01').toISOString(),
+          updated_at: new Date('2024-01-01').toISOString(),
+          metadata: {},
+        },
+        {
+          user_id: '2',
+          username: 'viewer',
+          email: 'viewer@example.com',
+          password_hash: 'hash2',
+          full_name: 'Viewer User',
+          role: UserRole.VIEWER,
+          status: UserStatus.ACTIVE,
+          created_at: new Date('2024-01-02').toISOString(),
+          updated_at: new Date('2024-01-02').toISOString(),
+          metadata: {},
+        },
+        {
+          user_id: '3',
+          username: 'suspended',
+          email: 'suspended@example.com',
+          password_hash: 'hash3',
+          full_name: 'Suspended User',
+          role: UserRole.VIEWER,
+          status: UserStatus.SUSPENDED,
+          created_at: new Date('2024-01-03').toISOString(),
+          updated_at: new Date('2024-01-03').toISOString(),
+          metadata: {},
+        },
+      ];
+      await store.initialize();
+    });
+
+    it('should filter by status', async () => {
+      const users = await store.list({ status: UserStatus.ACTIVE });
+      expect(users).toHaveLength(2);
+      expect(users.every(u => u.status === UserStatus.ACTIVE)).toBe(true);
+    });
+
+    it('should filter by role', async () => {
+      const users = await store.list({ role: UserRole.ADMIN });
+      expect(users).toHaveLength(1);
+      expect(users[0].username).toBe('admin');
+    });
+
+    it('should filter by both status and role', async () => {
+      const users = await store.list({ 
+        status: UserStatus.ACTIVE, 
+        role: UserRole.VIEWER 
+      });
+      expect(users).toHaveLength(1);
+      expect(users[0].username).toBe('viewer');
+    });
+
+    it('should apply pagination with offset and limit', async () => {
+      const users = await store.list({ offset: 1, limit: 1 });
+      expect(users).toHaveLength(1);
+      expect(users[0].username).toBe('viewer'); // Second in desc order (sorted by created_at desc)
+    });
+  });
+
+  describe('revokeAllRefreshTokens', () => {
+    it('should log when tokens are revoked', async () => {
+      const { logger } = require('../../src/utils/logger');
+      
+      mockData.refreshTokens = [
+        {
+          token_id: 't1',
+          user_id: 'u1',
+          token_hash: 'hash1',
+          created_at: new Date().toISOString(),
+          expires_at: new Date(Date.now() + 86400000).toISOString(),
+          revoked: false,
+        },
+        {
+          token_id: 't2',
+          user_id: 'u1',
+          token_hash: 'hash2',
+          created_at: new Date().toISOString(),
+          expires_at: new Date(Date.now() + 86400000).toISOString(),
+          revoked: false,
+        },
+      ];
+      await store.initialize();
+      
+      await store.revokeAllRefreshTokens('u1');
+      
+      expect(logger.info).toHaveBeenCalledWith(
+        { user_id: 'u1', count: 2 },
+        'All refresh tokens revoked'
+      );
+    });
+  });
+
+  describe('API key expiration', () => {
+    it('should return null for expired API key in findApiKey', async () => {
+      const expiredKey: ApiKey = {
+        key_id: 'k1',
+        user_id: 'u1',
+        key_hash: 'hash1',
+        name: 'Expired Key',
+        description: 'Expired key description',
+        scopes: ['read'],
+        revoked: false,
+        created_at: new Date(),
+        expires_at: new Date(Date.now() - 86400000), // Expired yesterday
+      };
+      
+      mockData.apiKeys = [expiredKey];
+      await store.initialize();
+      
+      const key = await store.findApiKey('k1');
+      expect(key).toBeNull();
+    });
+
+    it('should return null for expired API key in findApiKeyByHash', async () => {
+      const expiredKey: ApiKey = {
+        key_id: 'k1',
+        user_id: 'u1',
+        key_hash: 'hash1',
+        name: 'Expired Key',
+        description: 'Expired key description',
+        scopes: ['read'],
+        revoked: false,
+        created_at: new Date(),
+        expires_at: new Date(Date.now() - 86400000), // Expired yesterday
+      };
+      
+      mockData.apiKeys = [expiredKey];
+      await store.initialize();
+      
+      const key = await store.findApiKeyByHash('hash1');
+      expect(key).toBeNull();
     });
   });
 });

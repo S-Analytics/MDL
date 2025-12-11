@@ -168,7 +168,7 @@ metadata:
       }
     });
 
-    test('should import batch metrics from sample file (sample has invalid objectives)', () => {
+    test('should import batch metrics from sample file', () => {
       const sampleFilePath = path.join(__dirname, '../../examples/sample-metrics.json');
       
       // Skip if sample file doesn't exist
@@ -177,13 +177,13 @@ metadata:
         return;
       }
       
-      // Note: The sample file contains objectives with metric_ids (array) instead of metric_id (singular)
-      // which causes validation errors when trying to parse objectives
-      // This test expects the error since the sample file format is incompatible
+      // The sample file contains a mix of objectives and metrics
+      // Import should succeed and parse the metrics correctly
+      const result = ConfigLoader.importFromFile(sampleFilePath);
       
-      expect(() => {
-        ConfigLoader.importFromFile(sampleFilePath);
-      }).toThrow('Key result at index 0 is missing required fields: metric_id');
+      expect(result).toBeDefined();
+      expect(result.type).toBe('metrics');
+      expect(result.metrics.length).toBeGreaterThan(0);
       
       // Alternative: Test with a metrics-only array file
       const testFilePath = path.join(__dirname, 'temp-batch-metrics.json');

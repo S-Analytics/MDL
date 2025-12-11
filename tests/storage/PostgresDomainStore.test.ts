@@ -155,6 +155,48 @@ describe('PostgresDomainStore', () => {
       });
     });
 
+    describe('findByName', () => {
+      it('should find a domain by name', async () => {
+        const uniqueName = `Test Domain ${Date.now()}`;
+        const input = {
+          ...createSampleDomain(),
+          name: uniqueName,
+        };
+        await store.create(input);
+
+        const found = await store.findByName(uniqueName);
+        expect(found).not.toBeNull();
+        expect(found?.name).toBe(uniqueName);
+        expect(found?.domain_id).toBe(input.domain_id);
+      });
+
+      it('should return null for non-existent name', async () => {
+        const found = await store.findByName('Nonexistent Domain Name 12345');
+        expect(found).toBeNull();
+      });
+
+      it('should handle exact name matching', async () => {
+        const name1 = `Exact Name ${Date.now()}`;
+        const name2 = `${name1} Suffix`;
+        
+        await store.create({
+          ...createSampleDomain(),
+          domain_id: `test-name-1-${Date.now()}`,
+          name: name1,
+        });
+        await store.create({
+          ...createSampleDomain(),
+          domain_id: `test-name-2-${Date.now()}`,
+          name: name2,
+        });
+
+        const found = await store.findByName(name1);
+        expect(found).not.toBeNull();
+        expect(found?.name).toBe(name1);
+        expect(found?.name).not.toBe(name2);
+      });
+    });
+
     describe('update', () => {
       it('should update an existing domain', async () => {
         const input = createSampleDomain();
@@ -334,6 +376,73 @@ describe('PostgresDomainStore', () => {
         const domain = await store.create(input);
         expect(domain.contact_email).toBe('not-an-email');
       });
+    });
+  });
+
+  skipIfNoDb('Legacy Mode Tests', () => {
+    it('should initialize in legacy mode when no dbPool provided', async () => {
+      const legacyStore = new PostgresDomainStore(testConfig);
+      
+      // Test that the store works in legacy mode
+      const input = {
+        domain_id: `test-legacy-${Date.now()}`,
+        name: 'Legacy Mode Test',
+        description: 'Testing legacy mode initialization',
+        owner_team: 'Test Team',
+        contact_email: 'legacy@example.com',
+      };
+
+      const created = await legacyStore.create(input);
+      expect(created.domain_id).toBe(input.domain_id);
+      expect(created.name).toBe(input.name);
+
+      // Verify it works with findByName in legacy mode
+      const found = await legacyStore.findByName(input.name);
+      expect(found).not.toBeNull();
+      expect(found?.domain_id).toBe(input.domain_id);
+
+      await legacyStore.close();
+    });
+
+    it('should handle all CRUD operations in legacy mode', async () => {
+      const legacyStore = new PostgresDomainStore(testConfig);
+      const domainId = `test-legacy-crud-${Date.now()}`;
+
+      // Create
+      const created = await legacyStore.create({
+        domain_id: domainId,
+        name: 'Legacy CRUD Test',
+        description: 'Testing CRUD in legacy mode',
+        owner_team: 'Test Team',
+      });
+      expect(created.domain_id).toBe(domainId);
+
+      // Read by ID
+      const foundById = await legacyStore.findById(domainId);
+      expect(foundById).not.toBeNull();
+      expect(foundById?.name).toBe('Legacy CRUD Test');
+
+      // Read by Name
+      const foundByName = await legacyStore.findByName('Legacy CRUD Test');
+      expect(foundByName).not.toBeNull();
+      expect(foundByName?.domain_id).toBe(domainId);
+
+      // Update
+      const updated = await legacyStore.update({
+        ...created,
+        description: 'Updated in legacy mode',
+      });
+      expect(updated.description).toBe('Updated in legacy mode');
+
+      // Delete
+      const deleted = await legacyStore.delete(domainId);
+      expect(deleted).toBe(true);
+
+      // Verify deletion
+      const notFound = await legacyStore.findById(domainId);
+      expect(notFound).toBeNull();
+
+      await legacyStore.close();
     });
   });
 

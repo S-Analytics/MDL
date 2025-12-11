@@ -166,6 +166,21 @@ describe('Validation Middleware', () => {
         expect((error as ValidationError).details).toHaveProperty('query');
       }
     });
+
+    it('should skip validation for null schemas', () => {
+      mockReq.body = { name: 'John' };
+      mockReq.query = { page: '2' };
+      
+      const middleware = validateAll({
+        body: bodySchema,
+        query: null as any, // Null schema should be skipped
+        params: undefined as any, // Undefined schema should be skipped
+      });
+      
+      middleware(mockReq as Request, mockRes as Response, mockNext);
+      
+      expect(mockNext).toHaveBeenCalled();
+    });
   });
 
   describe('validateBody', () => {

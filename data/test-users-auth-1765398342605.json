@@ -1,0 +1,27 @@
+{
+  "users": [
+    {
+      "user_id": "test-uuid-xqvb8t",
+      "username": "meuser_1765398345586",
+      "email": "meuser_1765398345586@test.com",
+      "password_hash": "$2b$10$eB4NDfvOH9AjVPC6znNc/esTWnpcv8YCnW7s4S0smUW6WLZThnN5G",
+      "full_name": "Test User",
+      "role": "editor",
+      "status": "active",
+      "created_at": "2025-12-10T20:25:45.757Z",
+      "updated_at": "2025-12-10T20:25:45.757Z",
+      "metadata": {}
+    }
+  ],
+  "refreshTokens": [
+    {
+      "token_id": "test-uuid-459fds",
+      "user_id": "test-uuid-xqvb8t",
+      "token_hash": "f8749cba4c2a87b730a9498e4e72b367819647cd7d8dbbe7bb7ce9b275c8a7df",
+      "expires_at": "2025-12-17T20:25:45.760Z",
+      "created_at": "2025-12-10T20:25:45.760Z",
+      "revoked": false
+    }
+  ],
+  "apiKeys": []
+}

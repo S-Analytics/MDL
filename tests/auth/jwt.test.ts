@@ -3,6 +3,7 @@
  * Tests for token generation, verification, and password management
  */
 
+import jwt from 'jsonwebtoken';
 import {
     extractBearerToken,
     generateApiKey,
@@ -88,6 +89,30 @@ describe('JWT Utilities', () => {
     it('should throw AuthenticationError for empty token', () => {
       expect(() => verifyAccessToken('')).toThrow(AuthenticationError);
     });
+
+    it('should throw AuthenticationError for expired token', () => {
+      const JWT_SECRET = process.env.JWT_SECRET || 'test-secret-key-for-development-only';
+      const expiredToken = jwt.sign(
+        { user_id: '123', username: 'test', email: 'test@example.com', role: 'user' },
+        JWT_SECRET,
+        { expiresIn: '-1s', issuer: 'mdl-api', audience: 'mdl-client' }
+      );
+      
+      expect(() => verifyAccessToken(expiredToken)).toThrow(AuthenticationError);
+      expect(() => verifyAccessToken(expiredToken)).toThrow('Access token expired');
+    });
+
+    it('should throw generic AuthenticationError for unknown errors', () => {
+      // Create a token with wrong signature to trigger a different error path
+      const JWT_SECRET = process.env.JWT_SECRET || 'test-secret-key-for-development-only';
+      const tokenWithWrongSecret = jwt.sign(
+        { user_id: '123', username: 'test' },
+        'wrong-secret',
+        { issuer: 'mdl-api', audience: 'mdl-client' }
+      );
+      
+      expect(() => verifyAccessToken(tokenWithWrongSecret)).toThrow(AuthenticationError);
+    });
   });
 
   describe('verifyRefreshToken', () => {
@@ -106,6 +131,41 @@ describe('JWT Utilities', () => {
       
       expect(() => verifyRefreshToken(invalidToken)).toThrow(AuthenticationError);
       expect(() => verifyRefreshToken(invalidToken)).toThrow('Invalid refresh token');
+    });
+
+    it('should throw AuthenticationError for expired refresh token', () => {
+      const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'test-refresh-secret-for-development';
+      const expiredToken = jwt.sign(
+        { user_id: '123', token_id: 'token-123' },
+        JWT_REFRESH_SECRET,
+        { expiresIn: '-1s', issuer: 'mdl-api', audience: 'mdl-client' }
+      );
+      
+      expect(() => verifyRefreshToken(expiredToken)).toThrow(AuthenticationError);
+      expect(() => verifyRefreshToken(expiredToken)).toThrow('Refresh token expired');
+    });
+
+    it('should throw AuthenticationError for refresh token with missing payload fields', () => {
+      const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'test-refresh-secret-for-development';
+      const tokenWithInvalidPayload = jwt.sign(
+        { user_id: '123' }, // Missing token_id
+        JWT_REFRESH_SECRET,
+        { issuer: 'mdl-api', audience: 'mdl-client' }
+      );
+      
+      expect(() => verifyRefreshToken(tokenWithInvalidPayload)).toThrow(AuthenticationError);
+      expect(() => verifyRefreshToken(tokenWithInvalidPayload)).toThrow('Token verification failed');
+    });
+
+    it('should throw generic AuthenticationError for unknown refresh token errors', () => {
+      const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'test-refresh-secret-for-development';
+      const tokenWithWrongSecret = jwt.sign(
+        { user_id: '123', token_id: 'token-123' },
+        'wrong-secret',
+        { issuer: 'mdl-api', audience: 'mdl-client' }
+      );
+      
+      expect(() => verifyRefreshToken(tokenWithWrongSecret)).toThrow(AuthenticationError);
     });
   });
 

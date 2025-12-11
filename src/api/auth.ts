@@ -39,6 +39,7 @@ import {
     ValidationError,
 } from '../utils/errors';
 import {
+    adminCreateUserSchema,
     apiKeyCreateSchema,
     apiKeyIdParamSchema,
     changePasswordSchema,
@@ -423,7 +424,7 @@ export function createAuthRouter(userStore: IUserStore) {
     '/users',
     authenticate,
     requireAdmin,
-    validateBody(registerSchema),
+    validateBody(adminCreateUserSchema),
     asyncHandler(async (req: Request, res: Response) => {
       const { username, email, password, full_name, role, status } = req.body;
 
